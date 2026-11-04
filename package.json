@@ -1,0 +1,34 @@
+{
+  "name": "strata-ai-infrastructure",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "test:e2e": "playwright test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "@fontsource-variable/dm-sans": "^5.3.0",
+    "@fontsource-variable/manrope": "^5.3.0",
+    "lucide-react": "^0.468.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "three": "^0.181.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "@types/node": "^24.10.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@types/three": "^0.181.0",
+    "@vitejs/plugin-react": "^5.1.0",
+    "prettier": "^3.6.2",
+    "typescript": "~5.9.3",
+    "vite": "^7.2.0"
+  }
+}
