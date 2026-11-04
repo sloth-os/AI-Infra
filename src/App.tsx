@@ -16,6 +16,7 @@ import {
   Cpu,
   ExternalLink,
   Gauge,
+  Gamepad2,
   GitBranch,
   Globe2,
   HardDrive,
@@ -59,6 +60,7 @@ import CollectivePlayground from './components/CollectivePlayground'
 import MotionTransport from './components/MotionTransport'
 import { chapterTime, motionChapters } from './motion'
 import type { MotionFrame } from './motion'
+import FleetGame from './game/Game'
 
 const layerIcons: Record<Layer, LucideIcon> = {
   fleet: Globe2,
@@ -78,6 +80,12 @@ const navigation: {
   icon: LucideIcon
   caption: string
 }[] = [
+  {
+    id: 'game',
+    title: 'Fleet Command',
+    icon: Gamepad2,
+    caption: 'Play the infrastructure game',
+  },
   {
     id: 'explore',
     title: 'Infrastructure explorer',
@@ -129,10 +137,18 @@ function initialParameters(): Parameters {
   return result
 }
 
+function initialPage(): Page {
+  const search = new URLSearchParams(window.location.search)
+  const view = search.get('view')
+  return view && ['game', 'explore', 'journey', 'lab', 'guide'].includes(view)
+    ? (view as Page)
+    : search.has('gpus')
+      ? 'lab'
+      : 'game'
+}
+
 function App() {
-  const [page, setPage] = useState<Page>(
-    new URLSearchParams(window.location.search).has('gpus') ? 'lab' : 'explore',
-  )
+  const [page, setPage] = useState<Page>(initialPage)
   const [layer, setLayer] = useState<Layer>('fleet')
   const [selected, setSelected] = useState('scheduler')
   const [traffic, setTraffic] = useState<Traffic>('requests')
@@ -160,6 +176,9 @@ function App() {
 
   const navigate = (next: Page) => {
     setPage(next)
+    const url = new URL(window.location.href)
+    url.searchParams.set('view', next)
+    window.history.pushState({}, '', url)
     setMobileNav(false)
     window.scrollTo({ top: 0, behavior: 'instant' })
   }
@@ -238,612 +257,630 @@ function App() {
   useEffect(() => {
     document.title = `${navigation.find((n) => n.id === page)!.title} — Strata`
   }, [page])
+  useEffect(() => {
+    const onPop = () => setPage(initialPage())
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
 
   return (
-    <div className="app-shell">
-      <aside className={`sidebar ${mobileNav ? 'sidebar-open' : ''}`}>
-        <a
-          className="brand"
-          href={import.meta.env.BASE_URL}
-          onClick={(e) => {
-            e.preventDefault()
-            navigate('explore')
-          }}
-          aria-label="Strata home"
-        >
-          <span className="brand-mark">
-            <Layers3 size={24} strokeWidth={1.8} />
-          </span>
-          strata<span className="brand-period">.</span>
-        </a>
-        <div className="sidebar-intro">
-          An inside look at
-          <br />
-          AI infrastructure.
-        </div>
-        <div className="nav-caption">THE WORKSPACE</div>
-        <nav aria-label="Main navigation">
-          {navigation.map((n) => (
-            <button
-              key={n.id}
-              className={`nav-item ${page === n.id ? 'active' : ''}`}
-              onClick={() => navigate(n.id)}
-              aria-current={page === n.id ? 'page' : undefined}
-            >
-              <n.icon size={19} />
-              <span>
-                {n.title}
-                <small>{n.caption}</small>
-              </span>
-              {page === n.id && <span className="nav-active-dot" />}
-            </button>
-          ))}
-        </nav>
-        <div className="sidebar-divider" />
-        <div className="nav-caption">ZOOM INTO A LAYER</div>
-        <div className="layer-navigation">
-          {layers.map((l, i) => {
-            const Icon = layerIcons[l.id]
-            return (
+    <>
+      <FleetGame active={page === 'game'} onLearn={() => navigate('explore')} />
+      <div className="app-shell" hidden={page === 'game'}>
+        <aside className={`sidebar ${mobileNav ? 'sidebar-open' : ''}`}>
+          <a
+            className="brand"
+            href={import.meta.env.BASE_URL}
+            onClick={(e) => {
+              e.preventDefault()
+              navigate('game')
+            }}
+            aria-label="Strata home"
+          >
+            <span className="brand-mark">
+              <Layers3 size={24} strokeWidth={1.8} />
+            </span>
+            strata<span className="brand-period">.</span>
+          </a>
+          <div className="sidebar-intro">
+            An inside look at
+            <br />
+            AI infrastructure.
+          </div>
+          <div className="nav-caption">THE WORKSPACE</div>
+          <nav aria-label="Main navigation">
+            {navigation.map((n) => (
               <button
-                key={l.id}
-                className={layer === l.id && page === 'explore' ? 'active' : ''}
-                onClick={() => {
-                  selectLayer(l.id)
-                  navigate('explore')
-                }}
+                key={n.id}
+                className={`nav-item ${page === n.id ? 'active' : ''}`}
+                onClick={() => navigate(n.id)}
+                aria-current={page === n.id ? 'page' : undefined}
               >
-                <span className="layer-nav-index">0{i + 1}</span>
-                <Icon size={16} />
-                <span>{l.name}</span>
-                <ChevronRight size={14} />
+                <n.icon size={19} />
+                <span>
+                  {n.title}
+                  <small>{n.caption}</small>
+                </span>
+                {page === n.id && <span className="nav-active-dot" />}
               </button>
-            )
-          })}
-        </div>
-        <div className="sidebar-bottom">
-          <div className="fleet-note">
-            <span className="tiny-dot" />
-            REFERENCE ARCHITECTURE
-            <strong>
-              100,000 <span>GPUs</span>
-            </strong>
-            <div className="mini-fleet">
-              {Array.from({ length: 30 }, (_, i) => (
-                <i key={i} className={i % 6 < 2 ? 'purple' : ''} />
-              ))}
-            </div>
-            <p>
-              A big system, made explorable.
-              <br />
-              No cluster required.
-            </p>
-            <button onClick={() => navigate('guide')}>
-              Meet the reference fleet <ArrowUpRight size={14} />
-            </button>
-          </div>
-          <button className="help-link" onClick={() => setHelp(true)}>
-            <CircleHelp size={16} /> How to explore <span>?</span>
-          </button>
-          <div className="sidebar-footnote">
-            BUILT FOR CURIOUS MINDS <Sparkles size={12} />
-          </div>
-        </div>
-      </aside>
-      {mobileNav && (
-        <button
-          className="nav-backdrop"
-          aria-label="Close navigation"
-          onClick={() => setMobileNav(false)}
-        />
-      )}
-      <div className="main-shell">
-        <header className="topbar">
-          <div className="topbar-left">
-            <button
-              className="icon-button mobile-menu"
-              aria-label="Open navigation"
-              onClick={() => setMobileNav(true)}
-            >
-              <Menu size={20} />
-            </button>
-            <span className="breadcrumb">
-              THE WORKSPACE <ChevronRight size={12} />{' '}
-              <strong>{navigation.find((n) => n.id === page)!.title}</strong>
-            </span>
-          </div>
-          <div className="topbar-right">
-            <span className="learning-tag">
-              <span className="tiny-dot" /> INTERACTIVE FIELD GUIDE
-            </span>
-            <a
-              className="repository-link"
-              href="https://github.com/sloth-os/AI-Infra"
-              target="_blank"
-              rel="noreferrer"
-            >
-              View project <ArrowUpRight size={15} />
-            </a>
-          </div>
-        </header>
-        <main id="main-content" className="main-content">
-          {page === 'explore' && (
-            <>
-              <section className="page-heading">
-                <div>
-                  <div className="eyebrow">
-                    <span className="eyebrow-line" /> THE INFRASTRUCTURE
-                    EXPLORER
-                  </div>
-                  <h1>
-                    Behind every answer.
-                    <br />
-                    <span>A whole world of infrastructure.</span>
-                  </h1>
-                  <p>
-                    From a single token to a 100,000-GPU fleet.
-                    <br className="mobile-break" /> See the system. Follow the
-                    data. Find the bottleneck.
-                  </p>
-                </div>
+            ))}
+          </nav>
+          <div className="sidebar-divider" />
+          <div className="nav-caption">ZOOM INTO A LAYER</div>
+          <div className="layer-navigation">
+            {layers.map((l, i) => {
+              const Icon = layerIcons[l.id]
+              return (
                 <button
-                  className="button button-dark heading-cta"
+                  key={l.id}
+                  className={
+                    layer === l.id && page === 'explore' ? 'active' : ''
+                  }
                   onClick={() => {
-                    setJourneyStep(0)
-                    navigate('journey')
+                    selectLayer(l.id)
+                    navigate('explore')
                   }}
                 >
-                  Follow a request <ArrowRight size={17} />
+                  <span className="layer-nav-index">0{i + 1}</span>
+                  <Icon size={16} />
+                  <span>{l.name}</span>
+                  <ChevronRight size={14} />
                 </button>
-              </section>
-              <section
-                className="stats-grid"
-                aria-label="Reference fleet overview"
+              )
+            })}
+          </div>
+          <div className="sidebar-bottom">
+            <div className="fleet-note">
+              <span className="tiny-dot" />
+              REFERENCE ARCHITECTURE
+              <strong>
+                100,000 <span>GPUs</span>
+              </strong>
+              <div className="mini-fleet">
+                {Array.from({ length: 30 }, (_, i) => (
+                  <i key={i} className={i % 6 < 2 ? 'purple' : ''} />
+                ))}
+              </div>
+              <p>
+                A big system, made explorable.
+                <br />
+                No cluster required.
+              </p>
+              <button onClick={() => navigate('guide')}>
+                Meet the reference fleet <ArrowUpRight size={14} />
+              </button>
+            </div>
+            <button className="help-link" onClick={() => setHelp(true)}>
+              <CircleHelp size={16} /> How to explore <span>?</span>
+            </button>
+            <div className="sidebar-footnote">
+              BUILT FOR CURIOUS MINDS <Sparkles size={12} />
+            </div>
+          </div>
+        </aside>
+        {mobileNav && (
+          <button
+            className="nav-backdrop"
+            aria-label="Close navigation"
+            onClick={() => setMobileNav(false)}
+          />
+        )}
+        <div className="main-shell">
+          <header className="topbar">
+            <div className="topbar-left">
+              <button
+                className="icon-button mobile-menu"
+                aria-label="Open navigation"
+                onClick={() => setMobileNav(true)}
               >
-                <Stat
-                  icon={Cpu}
-                  label="GPUs IN THE FLEET"
-                  value="100,000"
-                  suffix="H100-class"
-                  foot="A reference-scale architecture"
-                />
-                <Stat
-                  icon={Box}
-                  label="MODEL REPLICAS"
-                  value="12,500"
-                  suffix="TP = 8"
-                  foot="8 accelerators working as one"
-                />
-                <Stat
-                  icon={Waypoints}
-                  label="LAB REQUEST RATE"
-                  value={formatNumber(params.arrivalRate)}
-                  suffix="req / sec"
-                  foot="Adjustable in the trade-off lab"
-                />
-                <Stat
-                  icon={Zap}
-                  label="FIRST TOKEN · LAB ESTIMATE"
-                  value={duration(model.ttftMs)}
-                  suffix=""
-                  foot={`For ${formatNumber(params.gpus)} modeled GPUs · not a benchmark`}
-                  accent
-                />
-              </section>
-              <section
-                className="explorer-card motion-explorer"
-                aria-label="Interactive infrastructure explorer"
-                ref={sceneFrameRef}
+                <Menu size={20} />
+              </button>
+              <span className="breadcrumb">
+                THE WORKSPACE <ChevronRight size={12} />{' '}
+                <strong>{navigation.find((n) => n.id === page)!.title}</strong>
+              </span>
+            </div>
+            <div className="topbar-right">
+              <span className="learning-tag">
+                <span className="tiny-dot" /> INTERACTIVE FIELD GUIDE
+              </span>
+              <a
+                className="repository-link"
+                href="https://github.com/sloth-os/AI-Infra"
+                target="_blank"
+                rel="noreferrer"
               >
-                <div className="explorer-toolbar">
-                  <div className="section-title">
-                    <Box size={18} />
-                    <h2>Explore the infrastructure</h2>
-                    <span className="subtle-tag">3D</span>
+                View project <ArrowUpRight size={15} />
+              </a>
+            </div>
+          </header>
+          <main id="main-content" className="main-content">
+            {page === 'explore' && (
+              <>
+                <section className="page-heading">
+                  <div>
+                    <div className="eyebrow">
+                      <span className="eyebrow-line" /> THE INFRASTRUCTURE
+                      EXPLORER
+                    </div>
+                    <h1>
+                      Behind every answer.
+                      <br />
+                      <span>A whole world of infrastructure.</span>
+                    </h1>
+                    <p>
+                      From a single token to a 100,000-GPU fleet.
+                      <br className="mobile-break" /> See the system. Follow the
+                      data. Find the bottleneck.
+                    </p>
                   </div>
-                  <div
-                    className="traffic-tabs"
-                    role="group"
-                    aria-label="Traffic type"
+                  <button
+                    className="button button-dark heading-cta"
+                    onClick={() => {
+                      setJourneyStep(0)
+                      navigate('journey')
+                    }}
                   >
-                    {(
-                      [
-                        { id: 'requests', name: 'Requests' },
-                        { id: 'kv', name: 'KV cache' },
-                        { id: 'collectives', name: 'Collectives' },
-                        { id: 'tensors', name: 'Tensor flow' },
-                      ] as const
-                    ).map((t) => (
-                      <button
-                        key={t.id}
-                        className={traffic === t.id ? 'active' : ''}
-                        onClick={() => selectTraffic(t.id)}
-                        aria-pressed={traffic === t.id}
-                      >
-                        <span className={`traffic-dot ${t.id}`} />
-                        {t.name}
-                      </button>
-                    ))}
+                    Follow a request <ArrowRight size={17} />
+                  </button>
+                </section>
+                <section
+                  className="stats-grid"
+                  aria-label="Reference fleet overview"
+                >
+                  <Stat
+                    icon={Cpu}
+                    label="GPUs IN THE FLEET"
+                    value="100,000"
+                    suffix="H100-class"
+                    foot="A reference-scale architecture"
+                  />
+                  <Stat
+                    icon={Box}
+                    label="MODEL REPLICAS"
+                    value="12,500"
+                    suffix="TP = 8"
+                    foot="8 accelerators working as one"
+                  />
+                  <Stat
+                    icon={Waypoints}
+                    label="LAB REQUEST RATE"
+                    value={formatNumber(params.arrivalRate)}
+                    suffix="req / sec"
+                    foot="Adjustable in the trade-off lab"
+                  />
+                  <Stat
+                    icon={Zap}
+                    label="FIRST TOKEN · LAB ESTIMATE"
+                    value={duration(model.ttftMs)}
+                    suffix=""
+                    foot={`For ${formatNumber(params.gpus)} modeled GPUs · not a benchmark`}
+                    accent
+                  />
+                </section>
+                <section
+                  className="explorer-card motion-explorer"
+                  aria-label="Interactive infrastructure explorer"
+                  ref={sceneFrameRef}
+                >
+                  <div className="explorer-toolbar">
+                    <div className="section-title">
+                      <Box size={18} />
+                      <h2>Explore the infrastructure</h2>
+                      <span className="subtle-tag">3D</span>
+                    </div>
+                    <div
+                      className="traffic-tabs"
+                      role="group"
+                      aria-label="Traffic type"
+                    >
+                      {(
+                        [
+                          { id: 'requests', name: 'Requests' },
+                          { id: 'kv', name: 'KV cache' },
+                          { id: 'collectives', name: 'Collectives' },
+                          { id: 'tensors', name: 'Tensor flow' },
+                        ] as const
+                      ).map((t) => (
+                        <button
+                          key={t.id}
+                          className={traffic === t.id ? 'active' : ''}
+                          onClick={() => selectTraffic(t.id)}
+                          aria-pressed={traffic === t.id}
+                        >
+                          <span className={`traffic-dot ${t.id}`} />
+                          {t.name}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
-                <div className="explorer-body">
-                  <div className="scene-column">
-                    <div className="scene-frame">
-                      <InfrastructureScene
-                        ref={sceneRef}
-                        layer={layer}
-                        traffic={traffic}
-                        paused={paused}
-                        selected={selected}
-                        onSelect={(id) => {
+                  <div className="explorer-body">
+                    <div className="scene-column">
+                      <div className="scene-frame">
+                        <InfrastructureScene
+                          ref={sceneRef}
+                          layer={layer}
+                          traffic={traffic}
+                          paused={paused}
+                          selected={selected}
+                          onSelect={(id) => {
+                            guidedRef.current = false
+                            setGuided(false)
+                            setSelected(id)
+                          }}
+                          speed={animationSpeed}
+                          exploded={exploded}
+                          heatmap={heatmap}
+                          orbit={orbit}
+                          params={params}
+                          onFrame={handleMotionFrame}
+                        />
+                        <div className="scene-topline">
+                          <div>
+                            <span className="scene-overline">
+                              {layer === 'fleet'
+                                ? 'THE BIG PICTURE'
+                                : 'A CLOSER LOOK'}
+                            </span>
+                            <h3>
+                              {layers.find((l) => l.id === layer)!.scale}
+                              <span className="scene-live-dot" />
+                            </h3>
+                          </div>
+                          <div className="scene-top-buttons">
+                            <button
+                              className="scene-icon-button"
+                              aria-label={
+                                paused ? 'Resume animation' : 'Pause animation'
+                              }
+                              onClick={() => setPaused(!paused)}
+                            >
+                              {paused ? (
+                                <Play size={15} />
+                              ) : (
+                                <Pause size={15} />
+                              )}
+                            </button>
+                            <button
+                              className="scene-icon-button fullscreen-button"
+                              aria-label={
+                                fullscreen
+                                  ? 'Exit fullscreen'
+                                  : 'Expand explorer'
+                              }
+                              onClick={() => {
+                                if (document.fullscreenElement)
+                                  void document.exitFullscreen()
+                                else
+                                  void sceneFrameRef.current
+                                    ?.requestFullscreen()
+                                    .catch(() => setHelp(true))
+                              }}
+                            >
+                              <Maximize2 size={15} />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="scene-bottomline">
+                          <span>
+                            <MousePointer2 size={13} /> Drag to orbit <i />{' '}
+                            Scroll to zoom <i /> Click to inspect
+                          </span>
+                          <div>
+                            <button
+                              className="scene-icon-button"
+                              aria-label="Zoom out"
+                              onClick={() => sceneRef.current?.zoom(-1)}
+                            >
+                              <Minus size={16} />
+                            </button>
+                            <button
+                              className="scene-icon-button"
+                              aria-label="Zoom in"
+                              onClick={() => sceneRef.current?.zoom(1)}
+                            >
+                              <Plus size={16} />
+                            </button>
+                            <button
+                              className="scene-icon-button"
+                              aria-label="Reset camera"
+                              onClick={() => sceneRef.current?.reset()}
+                            >
+                              <RotateCcw size={14} />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="scene-scale">
+                          <i />
+                          <span>
+                            {layer === 'fleet'
+                              ? 'Each group = a logical pool of 5,000 GPUs'
+                              : layer === 'gpu'
+                                ? 'Conceptual chip layout · not to scale'
+                                : 'Representative architecture · not a floor plan'}
+                          </span>
+                        </div>
+                      </div>
+                      <div
+                        className="layer-strip"
+                        aria-label="Infrastructure scale"
+                      >
+                        {layers.map((l, i) => {
+                          const Icon = layerIcons[l.id]
+                          return (
+                            <button
+                              key={l.id}
+                              className={layer === l.id ? 'active' : ''}
+                              onClick={() => selectLayer(l.id)}
+                              aria-pressed={layer === l.id}
+                            >
+                              <span className="layer-number">0{i + 1}</span>
+                              <Icon size={19} />
+                              <span>
+                                {l.name}
+                                <small>{l.scale}</small>
+                              </span>
+                              {i < 3 && (
+                                <ChevronRight
+                                  className="layer-strip-chevron"
+                                  size={13}
+                                />
+                              )}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                    <Inspector
+                      id={selected}
+                      onFollow={() => followStage(selected)}
+                      params={params}
+                      onParameters={(next) => {
+                        setParams(next)
+                        setScenario('custom')
+                      }}
+                    />
+                  </div>
+                  <MotionTransport
+                    sceneRef={sceneRef}
+                    mode={traffic}
+                    paused={paused}
+                    onPaused={setPaused}
+                    onChapter={selectAnimationChapter}
+                    speed={animationSpeed}
+                    onSpeed={setAnimationSpeed}
+                    exploded={exploded}
+                    onExploded={setExploded}
+                    heatmap={heatmap}
+                    onHeatmap={setHeatmap}
+                    orbit={orbit}
+                    onOrbit={setOrbit}
+                    guided={guided}
+                    onGuided={() => {
+                      if (guided) {
+                        guidedRef.current = false
+                        setGuided(false)
+                        return
+                      }
+                      lastGuidedChapter.current = ''
+                      guidedRef.current = true
+                      setGuided(true)
+                      setPaused(false)
+                      sceneRef.current?.seek(0)
+                    }}
+                  />
+                  <div className="component-picker">
+                    <span>INSPECT</span>
+                    {layerNodes[layer].map((id) => (
+                      <button
+                        key={id}
+                        className={selected === id ? 'active' : ''}
+                        onClick={() => {
                           guidedRef.current = false
                           setGuided(false)
                           setSelected(id)
+                          sceneRef.current?.focus(id)
                         }}
-                        speed={animationSpeed}
-                        exploded={exploded}
-                        heatmap={heatmap}
-                        orbit={orbit}
-                        params={params}
-                        onFrame={handleMotionFrame}
-                      />
-                      <div className="scene-topline">
-                        <div>
-                          <span className="scene-overline">
-                            {layer === 'fleet'
-                              ? 'THE BIG PICTURE'
-                              : 'A CLOSER LOOK'}
-                          </span>
-                          <h3>
-                            {layers.find((l) => l.id === layer)!.scale}
-                            <span className="scene-live-dot" />
-                          </h3>
-                        </div>
-                        <div className="scene-top-buttons">
-                          <button
-                            className="scene-icon-button"
-                            aria-label={
-                              paused ? 'Resume animation' : 'Pause animation'
-                            }
-                            onClick={() => setPaused(!paused)}
-                          >
-                            {paused ? <Play size={15} /> : <Pause size={15} />}
-                          </button>
-                          <button
-                            className="scene-icon-button fullscreen-button"
-                            aria-label={
-                              fullscreen ? 'Exit fullscreen' : 'Expand explorer'
-                            }
-                            onClick={() => {
-                              if (document.fullscreenElement)
-                                void document.exitFullscreen()
-                              else
-                                void sceneFrameRef.current
-                                  ?.requestFullscreen()
-                                  .catch(() => setHelp(true))
-                            }}
-                          >
-                            <Maximize2 size={15} />
-                          </button>
-                        </div>
-                      </div>
-                      <div className="scene-bottomline">
-                        <span>
-                          <MousePointer2 size={13} /> Drag to orbit <i /> Scroll
-                          to zoom <i /> Click to inspect
-                        </span>
-                        <div>
-                          <button
-                            className="scene-icon-button"
-                            aria-label="Zoom out"
-                            onClick={() => sceneRef.current?.zoom(-1)}
-                          >
-                            <Minus size={16} />
-                          </button>
-                          <button
-                            className="scene-icon-button"
-                            aria-label="Zoom in"
-                            onClick={() => sceneRef.current?.zoom(1)}
-                          >
-                            <Plus size={16} />
-                          </button>
-                          <button
-                            className="scene-icon-button"
-                            aria-label="Reset camera"
-                            onClick={() => sceneRef.current?.reset()}
-                          >
-                            <RotateCcw size={14} />
-                          </button>
-                        </div>
-                      </div>
-                      <div className="scene-scale">
-                        <i />
-                        <span>
-                          {layer === 'fleet'
-                            ? 'Each group = a logical pool of 5,000 GPUs'
-                            : layer === 'gpu'
-                              ? 'Conceptual chip layout · not to scale'
-                              : 'Representative architecture · not a floor plan'}
-                        </span>
-                      </div>
-                    </div>
-                    <div
-                      className="layer-strip"
-                      aria-label="Infrastructure scale"
-                    >
-                      {layers.map((l, i) => {
-                        const Icon = layerIcons[l.id]
-                        return (
-                          <button
-                            key={l.id}
-                            className={layer === l.id ? 'active' : ''}
-                            onClick={() => selectLayer(l.id)}
-                            aria-pressed={layer === l.id}
-                          >
-                            <span className="layer-number">0{i + 1}</span>
-                            <Icon size={19} />
-                            <span>
-                              {l.name}
-                              <small>{l.scale}</small>
-                            </span>
-                            {i < 3 && (
-                              <ChevronRight
-                                className="layer-strip-chevron"
-                                size={13}
-                              />
-                            )}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                  <Inspector
-                    id={selected}
-                    onFollow={() => followStage(selected)}
-                    params={params}
-                    onParameters={(next) => {
-                      setParams(next)
-                      setScenario('custom')
-                    }}
-                  />
-                </div>
-                <MotionTransport
-                  sceneRef={sceneRef}
-                  mode={traffic}
-                  paused={paused}
-                  onPaused={setPaused}
-                  onChapter={selectAnimationChapter}
-                  speed={animationSpeed}
-                  onSpeed={setAnimationSpeed}
-                  exploded={exploded}
-                  onExploded={setExploded}
-                  heatmap={heatmap}
-                  onHeatmap={setHeatmap}
-                  orbit={orbit}
-                  onOrbit={setOrbit}
-                  guided={guided}
-                  onGuided={() => {
-                    if (guided) {
-                      guidedRef.current = false
-                      setGuided(false)
-                      return
-                    }
-                    lastGuidedChapter.current = ''
-                    guidedRef.current = true
-                    setGuided(true)
-                    setPaused(false)
-                    sceneRef.current?.seek(0)
-                  }}
-                />
-                <div className="component-picker">
-                  <span>INSPECT</span>
-                  {layerNodes[layer].map((id) => (
-                    <button
-                      key={id}
-                      className={selected === id ? 'active' : ''}
-                      onClick={() => {
-                        guidedRef.current = false
-                        setGuided(false)
-                        setSelected(id)
-                        sceneRef.current?.focus(id)
-                      }}
-                      aria-pressed={selected === id}
-                    >
-                      <span style={{ background: details[id].color }} />
-                      {id === 'scheduler'
-                        ? 'Scheduler'
-                        : id === 'storage'
-                          ? 'Storage'
-                          : id === 'tensor'
-                            ? 'Compute'
-                            : id === 'fabric'
-                              ? 'Network fabric'
-                              : id === 'nvlink'
-                                ? 'NVLink'
-                                : details[id].title.replace(' workers', '')}
-                    </button>
-                  ))}
-                </div>
-              </section>
-              <div className="traffic-explainer">
-                <span className={`traffic-dot ${traffic}`} />
-                <p>
-                  {traffic === 'requests' ? (
-                    <>
-                      <strong>North–south traffic.</strong> Requests enter
-                      through the gateway, route to a replica, and return as
-                      streamed tokens.
-                    </>
-                  ) : traffic === 'kv' ? (
-                    <>
-                      <strong>State moves, too.</strong> Separate prefill and
-                      decode workers transfer per-request KV blocks. In a
-                      colocated worker, the cache stays local.
-                    </>
-                  ) : traffic === 'tensors' ? (
-                    <>
-                      <strong>Follow the tensors.</strong> Embedding rows become
-                      Q, K, and V; causal attention combines context, ranks
-                      synchronize, and the final state produces a sampled token.
-                      Shapes refer to the illustrative 70B model.
-                    </>
-                  ) : (
-                    <>
-                      <strong>GPUs talk to GPUs.</strong> Tensor-parallel ranks
-                      exchange partial results; MoE adds expert all-to-all.
-                      Fleet lines are conceptual, not a single collective group.
-                    </>
-                  )}
-                </p>
-                <span className="simulation-label">ILLUSTRATIVE FLOW</span>
-              </div>
-              {traffic === 'collectives' && <CollectivePlayground />}
-              <section className="below-explorer">
-                <div className="bottleneck-panel">
-                  <div className="card-eyebrow">
-                    <span className="tiny-dot" /> AT THIS LAYER
-                  </div>
-                  <h2>{layers.find((l) => l.id === layer)!.question}</h2>
-                  <div className="problem-solution">
-                    <div>
-                      <span className="small-label">THE CHALLENGE</span>
-                      <p>{details[selected].problem}</p>
-                    </div>
-                    <div>
-                      <span className="small-label green-text">
-                        THE APPROACH
-                      </span>
-                      <p>{details[selected].solution}</p>
-                    </div>
-                  </div>
-                  <div className="tradeoff-note">
-                    <GitBranch size={17} />
-                    <p>{details[selected].tradeoff}</p>
-                  </div>
-                </div>
-                <div className="experiment-panel">
-                  <span className="card-eyebrow">A LITTLE EXPERIMENT</span>
-                  <h2>What happens when…</h2>
-                  <div className="scenario-buttons">
-                    {[
-                      { id: 'baseline', name: 'Normal traffic', icon: Radio },
-                      { id: 'burst', name: 'Traffic doubles', icon: Zap },
-                      {
-                        id: 'context',
-                        name: 'Prompts get longer',
-                        icon: HardDrive,
-                      },
-                    ].map((s) => (
-                      <button
-                        key={s.id}
-                        className={scenario === s.id ? 'active' : ''}
-                        onClick={() => applyScenario(s.id)}
+                        aria-pressed={selected === id}
                       >
-                        <s.icon size={16} />
-                        {s.name}
-                        {scenario === s.id ? (
-                          <Check size={15} />
-                        ) : (
-                          <ArrowUpRight size={15} />
-                        )}
+                        <span style={{ background: details[id].color }} />
+                        {id === 'scheduler'
+                          ? 'Scheduler'
+                          : id === 'storage'
+                            ? 'Storage'
+                            : id === 'tensor'
+                              ? 'Compute'
+                              : id === 'fabric'
+                                ? 'Network fabric'
+                                : id === 'nvlink'
+                                  ? 'NVLink'
+                                  : details[id].title.replace(' workers', '')}
                       </button>
                     ))}
                   </div>
-                  <div
-                    className={`experiment-result ${!model.stable ? 'warning' : ''}`}
-                    aria-live="polite"
-                  >
-                    <span className="tiny-dot" />
-                    <div>
-                      <strong>
-                        {!model.stable
-                          ? 'The queue can no longer drain.'
-                          : scenario === 'context'
-                            ? 'More context, more KV memory.'
-                            : 'The fleet has room to breathe.'}
-                      </strong>
-                      <p>
-                        {!model.stable
-                          ? `Demand exceeds the modeled ${formatNumber(model.capacity)} req/s capacity. Add capacity or control admission.`
-                          : `${formatNumber(model.utilization * 100)}% modeled load · ${duration(model.ttftMs)} to first token`}
-                      </p>
+                </section>
+                <div className="traffic-explainer">
+                  <span className={`traffic-dot ${traffic}`} />
+                  <p>
+                    {traffic === 'requests' ? (
+                      <>
+                        <strong>North–south traffic.</strong> Requests enter
+                        through the gateway, route to a replica, and return as
+                        streamed tokens.
+                      </>
+                    ) : traffic === 'kv' ? (
+                      <>
+                        <strong>State moves, too.</strong> Separate prefill and
+                        decode workers transfer per-request KV blocks. In a
+                        colocated worker, the cache stays local.
+                      </>
+                    ) : traffic === 'tensors' ? (
+                      <>
+                        <strong>Follow the tensors.</strong> Embedding rows
+                        become Q, K, and V; causal attention combines context,
+                        ranks synchronize, and the final state produces a
+                        sampled token. Shapes refer to the illustrative 70B
+                        model.
+                      </>
+                    ) : (
+                      <>
+                        <strong>GPUs talk to GPUs.</strong> Tensor-parallel
+                        ranks exchange partial results; MoE adds expert
+                        all-to-all. Fleet lines are conceptual, not a single
+                        collective group.
+                      </>
+                    )}
+                  </p>
+                  <span className="simulation-label">ILLUSTRATIVE FLOW</span>
+                </div>
+                {traffic === 'collectives' && <CollectivePlayground />}
+                <section className="below-explorer">
+                  <div className="bottleneck-panel">
+                    <div className="card-eyebrow">
+                      <span className="tiny-dot" /> AT THIS LAYER
+                    </div>
+                    <h2>{layers.find((l) => l.id === layer)!.question}</h2>
+                    <div className="problem-solution">
+                      <div>
+                        <span className="small-label">THE CHALLENGE</span>
+                        <p>{details[selected].problem}</p>
+                      </div>
+                      <div>
+                        <span className="small-label green-text">
+                          THE APPROACH
+                        </span>
+                        <p>{details[selected].solution}</p>
+                      </div>
+                    </div>
+                    <div className="tradeoff-note">
+                      <GitBranch size={17} />
+                      <p>{details[selected].tradeoff}</p>
                     </div>
                   </div>
+                  <div className="experiment-panel">
+                    <span className="card-eyebrow">A LITTLE EXPERIMENT</span>
+                    <h2>What happens when…</h2>
+                    <div className="scenario-buttons">
+                      {[
+                        { id: 'baseline', name: 'Normal traffic', icon: Radio },
+                        { id: 'burst', name: 'Traffic doubles', icon: Zap },
+                        {
+                          id: 'context',
+                          name: 'Prompts get longer',
+                          icon: HardDrive,
+                        },
+                      ].map((s) => (
+                        <button
+                          key={s.id}
+                          className={scenario === s.id ? 'active' : ''}
+                          onClick={() => applyScenario(s.id)}
+                        >
+                          <s.icon size={16} />
+                          {s.name}
+                          {scenario === s.id ? (
+                            <Check size={15} />
+                          ) : (
+                            <ArrowUpRight size={15} />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                    <div
+                      className={`experiment-result ${!model.stable ? 'warning' : ''}`}
+                      aria-live="polite"
+                    >
+                      <span className="tiny-dot" />
+                      <div>
+                        <strong>
+                          {!model.stable
+                            ? 'The queue can no longer drain.'
+                            : scenario === 'context'
+                              ? 'More context, more KV memory.'
+                              : 'The fleet has room to breathe.'}
+                        </strong>
+                        <p>
+                          {!model.stable
+                            ? `Demand exceeds the modeled ${formatNumber(model.capacity)} req/s capacity. Add capacity or control admission.`
+                            : `${formatNumber(model.utilization * 100)}% modeled load · ${duration(model.ttftMs)} to first token`}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      className="text-button"
+                      onClick={() => navigate('lab')}
+                    >
+                      Take it to the trade-off lab <ArrowRight size={15} />
+                    </button>
+                  </div>
+                </section>
+                <section className="journey-banner">
+                  <div className="journey-banner-icon">
+                    <Route size={26} />
+                  </div>
+                  <div>
+                    <span className="small-label">THE LIFE OF A REQUEST</span>
+                    <h2>One prompt. A remarkable journey.</h2>
+                    <p>
+                      Follow the transformations that turn your question into an
+                      answer.
+                    </p>
+                  </div>
                   <button
-                    className="text-button"
-                    onClick={() => navigate('lab')}
+                    className="button button-light"
+                    onClick={() => {
+                      setJourneyStep(0)
+                      navigate('journey')
+                    }}
                   >
-                    Take it to the trade-off lab <ArrowRight size={15} />
+                    Take the tour <ArrowRight size={17} />
                   </button>
-                </div>
-              </section>
-              <section className="journey-banner">
-                <div className="journey-banner-icon">
-                  <Route size={26} />
-                </div>
-                <div>
-                  <span className="small-label">THE LIFE OF A REQUEST</span>
-                  <h2>One prompt. A remarkable journey.</h2>
-                  <p>
-                    Follow the transformations that turn your question into an
-                    answer.
-                  </p>
-                </div>
-                <button
-                  className="button button-light"
-                  onClick={() => {
-                    setJourneyStep(0)
-                    navigate('journey')
-                  }}
-                >
-                  Take the tour <ArrowRight size={17} />
-                </button>
-              </section>
-            </>
-          )}
-          {page === 'journey' && (
-            <JourneyView step={journeyStep} setStep={setJourneyStep} />
-          )}
-          {page === 'lab' && (
-            <LabView
-              params={params}
-              setParams={(next) => {
-                setParams(next)
-                setScenario('custom')
-              }}
-              onPreset={applyScenario}
-              scenario={scenario}
-            />
-          )}
-          {page === 'guide' && (
-            <GuideView
-              onExplore={(next) => {
-                selectLayer(next)
-                navigate('explore')
-              }}
-            />
-          )}
-          <footer className="page-footer">
-            <span className="footer-brand">
-              <Layers3 size={16} /> strata.
-            </span>
-            <span>Complex systems. Clearer understanding.</span>
-            <button onClick={() => navigate('guide')}>
-              Sources & model assumptions <ArrowUpRight size={13} />
-            </button>
-          </footer>
-        </main>
+                </section>
+              </>
+            )}
+            {page === 'journey' && (
+              <JourneyView step={journeyStep} setStep={setJourneyStep} />
+            )}
+            {page === 'lab' && (
+              <LabView
+                params={params}
+                setParams={(next) => {
+                  setParams(next)
+                  setScenario('custom')
+                }}
+                onPreset={applyScenario}
+                scenario={scenario}
+              />
+            )}
+            {page === 'guide' && (
+              <GuideView
+                onExplore={(next) => {
+                  selectLayer(next)
+                  navigate('explore')
+                }}
+              />
+            )}
+            <footer className="page-footer">
+              <span className="footer-brand">
+                <Layers3 size={16} /> strata.
+              </span>
+              <span>Complex systems. Clearer understanding.</span>
+              <button onClick={() => navigate('guide')}>
+                Sources & model assumptions <ArrowUpRight size={13} />
+              </button>
+            </footer>
+          </main>
+        </div>
+        {help && (
+          <HelpModal
+            onClose={() => setHelp(false)}
+            onGuide={() => {
+              setHelp(false)
+              navigate('guide')
+            }}
+          />
+        )}
       </div>
-      {help && (
-        <HelpModal
-          onClose={() => setHelp(false)}
-          onGuide={() => {
-            setHelp(false)
-            navigate('guide')
-          }}
-        />
-      )}
-    </div>
+    </>
   )
 }
 

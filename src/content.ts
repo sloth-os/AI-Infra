@@ -1,6 +1,6 @@
 export type Layer = 'fleet' | 'pod' | 'rack' | 'gpu'
 export type Traffic = 'requests' | 'kv' | 'collectives' | 'tensors'
-export type Page = 'explore' | 'journey' | 'lab' | 'guide'
+export type Page = 'game' | 'explore' | 'journey' | 'lab' | 'guide'
 
 export const layers: {
   id: Layer

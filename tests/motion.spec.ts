@@ -5,7 +5,7 @@ test('motion lenses preserve the WebGL canvas and make a transformer pass seekab
 }) => {
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
-  await page.goto('/')
+  await page.goto('/?view=explore')
   await expect(page.locator('canvas')).toHaveCount(1)
   const canvas = await page.locator('canvas').elementHandle()
   await page.getByRole('button', { name: 'Tensor flow', exact: true }).click()
@@ -49,7 +49,7 @@ test('motion lenses preserve the WebGL canvas and make a transformer pass seekab
 test('KV motion uses per-rank sizes and responds to endpoint bandwidth', async ({
   page,
 }) => {
-  await page.goto('/')
+  await page.goto('/?view=explore')
   await page.getByRole('button', { name: 'KV cache', exact: true }).click()
   await page
     .getByRole('button', { name: /Animation chapter 3: Move eight/ })
@@ -80,7 +80,7 @@ test('KV motion uses per-rank sizes and responds to endpoint bandwidth', async (
 test('pause holds the timeline and guided flight follows chapters across scales', async ({
   page,
 }) => {
-  await page.goto('/')
+  await page.goto('/?view=explore')
   await page.getByRole('button', { name: 'Guided flight', exact: true }).click()
   await page.getByRole('slider', { name: 'Animation timeline' }).fill('29')
   await expect(
@@ -110,7 +110,7 @@ test('reduced-motion users can scrub and mobile controls fit the viewport', asyn
 }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/')
+  await page.goto('/?view=explore')
   await expect(
     page.getByRole('slider', { name: 'Animation timeline' }),
   ).toHaveValue('0')

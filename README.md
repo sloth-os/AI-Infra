@@ -1,6 +1,18 @@
-# Strata — Inside AI infrastructure
+# Strata — Fleet Command
 
-An interactive, source-backed 3D website for understanding how AI serving works, from an API request to a 100,000-GPU reference fleet.
+A playable 3D strategy game about AI serving, with a source-backed learning explorer that reaches from an API request to a 100,000-GPU reference fleet.
+
+## Play Fleet Command
+
+The home page is an isometric infrastructure game. Build prefill and decode engines on a floating 16-sector district, reserve KV memory, expand the shared fabric, and keep requests within their deadlines. Completed requests earn construction credits; missed deadlines damage service integrity. Upgrades, continuous batching, tenant-scoped prefix reuse, power limits, traffic bursts, and a repairable outage change the outcome.
+
+Six missions introduce the complete request path, batching, memory pressure, network contention, prefix locality, and a combined operational challenge. **Open horizon** is an endless sandbox. Any mission can be played immediately. Stars and personal bests stay in browser-local storage; a live run survives switching to Learning mode but is reset by reloading.
+
+Click a build tool and an empty 3D hex, or use the labeled sector grid. Drag to orbit; scroll or pinch to zoom. Keys **1–4** choose a module, **Space** pauses, **Q/E** rotates, **R** resets the view, **U** upgrades the selection, and **Esc** opens mission control. Building and research work while paused. The crosshair button pauses the shift and opens a live request inspector, including on phones. A 2D tactical board keeps the game playable without WebGL.
+
+The request lens and moving payload labels show actual game requests: tenant, input length, retained KV size, current phase, emitted tokens, and deadline. Network transfer progress and memory admission respond to the player's infrastructure. The physics, clock, economy, and compute rates are balanced for a game; they are not benchmarks. [docs/GAME.md](docs/GAME.md) documents the rules and simplifications.
+
+**Learning mode** opens the existing 3D infrastructure explorer, transformer/collective walkthroughs, performance lab, and field guide. Direct links use `?view=explore`, `?view=journey`, `?view=lab`, or `?view=guide`. Existing parameterized lab links continue to work.
 
 ## Run locally
 
@@ -53,7 +65,7 @@ The animation runs in **teaching time**, not real inference time. Tensor dimensi
 
 ```sh
 npm run build       # strict TypeScript + production bundle
-npm test            # dimensional math, capacity, saturation, and memory tests
+npm test            # game rules, all mission strategies, math and algorithms
 npm run test:e2e    # real browser tests including software WebGL and mobile
 ```
 
@@ -61,6 +73,6 @@ Browser tests use `/usr/bin/chromium` by default. Set `CHROMIUM_PATH` to another
 
 ## Implementation
 
-React + TypeScript + Vite, Three.js with OrbitControls, Lucide icons, and locally bundled DM Sans/Manrope fonts. Architecture and data parcels use instanced geometry; trails use shared buffers. The renderer and prepared scene layers persist across scale changes. Camera flights and layer transitions interpolate smoothly; off-screen scenes stop rendering, and unmounting disposes GPU resources. Reduced-motion preferences stop autonomous motion and make view changes immediate while retaining timeline scrubbing. If WebGL is unavailable, the timeline and a selectable 2D topology keep the explanations accessible. Every hardware component also has a conventional labeled button.
+React + TypeScript + Vite, Three.js with OrbitControls, Lucide icons, and locally bundled DM Sans/Manrope fonts. The game uses a deterministic, immutable simulation independent of the renderer, with seeded arrivals and bounded integration steps. Architecture and data parcels use instanced geometry; trails use shared buffers. The renderer and prepared scene layers persist across scale changes. Camera flights and layer transitions interpolate smoothly; off-screen scenes stop rendering, and unmounting disposes GPU resources. Reduced-motion preferences stop ambient animation and make view changes immediate. Essential gameplay motion follows the simulation and can be paused. Every hardware component also has a conventional labeled button.
 
 Use the existing checkout for future cloud tasks; each cloud task already has an isolated environment and does not need a new Git worktree. Start the development server with `npm run dev`; no environment publication or configuration-draft changes are performed by the application.
