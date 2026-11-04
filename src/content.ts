@@ -1,5 +1,5 @@
 export type Layer = 'fleet' | 'pod' | 'rack' | 'gpu'
-export type Traffic = 'requests' | 'kv' | 'collectives'
+export type Traffic = 'requests' | 'kv' | 'collectives' | 'tensors'
 export type Page = 'explore' | 'journey' | 'lab' | 'guide'
 
 export const layers: {

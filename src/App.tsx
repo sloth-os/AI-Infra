@@ -56,6 +56,9 @@ import type { Parameters, Strategy } from './model'
 import { InfrastructureScene } from './components/InfrastructureScene'
 import type { SceneHandle } from './components/InfrastructureScene'
 import CollectivePlayground from './components/CollectivePlayground'
+import MotionTransport from './components/MotionTransport'
+import { chapterTime, motionChapters } from './motion'
+import type { MotionFrame } from './motion'
 
 const layerIcons: Record<Layer, LucideIcon> = {
   fleet: Globe2,
@@ -134,6 +137,13 @@ function App() {
   const [selected, setSelected] = useState('scheduler')
   const [traffic, setTraffic] = useState<Traffic>('requests')
   const [paused, setPaused] = useState(false)
+  const [animationSpeed, setAnimationSpeed] = useState(1)
+  const [exploded, setExploded] = useState(false)
+  const [heatmap, setHeatmap] = useState(false)
+  const [orbit, setOrbit] = useState(false)
+  const [guided, setGuided] = useState(false)
+  const guidedRef = useRef(false)
+  const lastGuidedChapter = useRef('')
   const [help, setHelp] = useState(false)
   const [mobileNav, setMobileNav] = useState(false)
   const [params, setParams] = useState<Parameters>(initialParameters)
@@ -154,8 +164,53 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'instant' })
   }
   const selectLayer = (next: Layer) => {
+    guidedRef.current = false
+    setGuided(false)
+    if (traffic === 'requests' || (traffic === 'tensors' && next !== 'gpu')) {
+      if (traffic === 'tensors') setTraffic('requests')
+      const representative = { fleet: 0, pod: 4, rack: 3, gpu: 5 }[next]
+      sceneRef.current?.seek(chapterTime('requests', representative))
+    } else if (traffic === 'kv') {
+      sceneRef.current?.seek(chapterTime('kv', next === 'pod' ? 2 : 1))
+    }
     setLayer(next)
     setSelected(layerDefaults[next])
+  }
+  const selectTraffic = (next: Traffic) => {
+    guidedRef.current = false
+    setGuided(false)
+    setTraffic(next)
+    if (next === 'tensors') {
+      setLayer('gpu')
+      setSelected('tensor')
+    } else if (next === 'collectives') {
+      setLayer('rack')
+      setSelected('nvlink')
+    } else if (next === 'kv') {
+      setLayer('pod')
+      setSelected('fabric')
+    } else if (next === 'requests') {
+      setLayer('fleet')
+      setSelected('scheduler')
+    }
+    sceneRef.current?.seek(next === 'kv' ? chapterTime('kv', 2) : 0)
+  }
+  const selectAnimationChapter = (index: number) => {
+    const chapter = motionChapters[traffic][index]
+    guidedRef.current = false
+    setGuided(false)
+    setPaused(true)
+    setLayer(chapter.layer)
+    setSelected(chapter.node)
+    sceneRef.current?.seek(chapterTime(traffic, index))
+  }
+  const handleMotionFrame = (frame: MotionFrame) => {
+    if (!guidedRef.current) return
+    const key = `${frame.mode}:${frame.chapterIndex}`
+    if (lastGuidedChapter.current === key) return
+    lastGuidedChapter.current = key
+    setLayer(frame.chapter.layer)
+    setSelected(frame.chapter.node)
   }
   const followStage = (id: string) => {
     const index = journey.findIndex((s) => s.node === id)
@@ -376,7 +431,7 @@ function App() {
                 />
               </section>
               <section
-                className="explorer-card"
+                className="explorer-card motion-explorer"
                 aria-label="Interactive infrastructure explorer"
                 ref={sceneFrameRef}
               >
@@ -396,12 +451,13 @@ function App() {
                         { id: 'requests', name: 'Requests' },
                         { id: 'kv', name: 'KV cache' },
                         { id: 'collectives', name: 'Collectives' },
+                        { id: 'tensors', name: 'Tensor flow' },
                       ] as const
                     ).map((t) => (
                       <button
                         key={t.id}
                         className={traffic === t.id ? 'active' : ''}
-                        onClick={() => setTraffic(t.id)}
+                        onClick={() => selectTraffic(t.id)}
                         aria-pressed={traffic === t.id}
                       >
                         <span className={`traffic-dot ${t.id}`} />
@@ -419,7 +475,17 @@ function App() {
                         traffic={traffic}
                         paused={paused}
                         selected={selected}
-                        onSelect={setSelected}
+                        onSelect={(id) => {
+                          guidedRef.current = false
+                          setGuided(false)
+                          setSelected(id)
+                        }}
+                        speed={animationSpeed}
+                        exploded={exploded}
+                        heatmap={heatmap}
+                        orbit={orbit}
+                        params={params}
+                        onFrame={handleMotionFrame}
                       />
                       <div className="scene-topline">
                         <div>
@@ -534,15 +600,53 @@ function App() {
                   <Inspector
                     id={selected}
                     onFollow={() => followStage(selected)}
+                    params={params}
+                    onParameters={(next) => {
+                      setParams(next)
+                      setScenario('custom')
+                    }}
                   />
                 </div>
+                <MotionTransport
+                  sceneRef={sceneRef}
+                  mode={traffic}
+                  paused={paused}
+                  onPaused={setPaused}
+                  onChapter={selectAnimationChapter}
+                  speed={animationSpeed}
+                  onSpeed={setAnimationSpeed}
+                  exploded={exploded}
+                  onExploded={setExploded}
+                  heatmap={heatmap}
+                  onHeatmap={setHeatmap}
+                  orbit={orbit}
+                  onOrbit={setOrbit}
+                  guided={guided}
+                  onGuided={() => {
+                    if (guided) {
+                      guidedRef.current = false
+                      setGuided(false)
+                      return
+                    }
+                    lastGuidedChapter.current = ''
+                    guidedRef.current = true
+                    setGuided(true)
+                    setPaused(false)
+                    sceneRef.current?.seek(0)
+                  }}
+                />
                 <div className="component-picker">
                   <span>INSPECT</span>
                   {layerNodes[layer].map((id) => (
                     <button
                       key={id}
                       className={selected === id ? 'active' : ''}
-                      onClick={() => setSelected(id)}
+                      onClick={() => {
+                        guidedRef.current = false
+                        setGuided(false)
+                        setSelected(id)
+                        sceneRef.current?.focus(id)
+                      }}
                       aria-pressed={selected === id}
                     >
                       <span style={{ background: details[id].color }} />
@@ -575,6 +679,13 @@ function App() {
                       <strong>State moves, too.</strong> Separate prefill and
                       decode workers transfer per-request KV blocks. In a
                       colocated worker, the cache stays local.
+                    </>
+                  ) : traffic === 'tensors' ? (
+                    <>
+                      <strong>Follow the tensors.</strong> Embedding rows become
+                      Q, K, and V; causal attention combines context, ranks
+                      synchronize, and the final state produces a sampled token.
+                      Shapes refer to the illustrative 70B model.
                     </>
                   ) : (
                     <>
@@ -766,7 +877,17 @@ function Stat({
   )
 }
 
-function Inspector({ id, onFollow }: { id: string; onFollow: () => void }) {
+function Inspector({
+  id,
+  onFollow,
+  params,
+  onParameters,
+}: {
+  id: string
+  onFollow: () => void
+  params: Parameters
+  onParameters: (p: Parameters) => void
+}) {
   const d = details[id]
   return (
     <aside
@@ -796,6 +917,67 @@ function Inspector({ id, onFollow }: { id: string; onFollow: () => void }) {
           </div>
         ))}
       </dl>
+      <div className="scene-experiment">
+        <span className="small-label">
+          <Settings2 size={12} /> EXPERIMENT IN 3D
+        </span>
+        <label className="scene-prompt-control">
+          <span>
+            Prompt length
+            <strong>
+              {formatNumber(params.inputTokens)} <small>tokens</small>
+            </strong>
+          </span>
+          <input
+            aria-label="3D prompt length"
+            type="range"
+            min={128}
+            max={32768}
+            step={128}
+            value={params.inputTokens}
+            onChange={(e) =>
+              onParameters({ ...params, inputTokens: Number(e.target.value) })
+            }
+          />
+        </label>
+        <label className="scene-network-control">
+          <span>Fabric endpoint</span>
+          <select
+            aria-label="3D fabric bandwidth"
+            value={params.networkGbps}
+            onChange={(e) =>
+              onParameters({ ...params, networkGbps: Number(e.target.value) })
+            }
+          >
+            {Array.from(new Set([25, 100, 400, 800, params.networkGbps]))
+              .sort((a, b) => a - b)
+              .map((n) => (
+                <option key={n} value={n}>
+                  {n} Gb/s
+                </option>
+              ))}
+          </select>
+        </label>
+        <button
+          className={params.arrivalRate >= 36000 ? 'burst-active' : ''}
+          onClick={() =>
+            onParameters({
+              ...params,
+              arrivalRate: params.arrivalRate >= 36000 ? 18000 : 36000,
+            })
+          }
+        >
+          <Zap size={12} />
+          {params.arrivalRate >= 36000
+            ? 'Restore baseline traffic'
+            : 'Inject a traffic burst'}
+          <ArrowRight size={12} />
+        </button>
+        <p>
+          Changes feed the animation and trade-off lab. Estimates assume a
+          uniform workload.
+        </p>
+      </div>
       <button className="inspector-follow" onClick={onFollow}>
         Follow this stage <ArrowRight size={16} />
       </button>
@@ -817,6 +999,7 @@ function JourneyView({
   )
   const [showPayload, setShowPayload] = useState(false)
   const s = journey[step]
+  const journeySceneLayer = step === 3 ? 'gpu' : s.layer
   const next = () => setStep(step === 0 && !rag ? 2 : Math.min(6, step + 1))
   const previous = () => setStep(step === 2 && !rag ? 0 : Math.max(0, step - 1))
   useEffect(() => {
@@ -947,19 +1130,26 @@ function JourneyView({
           </div>
           <div className="journey-mini-scene">
             <InfrastructureScene
-              layer={s.layer}
-              traffic={
-                step === 4 ? 'kv' : step === 3 ? 'collectives' : 'requests'
-              }
+              layer={journeySceneLayer}
+              traffic={step === 4 ? 'kv' : step === 3 ? 'tensors' : 'requests'}
               paused={!playing}
               selected={s.node}
               onSelect={() => setShowPayload(true)}
+              compact
+              initialTime={
+                step === 4
+                  ? chapterTime('kv', 2)
+                  : step === 3
+                    ? 0
+                    : chapterTime('requests', step)
+              }
             />
             <div className="mini-scene-caption">
               <span className="tiny-dot" />
               {layers
-                .find((l) => l.id === s.layer)!
-                .name.toUpperCase()} VIEW <span>Conceptual topology</span>
+                .find((l) => l.id === journeySceneLayer)!
+                .name.toUpperCase()}{' '}
+              VIEW <span>Conceptual topology</span>
             </div>
           </div>
           <div className="stage-explanation">

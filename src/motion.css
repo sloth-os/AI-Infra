@@ -1,0 +1,1088 @@
+/* The scene is the explanation: labels, parcels, state and controls share a clock. */
+.motion-explorer .scene-frame {
+  height: 580px;
+  min-height: 580px;
+  flex: 1;
+  background: #121e24;
+}
+.motion-explorer .scene-column {
+  display: flex;
+  flex-direction: column;
+}
+.motion-explorer .scene-scale {
+  display: none;
+}
+.motion-explorer .scene-topline {
+  z-index: 5;
+  top: 23px;
+  left: 24px;
+}
+.motion-explorer .scene-topline h3 {
+  font-size: 22px;
+}
+.motion-explorer .scene-overline {
+  color: #91aba6;
+}
+.motion-explorer .scene-bottomline {
+  z-index: 6;
+}
+.motion-explorer .inspector {
+  padding-top: 27px;
+}
+.motion-explorer .inspector-description {
+  font-size: 11px;
+}
+.motion-explorer .inspector-metric {
+  margin-top: 25px;
+  margin-bottom: 25px;
+}
+.motion-explorer .inspector-facts > div {
+  padding: 13px 0;
+}
+.scene-experiment {
+  border-top: 1px solid #e3ead8;
+  margin: 5px 0 12px;
+  padding-top: 15px;
+}
+.scene-experiment > .small-label {
+  font-size: 6px;
+  letter-spacing: 1.1px;
+  color: #98a885;
+}
+.scene-prompt-control {
+  display: block;
+  margin: 13px 0;
+}
+.scene-prompt-control > span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 8px;
+  color: #8e9f7d;
+}
+.scene-prompt-control strong {
+  font-size: 9px;
+  font-weight: 500;
+  color: #78925d;
+}
+.scene-prompt-control small {
+  font-size: 6px;
+  font-weight: 400;
+  color: #a8b698;
+}
+.scene-prompt-control input {
+  display: block;
+  width: 100%;
+  height: 3px;
+  accent-color: #98b478;
+  margin: 13px 0 0;
+  cursor: pointer;
+}
+.scene-network-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 12px 0;
+  font-size: 8px;
+  color: #8e9f7d;
+}
+.scene-network-control select {
+  padding: 5px;
+  font-size: 8px;
+  background: #f6faee;
+  border: 1px solid #dfe8d2;
+  border-radius: 4px;
+  color: #839d65;
+  cursor: pointer;
+}
+.scene-experiment > button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px;
+  background: #edf3e3;
+  border: 1px solid #e0e9d1;
+  color: #8da771;
+  border-radius: 4px;
+  font-size: 8px;
+  margin-top: 10px;
+}
+.scene-experiment > button > svg:last-child {
+  margin-left: auto;
+}
+.scene-experiment > button.burst-active {
+  background: #f9eddf;
+  border-color: #efddc7;
+  color: #b08c66;
+}
+.scene-experiment p {
+  font-size: 7px;
+  line-height: 1.8;
+  color: #9baa89;
+  margin-top: 9px;
+}
+.traffic-dot.tensors {
+  background: #dca36d;
+}
+.enhanced-scene .scene-label {
+  padding: 8px 10px;
+  font-size: 9px;
+  line-height: 1.45;
+  max-width: 190px;
+  color: #dce9df;
+  border-color: #5b787973;
+  border-radius: 6px;
+  background: #192a30ed;
+  box-shadow: 0 6px 18px #07191d33;
+  backdrop-filter: blur(7px);
+  opacity: 0;
+}
+.enhanced-scene .scene-label small {
+  font-size: 7px;
+  color: #a1bcb2;
+  line-height: 1.65;
+  white-space: normal;
+  max-width: 170px;
+}
+.enhanced-scene .scene-label.is-selected {
+  background: #2b3e35ed;
+  border-color: #b4cc828a;
+}
+.enhanced-scene .scene-label.active-tensor-stage {
+  background: #3b3e28f2;
+  border-color: #d8df8ba6;
+  box-shadow: 0 0 18px #bfcd7112;
+}
+.enhanced-scene .scene-label-dot {
+  margin-top: 4px;
+  width: 5px;
+  height: 5px;
+  box-shadow: 0 0 8px currentColor;
+}
+.enhanced-scene .moving-payload-label {
+  border-color: #b4c484a3;
+  background: #23362ef5;
+  max-width: 230px;
+  z-index: 4;
+  box-shadow: 0 0 20px #b6dd6420;
+}
+.moving-payload-label > svg {
+  align-self: center;
+  color: #bcd99d;
+  margin-left: 4px;
+}
+.tensor-stage-number {
+  font-size: 8px;
+  color: #b0c57b;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+.motion-telemetry {
+  position: absolute;
+  left: 21px;
+  right: 19px;
+  bottom: 59px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 15px 17px;
+  border: 1px solid #78928b2b;
+  border-radius: 8px;
+  background: linear-gradient(110deg, #1a2a30f0, #18282dd6);
+  backdrop-filter: blur(10px);
+  pointer-events: none;
+  box-shadow: 0 4px 20px #07111621;
+}
+.motion-telemetry-phase {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  padding-left: 13px;
+}
+.telemetry-indicator {
+  width: 5px;
+  height: 5px;
+  position: absolute;
+  left: 0;
+  top: 4px;
+  border-radius: 50%;
+  box-shadow: 0 0 9px #bbd79166;
+}
+.telemetry-kicker {
+  font-size: 6px;
+  letter-spacing: 1.25px;
+  color: #83a496;
+  display: block;
+  line-height: 1.7;
+}
+.motion-telemetry-phase > strong {
+  font-family: 'Manrope Variable', sans-serif;
+  font-size: 12px;
+  font-weight: 450;
+  color: #d4e2d1;
+  letter-spacing: -0.15px;
+  display: block;
+  line-height: 1.65;
+  margin-top: 4px;
+}
+.motion-telemetry-stats {
+  display: flex;
+  gap: 20px;
+  flex-shrink: 0;
+}
+.motion-telemetry-stats > span {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.motion-telemetry-stats small {
+  font-size: 5.5px;
+  letter-spacing: 1px;
+  color: #83a296;
+}
+.motion-telemetry-stats b {
+  font-size: 11px;
+  font-weight: 450;
+  color: #bed7a1;
+  font-variant-numeric: tabular-nums;
+}
+.payload-inspection {
+  position: absolute;
+  z-index: 12;
+  right: 18px;
+  top: 78px;
+  width: 274px;
+  border: 1px solid #94b19670;
+  border-radius: 9px;
+  background: #1b2e31f7;
+  backdrop-filter: blur(14px);
+  padding: 20px;
+  box-shadow: 0 10px 40px #08111670;
+  color: #cfe0c5;
+}
+.payload-inspection-close {
+  display: grid;
+  place-content: center;
+  position: absolute;
+  right: 9px;
+  top: 9px;
+  background: transparent;
+  color: #8ca993;
+  padding: 5px;
+}
+.payload-inspection .small-label {
+  font-size: 6px;
+  color: #97b786;
+  letter-spacing: 1px;
+}
+.payload-inspection h4 {
+  font-family: 'Manrope Variable', sans-serif;
+  font-size: 17px;
+  line-height: 1.55;
+  font-weight: 500;
+  margin: 15px 0;
+  color: #d7e5cc;
+  letter-spacing: -0.4px;
+}
+.payload-inspection > strong {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: #bbd797;
+  line-height: 1.8;
+  margin-bottom: 12px;
+}
+.payload-transport {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  font-size: 8px;
+  color: #9dc5ba;
+  padding: 10px 0;
+  border-top: 1px solid #6985773a;
+  border-bottom: 1px solid #6985773a;
+}
+.payload-inspection p {
+  font-size: 10px;
+  line-height: 1.85;
+  color: #9bb3a2;
+  margin: 13px 0;
+}
+.payload-inspection code {
+  display: block;
+  font-size: 8px;
+  line-height: 1.85;
+  background: #0d202654;
+  color: #9cc9be;
+  border: 1px solid #6292852d;
+  padding: 11px;
+  border-radius: 4px;
+}
+.motion-transport {
+  background: #f7f9f2;
+  border-top: 1px solid #dde6d3;
+}
+.motion-playhead-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 19px 22px 11px;
+}
+.motion-play-button {
+  height: 32px;
+  width: 33px;
+  border-radius: 6px;
+  display: grid;
+  place-content: center;
+  background: #314b36;
+  color: #ecf3df;
+  border: 1px solid #314b36;
+  flex-shrink: 0;
+}
+.motion-play-button:hover {
+  background: #42613e;
+}
+.motion-step-button {
+  padding: 5px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: #879a73;
+  display: grid;
+  place-content: center;
+  flex-shrink: 0;
+}
+.motion-step-button:hover {
+  background: #e8efdc;
+  border-color: #dce5d1;
+}
+.motion-timeline {
+  position: relative;
+  flex: 1;
+  min-width: 40px;
+  display: block;
+  padding: 13px 0;
+}
+.motion-timeline input {
+  height: 4px;
+  width: 100%;
+  margin: 0;
+  display: block;
+  appearance: none;
+  border-radius: 4px;
+  background: linear-gradient(
+    to right,
+    #a1b97c var(--motion-progress),
+    #e1e8d7 var(--motion-progress)
+  );
+  cursor: pointer;
+  outline-offset: 6px;
+}
+.motion-timeline input::-webkit-slider-thumb {
+  appearance: none;
+  border-radius: 50%;
+  width: 12px;
+  height: 12px;
+  background: #f7fbee;
+  border: 3px solid #8da96b;
+  box-shadow: 0 0 0 3px #f7f9f2;
+}
+.motion-timeline input::-moz-range-thumb {
+  border-radius: 50%;
+  width: 7px;
+  height: 7px;
+  background: #f7fbee;
+  border: 3px solid #8da96b;
+}
+.motion-timeline-ticks {
+  pointer-events: none;
+  position: absolute;
+  inset: 12px 0 0;
+  height: 7px;
+}
+.motion-timeline-ticks > i {
+  width: 1px;
+  height: 7px;
+  background: #b7c8a2;
+  position: absolute;
+  top: 0;
+  opacity: 0.6;
+}
+.motion-time {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: #60794e;
+  font-weight: 500;
+  white-space: nowrap;
+  min-width: 68px;
+  text-align: right;
+}
+.motion-time > span {
+  font-size: 8px;
+  color: #a5b294;
+  font-weight: 400;
+}
+.motion-speed select {
+  font-size: 8px;
+  padding: 7px;
+  border-radius: 4px;
+  border: 1px solid #dde6d0;
+  color: #81976a;
+  background: #fafff2;
+  cursor: pointer;
+  outline-offset: 3px;
+}
+.motion-chapters {
+  display: flex;
+  gap: 5px;
+  padding: 0 22px 15px;
+  flex-wrap: wrap;
+}
+.motion-chapters > button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: 9px;
+  white-space: nowrap;
+  background: #f0f4e8;
+  border: 1px solid #e4eadb;
+  border-radius: 5px;
+  padding: 9px 7px;
+  color: #8d9e7b;
+}
+.motion-chapters > button > span {
+  font-size: 6px;
+  font-family: monospace;
+  color: #abb99a;
+}
+.motion-chapters > button.active {
+  background: #e5eed6;
+  border-color: #cadcb2;
+  color: #688448;
+  box-shadow: 0 1px 3px #3a572508;
+}
+.motion-chapters > button.active > span {
+  color: #8ca76b;
+}
+.motion-tools {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  border-top: 1px solid #e3eada;
+  padding: 11px 22px;
+}
+.motion-tools > button,
+.motion-camera-presets > button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 8px;
+  color: #8fa17c;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 7px 8px;
+  white-space: nowrap;
+}
+.motion-tools > button:hover,
+.motion-camera-presets > button:hover {
+  background: #edf3e3;
+}
+.motion-tools > button.active,
+.motion-camera-presets > button.active {
+  background: #e8f0dc;
+  border-color: #dce8ca;
+  color: #749450;
+}
+.motion-camera-presets {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  background: #f1f5e9;
+  border: 1px solid #e1e9d5;
+  border-radius: 5px;
+}
+.motion-camera-presets > button {
+  font-size: 7px;
+  gap: 5px;
+  padding: 6px 8px;
+}
+.motion-tools > button.guided-flight-button {
+  margin-left: auto;
+  color: #63844b;
+  background: #e6f0d7;
+  border-color: #d6e4c2;
+  font-size: 8px;
+  padding: 8px 10px;
+}
+.motion-tool-divider {
+  width: 1px;
+  height: 17px;
+  background: #dfe8d2;
+  margin: 0 4px;
+}
+.motion-learning-note {
+  padding: 0 24px 13px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 7px;
+  color: #8b9e76;
+  line-height: 1.8;
+}
+.motion-learning-note > .tiny-dot {
+  height: 4px;
+  width: 4px;
+  background: #a3bc7b;
+}
+.motion-chapter-explanation {
+  border-top: 1px solid #e2e9d6;
+  background: #f2f6e9;
+  padding: 19px 24px;
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 30px;
+}
+.motion-chapter-explanation .small-label {
+  font-size: 7px;
+  color: #8d9f78;
+  letter-spacing: 1.2px;
+}
+.motion-chapter-explanation p {
+  margin-top: 8px;
+  font-size: 11px;
+  color: #71845e;
+  line-height: 1.8;
+}
+.fallback-motion-phase {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 23px;
+  font-size: 10px;
+  color: #b5cda3;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.fallback-motion-phase > strong {
+  font-weight: 500;
+}
+.fallback-motion-phase > span {
+  font-size: 9px;
+  color: #8ea688;
+}
+.compact-scene .motion-telemetry {
+  bottom: 13px;
+  left: 13px;
+  right: 13px;
+  padding: 10px 13px;
+  gap: 12px;
+}
+.compact-scene .motion-telemetry-stats > span:last-child {
+  display: none;
+}
+.compact-scene .motion-telemetry-phase > strong {
+  font-size: 10px;
+}
+.compact-scene .telemetry-kicker {
+  font-size: 5px;
+}
+.compact-scene .scene-label {
+  font-size: 8px;
+  padding: 6px 8px;
+}
+.compact-scene .scene-label small {
+  font-size: 6px;
+}
+.journey-mini-scene {
+  height: 370px;
+}
+.motion-explorer:fullscreen .scene-column {
+  min-height: 0;
+}
+.motion-explorer:fullscreen .scene-frame {
+  min-height: 0;
+  height: auto;
+  flex: 1;
+}
+.motion-explorer:fullscreen .inspector {
+  display: none;
+}
+.motion-explorer:fullscreen .layer-strip {
+  flex-shrink: 0;
+}
+.motion-explorer:fullscreen .motion-chapter-explanation {
+  display: none;
+}
+.motion-explorer:fullscreen .motion-transport {
+  flex-shrink: 0;
+}
+@media (min-width: 1650px) {
+  .motion-explorer .scene-frame {
+    height: 650px;
+    min-height: 650px;
+  }
+  .enhanced-scene .scene-label {
+    font-size: 10px;
+    padding: 9px 12px;
+    max-width: 220px;
+  }
+  .enhanced-scene .scene-label small {
+    font-size: 8px;
+    max-width: 190px;
+  }
+  .motion-telemetry-phase > strong {
+    font-size: 15px;
+  }
+  .telemetry-kicker {
+    font-size: 7px;
+  }
+  .motion-telemetry-stats b {
+    font-size: 14px;
+  }
+  .motion-telemetry-stats small {
+    font-size: 6px;
+  }
+  .motion-chapters > button {
+    font-size: 10px;
+  }
+  .motion-tools > button {
+    font-size: 9px;
+  }
+  .motion-chapter-explanation p {
+    font-size: 12px;
+  }
+}
+@media (max-width: 1200px) {
+  .motion-playhead-row {
+    padding-left: 17px;
+    padding-right: 17px;
+    gap: 9px;
+  }
+  .motion-chapters {
+    padding-left: 17px;
+    padding-right: 17px;
+    gap: 4px;
+  }
+  .motion-chapters > button {
+    font-size: 8px;
+    padding: 9px 6px;
+    gap: 5px;
+  }
+  .motion-tools {
+    padding-left: 17px;
+    padding-right: 17px;
+    gap: 4px;
+  }
+  .motion-tools > button {
+    font-size: 7px;
+    padding: 7px 6px;
+  }
+  .motion-camera-presets > button {
+    padding: 6px;
+    font-size: 7px;
+  }
+  .motion-tool-divider {
+    display: none;
+  }
+  .motion-tools > button.guided-flight-button {
+    margin-left: 0;
+  }
+  .motion-telemetry-stats {
+    gap: 12px;
+  }
+  .motion-telemetry {
+    padding: 13px;
+    gap: 13px;
+  }
+  .motion-telemetry-phase > strong {
+    font-size: 11px;
+  }
+  .motion-telemetry-stats b {
+    font-size: 10px;
+  }
+  .motion-telemetry-stats small {
+    font-size: 5px;
+  }
+  .motion-learning-note {
+    padding-left: 18px;
+    font-size: 6px;
+  }
+}
+@media (max-width: 1000px) {
+  .motion-explorer .scene-frame {
+    height: 550px;
+    min-height: 550px;
+  }
+  .motion-explorer .inspector {
+    padding: 20px 23px;
+  }
+  .motion-explorer .inspector-metric {
+    margin: 0 0 7px;
+  }
+  .motion-explorer .inspector-facts > div {
+    padding: 7px 0;
+  }
+  .motion-chapter-explanation {
+    gap: 24px;
+  }
+  .motion-chapters > button {
+    font-size: 8px;
+    min-width: 70px;
+    flex: 1;
+  }
+  .motion-chapters.collective-chapters > button {
+    min-width: 30px;
+  }
+  .motion-tools {
+    gap: 7px;
+  }
+  .motion-telemetry-stats > span:last-child {
+    display: flex;
+  }
+  .motion-telemetry-phase > strong {
+    font-size: 12px;
+  }
+  .motion-telemetry-stats b {
+    font-size: 11px;
+  }
+}
+@media (max-width: 760px) {
+  .motion-explorer .scene-frame {
+    height: 530px;
+    min-height: 530px;
+  }
+  .motion-playhead-row {
+    gap: 8px;
+    padding: 14px 14px 9px;
+  }
+  .motion-time {
+    font-size: 10px;
+    min-width: 59px;
+  }
+  .motion-time > span {
+    font-size: 7px;
+  }
+  .motion-speed select {
+    font-size: 7px;
+    padding: 6px;
+  }
+  .motion-chapters {
+    padding-left: 14px;
+    padding-right: 14px;
+    gap: 5px;
+  }
+  .motion-chapters > button {
+    font-size: 8px;
+    min-width: 68px;
+  }
+  .motion-tools {
+    padding: 10px 14px;
+    gap: 5px;
+  }
+  .motion-tools > button {
+    font-size: 7px;
+  }
+  .motion-tools > button.guided-flight-button {
+    font-size: 7px;
+  }
+  .motion-chapter-explanation {
+    padding: 18px;
+    gap: 20px;
+  }
+  .motion-chapter-explanation p {
+    font-size: 10px;
+  }
+  .motion-learning-note {
+    padding: 0 16px 12px;
+    font-size: 6px;
+  }
+  .motion-telemetry {
+    left: 15px;
+    right: 14px;
+    bottom: 57px;
+  }
+  .motion-telemetry-stats > span:last-child {
+    display: none;
+  }
+  .motion-telemetry-phase > strong {
+    font-size: 11px;
+  }
+  .enhanced-scene .scene-label {
+    font-size: 8px;
+    max-width: 155px;
+    padding: 7px 8px;
+  }
+  .enhanced-scene .scene-label small {
+    font-size: 6.5px;
+  }
+  .journey-mini-scene {
+    height: 350px;
+  }
+  .motion-explorer .scene-topline {
+    left: 18px;
+    top: 20px;
+  }
+}
+@media (max-width: 460px) {
+  .motion-explorer .scene-frame {
+    height: 470px;
+    min-height: 470px;
+  }
+  .motion-explorer .scene-topline h3 {
+    font-size: 18px;
+  }
+  .motion-explorer .scene-topline {
+    left: 15px;
+    top: 16px;
+  }
+  .motion-explorer .scene-overline {
+    font-size: 6px;
+  }
+  .enhanced-scene .scene-label {
+    font-size: 7px;
+    max-width: 140px;
+    padding: 6px 7px;
+    gap: 4px;
+  }
+  .enhanced-scene .scene-label small {
+    font-size: 6px;
+    line-height: 1.7;
+  }
+  .moving-payload-label > svg {
+    width: 10px;
+  }
+  .enhanced-scene .scene-label-dot {
+    width: 4px;
+    height: 4px;
+    margin-top: 3px;
+  }
+  .tensor-stage-number {
+    font-size: 6px;
+  }
+  .motion-telemetry {
+    left: 12px;
+    right: 12px;
+    bottom: 49px;
+    padding: 11px;
+    gap: 8px;
+  }
+  .motion-telemetry-phase {
+    padding-left: 10px;
+  }
+  .telemetry-kicker {
+    font-size: 5px;
+    letter-spacing: 0.8px;
+  }
+  .motion-telemetry-phase > strong {
+    font-size: 10px;
+    line-height: 1.6;
+  }
+  .motion-telemetry-stats {
+    gap: 7px;
+  }
+  .motion-telemetry-stats b {
+    font-size: 10px;
+  }
+  .motion-telemetry-stats small {
+    font-size: 5px;
+    letter-spacing: 0.6px;
+  }
+  .motion-playhead-row {
+    gap: 5px;
+    padding: 13px 11px 9px;
+  }
+  .motion-play-button {
+    height: 29px;
+    width: 29px;
+  }
+  .motion-step-button {
+    padding: 4px;
+  }
+  .motion-time {
+    font-size: 9px;
+    min-width: 53px;
+  }
+  .motion-time > span {
+    font-size: 6px;
+  }
+  .motion-speed select {
+    font-size: 6px;
+    max-width: 58px;
+    padding: 6px 3px;
+  }
+  .motion-playhead-row > .motion-step-button:last-child {
+    display: none;
+  }
+  .motion-chapters {
+    padding-left: 11px;
+    padding-right: 11px;
+    gap: 4px;
+  }
+  .motion-chapters > button {
+    min-width: 68px;
+    font-size: 8px;
+    padding: 8px 6px;
+  }
+  .motion-chapters.collective-chapters > button {
+    min-width: 29px;
+    padding: 7px 4px;
+    font-size: 7px;
+  }
+  .motion-chapters > button > span {
+    font-size: 5px;
+  }
+  .motion-tools {
+    padding: 10px 11px;
+    gap: 5px;
+  }
+  .motion-tools > button {
+    font-size: 7px;
+    padding: 6px;
+  }
+  .motion-tools > button > svg {
+    width: 12px;
+  }
+  .motion-camera-presets {
+    width: 100%;
+    margin-bottom: 3px;
+  }
+  .motion-camera-presets > button {
+    flex: 1;
+    justify-content: center;
+    padding: 7px;
+    font-size: 7px;
+  }
+  .motion-tools > button.guided-flight-button {
+    margin-left: auto;
+    padding: 7px 8px;
+  }
+  .motion-tools > button:nth-of-type(4) {
+    flex: 1;
+  }
+  .motion-learning-note {
+    font-size: 6px;
+    padding: 2px 13px 12px;
+    align-items: flex-start;
+    line-height: 1.9;
+  }
+  .motion-learning-note > .tiny-dot {
+    margin-top: 4px;
+  }
+  .motion-chapter-explanation {
+    padding: 17px;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .motion-chapter-explanation .small-label {
+    font-size: 6px;
+  }
+  .motion-chapter-explanation p {
+    font-size: 10px;
+    line-height: 1.9;
+    margin-top: 7px;
+  }
+  .payload-inspection {
+    right: 12px;
+    left: 12px;
+    width: auto;
+    top: 71px;
+    padding: 18px;
+  }
+  .payload-inspection h4 {
+    font-size: 16px;
+  }
+  .payload-inspection p {
+    font-size: 10px;
+  }
+  .motion-explorer .inspector-description {
+    font-size: 9px;
+  }
+  .journey-mini-scene {
+    height: 330px;
+  }
+  .compact-scene .motion-telemetry-phase > strong {
+    font-size: 8px;
+  }
+  .compact-scene .motion-telemetry-stats {
+    display: none;
+  }
+  .compact-scene .scene-label {
+    font-size: 6px;
+    padding: 5px;
+  }
+  .compact-scene .scene-label small {
+    font-size: 5px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scene-label {
+    transition: none !important;
+  }
+}
+@media (max-width: 1000px) {
+  .scene-experiment {
+    grid-column: 1/-1;
+    grid-row: 6;
+    margin: 16px 0 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 20px;
+  }
+  .scene-experiment > .small-label {
+    grid-column: 1/-1;
+  }
+  .scene-prompt-control {
+    margin: 0;
+  }
+  .scene-network-control {
+    margin: 0;
+  }
+  .scene-experiment > button {
+    margin: 0;
+  }
+  .scene-experiment p {
+    margin: 0;
+  }
+  .motion-explorer .inspector-follow {
+    grid-column: 1/-1;
+    grid-row: 7;
+    max-width: none;
+    margin-top: 15px;
+  }
+}
+@media (max-width: 460px) {
+  .scene-experiment {
+    gap: 14px 17px;
+  }
+  .scene-experiment > .small-label {
+    font-size: 6px;
+  }
+  .scene-experiment p {
+    font-size: 7px;
+  }
+  .scene-prompt-control > span,
+  .scene-network-control {
+    font-size: 8px;
+  }
+  .scene-experiment > button {
+    font-size: 7px;
+  }
+  .scene-prompt-control strong {
+    font-size: 8px;
+  }
+}
+.motion-telemetry-stats .telemetry-overload b {
+  color: #e9b17e;
+}
+@media (max-width: 760px) {
+  .motion-telemetry-stats > span:nth-child(n + 2) {
+    display: none;
+  }
+}
