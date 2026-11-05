@@ -40,3 +40,7 @@ The three-phase lifecycle has a separate evidence and calculation record in [LIF
 - Explicitly show overload instead of inventing finite latency when the modeled queue is unstable.
 - Keep source links and model assumptions in the application, alongside the numbers they qualify.
 - All prompt tracing is browser-local educational animation, not a real model execution or a purported monitoring connection.
+
+## Current infrastructure issues
+
+The **Hot issues** briefing is an editorial top-ten watchlist reviewed **2026-11-05**, based on primary engineering sources. It extends this foundational reference with current power/grid context, KV infrastructure, P/D transfer, DeepEP V2, speculative decoding, low-precision recipes, online RL, topology-aware placement, recovery and tenant/cache boundaries. Publication dates, pinned snapshot dates and claim scopes are shown separately. It does not assign measured popularity or adopt vendor benchmark numbers as generic speedups. [HOT-ISSUES.md](HOT-ISSUES.md) records selection, all source families, quantitative assumptions and the 3D visual mappings.

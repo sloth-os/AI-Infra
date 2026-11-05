@@ -72,3 +72,7 @@ In a lifecycle lesson, **1–6 / arrows** select a stage, **Space** controls les
 ## Learning missions and shared visual quality
 
 **Trade-off lab → Learn by solving** offers four constraints-based missions using the lab's actual analytical results and world parameters. Each provides a workload/budget brief, live checklist, optional hint, reset, solution check and locally saved stars/XP. Loading a mission selects its scale/lens/component together; ordinary controls remain available. **Calm / Balanced / Cinematic** signal settings persist across game and learning modes without recreating a canvas or changing the underlying calculations. [EXPERIENCE.md](EXPERIENCE.md) explains mission solutions, limits, effect semantics and checks.
+
+## Top-ten infrastructure briefing
+
+**Hot issues** opens ten radial 3D stations in the persistent world, with an editorial priority list, detailed issue explanations, intervention experiments and dated primary sources. Each station has a distinct mechanism and a visual legend. The reader and dock share the selected topic and calculations. **1–9, 0 / arrows** select topics, **Space** plays the five-second teaching tour, and **F** focuses. World/Details and cinema preserve lesson controls; the base request timeline stays frozen. Shared links, narrow layouts, reduced motion and fallback retain the complete briefing. See [HOT-ISSUES.md](HOT-ISSUES.md) for source revisions and the explicit math/visual assumptions.

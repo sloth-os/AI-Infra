@@ -72,7 +72,11 @@ test('Fusion keeps moving-request controls still, then clears the view for a cam
     exact: true,
   })
   await expect(ride).toBeVisible()
-  await page.waitForTimeout(350)
+  await page.locator('.fusion-spatial-card').evaluate(async (element) => {
+    await Promise.all(
+      element.getAnimations().map((animation) => animation.finished),
+    )
+  })
   const before = await ride.boundingBox()
   await page.waitForTimeout(600)
   const after = await ride.boundingBox()

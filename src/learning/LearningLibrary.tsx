@@ -7,6 +7,8 @@ import type { ExampleId } from '../examples/catalog'
 import type { ExampleView } from '../examples/model'
 import { LifecycleStudy } from '../lifecycle/Lifecycle'
 import type { LifecycleView } from '../lifecycle/model'
+import { HotIssuesStudy } from '../issues/HotIssues'
+import type { IssueView } from '../issues/model'
 
 export type LibraryTab =
   | 'concepts'
@@ -14,6 +16,7 @@ export type LibraryTab =
   | 'sources'
   | 'models'
   | 'lifecycle'
+  | 'hot'
 const detailWorlds: Record<string, { layer: Layer; traffic: Traffic }> = {
   gateway: { layer: 'fleet', traffic: 'requests' },
   scheduler: { layer: 'fleet', traffic: 'requests' },
@@ -39,6 +42,9 @@ export default function LearningLibrary({
   lifecycle,
   onLifecycle,
   onLifecycleCompare,
+  issue,
+  onIssue,
+  onIssueMethodology,
 }: {
   query: string
   onQuery: (q: string) => void
@@ -53,6 +59,9 @@ export default function LearningLibrary({
   lifecycle: LifecycleView
   onLifecycle: (view: LifecycleView) => void
   onLifecycleCompare: () => void
+  issue: IssueView
+  onIssue: (v: IssueView) => void
+  onIssueMethodology: () => void
 }) {
   const match = (value: string) =>
     value.toLowerCase().includes(query.toLowerCase())
@@ -81,22 +90,24 @@ export default function LearningLibrary({
           ? 'Explore how text, images, video, music, and speech move through real model pipelines.'
           : 'Find the idea, then locate the part of the infrastructure where it matters.'}
       </p>
-      {tab !== 'lifecycle' && !(tab === 'models' && example) && (
-        <label className="learn-library-search">
-          <Search size={16} />
-          <input
-            type="search"
-            aria-label="Search learning library"
-            placeholder={
-              tab === 'models'
-                ? 'Kimi, Qwen, video, music, speech…'
-                : 'Memory, attention, routing…'
-            }
-            value={query}
-            onChange={(e) => onQuery(e.target.value)}
-          />
-        </label>
-      )}
+      {tab !== 'hot' &&
+        tab !== 'lifecycle' &&
+        !(tab === 'models' && example) && (
+          <label className="learn-library-search">
+            <Search size={16} />
+            <input
+              type="search"
+              aria-label="Search learning library"
+              placeholder={
+                tab === 'models'
+                  ? 'Kimi, Qwen, video, music, speech…'
+                  : 'Memory, attention, routing…'
+              }
+              value={query}
+              onChange={(e) => onQuery(e.target.value)}
+            />
+          </label>
+        )}
       <nav
         className="learn-library-tabs"
         aria-label="Learning library sections"
@@ -108,22 +119,31 @@ export default function LearningLibrary({
             'sources',
             'models',
             'lifecycle',
+            'hot',
           ] as LibraryTab[]
         ).map((t) => (
           <button key={t} aria-pressed={t === tab} onClick={() => onTab(t)}>
-            {t === 'lifecycle'
-              ? 'AI lifecycle'
-              : t === 'concepts'
-                ? 'Problems & solutions'
-                : t === 'glossary'
-                  ? 'Glossary'
-                  : t === 'models'
-                    ? 'Real models'
-                    : 'Primary sources'}
+            {t === 'hot'
+              ? 'Hot issues'
+              : t === 'lifecycle'
+                ? 'AI lifecycle'
+                : t === 'concepts'
+                  ? 'Problems & solutions'
+                  : t === 'glossary'
+                    ? 'Glossary'
+                    : t === 'models'
+                      ? 'Real models'
+                      : 'Primary sources'}
           </button>
         ))}
       </nav>
-      {tab === 'lifecycle' ? (
+      {tab === 'hot' ? (
+        <HotIssuesStudy
+          view={issue}
+          onChange={onIssue}
+          onMethodology={onIssueMethodology}
+        />
+      ) : tab === 'lifecycle' ? (
         <LifecycleStudy
           view={lifecycle}
           onChange={onLifecycle}

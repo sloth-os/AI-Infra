@@ -17,6 +17,7 @@ import {
   Eye,
   EyeOff,
   FlaskConical,
+  Flame,
   Globe2,
   Grid2X2,
   HardDrive,
@@ -84,6 +85,18 @@ import {
 } from '../lifecycle/model'
 import type { LifecycleView } from '../lifecycle/model'
 import { phaseInfo } from '../lifecycle/catalog'
+import { hotIssues } from '../issues/catalog'
+import { HotIssuesHUD, HotIssuesMethodology } from '../issues/HotIssues'
+import {
+  clearIssueParams,
+  defaultIssueView,
+  issueIndex,
+  issueUrl,
+  parseIssueLocation,
+  sanitizeIssueInputs,
+  selectIssue,
+} from '../issues/model'
+import type { IssueView } from '../issues/model'
 import { VisualSettings, useEffectsQuality } from '../components/VisualSettings'
 
 export type LearningPage = Exclude<Page, 'game'>
@@ -225,17 +238,19 @@ export default function LearningFusion(p: Props) {
     [webgl, setWebgl] = useState(true)
   const [camera, setCamera] = useState<CameraView>('isometric'),
     [reader, setReader] = useState<
-      'lab' | 'guide' | 'examples' | 'lifecycle' | null
+      'lab' | 'guide' | 'examples' | 'lifecycle' | 'issues' | null
     >(null),
     [help, setHelp] = useState(false)
   const [query, setQuery] = useState(''),
     [libraryTab, setLibraryTab] = useState<LibraryTab>(() =>
-      parseLifecycleLocation(location.href)
-        ? 'lifecycle'
-        : parseExampleLocation(location.href) ||
-            new URLSearchParams(location.search).get('examples') === 'all'
-          ? 'models'
-          : 'concepts',
+      parseIssueLocation(location.href)
+        ? 'hot'
+        : parseLifecycleLocation(location.href)
+          ? 'lifecycle'
+          : parseExampleLocation(location.href) ||
+              new URLSearchParams(location.search).get('examples') === 'all'
+            ? 'models'
+            : 'concepts',
     )
   const [example, setExample] = useState<ExampleView | null>(() =>
     parseExampleLocation(location.href),
@@ -243,23 +258,60 @@ export default function LearningFusion(p: Props) {
   const [lifecycle, setLifecycle] = useState<LifecycleView>(
     () => parseLifecycleLocation(location.href) || defaultLifecycleView(),
   )
+  const [issue, setIssue] = useState<IssueView>(
+    () => parseIssueLocation(location.href) || defaultIssueView(),
+  )
+  const issueActive = p.active && p.page === 'guide' && libraryTab === 'hot'
   const lifecycleActive =
     p.active && p.page === 'guide' && libraryTab === 'lifecycle'
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const exampleActive =
     p.active && p.page === 'guide' && libraryTab === 'models' && !!example
-  const teachingActive = exampleActive || lifecycleActive
-  const activeLesson = lifecycleActive
-    ? lifecycle
-    : exampleActive
-      ? example
-      : null
+  const teachingActive = exampleActive || lifecycleActive || issueActive
+  const activeLesson = issueActive
+    ? issue
+    : lifecycleActive
+      ? lifecycle
+      : exampleActive
+        ? example
+        : null
   const clearLifecycleUrl = () => {
     const url = new URL(location.href)
     clearLifecycleParams(url)
     history.replaceState({}, '', url)
   }
+  const clearIssueUrl = () => {
+    const url = new URL(location.href)
+    clearIssueParams(url)
+    history.replaceState({}, '', url)
+  }
+  const changeIssue = (v: IssueView) => {
+    clearLifecycleUrl()
+    clearExampleUrl()
+    closeContext()
+    setFollow(false)
+    setJourneyAuto(false)
+    p.onManual()
+    const stage = issueIndex(v.stage)
+    if (
+      stage !== issue.stage ||
+      (v.panel !== issue.panel && ['brief', 'lab'].includes(v.panel))
+    )
+      p.sceneRef.current?.focus(`issue-stage-${stage}`)
+    setIssue({
+      ...v,
+      stage,
+      playing: reduced ? false : v.playing,
+      inputs: sanitizeIssueInputs(hotIssues[stage].id, v.inputs),
+    })
+  }
+  const selectIssueStage = (stage: number, automatic = false) => {
+    const index = issueIndex(stage)
+    if (!automatic) p.sceneRef.current?.focus(`issue-stage-${index}`)
+    setIssue((v) => selectIssue(v, index, automatic))
+  }
   const changeLifecycle = (v: LifecycleView) => {
+    clearIssueUrl()
     closeContext()
     setFollow(false)
     setJourneyAuto(false)
@@ -279,7 +331,9 @@ export default function LearningFusion(p: Props) {
     }))
   const toggleLesson = () => {
     if (reduced) return
-    if (lifecycleActive) setLifecycle((v) => ({ ...v, playing: !v.playing }))
+    if (issueActive) setIssue((v) => ({ ...v, playing: !v.playing }))
+    else if (lifecycleActive)
+      setLifecycle((v) => ({ ...v, playing: !v.playing }))
     else if (exampleActive)
       setExample((v) => (v ? { ...v, playing: !v.playing } : null))
   }
@@ -296,6 +350,7 @@ export default function LearningFusion(p: Props) {
     history.replaceState({}, '', url)
   }
   const changeExample = (view: ExampleView | null) => {
+    clearIssueUrl()
     clearLifecycleUrl()
     closeContext()
     setFollow(false)
@@ -333,13 +388,18 @@ export default function LearningFusion(p: Props) {
     setLibraryTab(tab)
     if (tab !== 'models') clearExampleUrl()
     if (tab !== 'lifecycle') clearLifecycleUrl()
+    if (tab !== 'hot') clearIssueUrl()
   }
   useEffect(() => {
     if (!p.active || p.page !== 'guide') return
-    if (libraryTab === 'lifecycle')
-      history.replaceState({}, '', lifecycleUrl(location.href, lifecycle))
+    const clean = new URL(location.href)
+    if (libraryTab !== 'hot') clearIssueParams(clean)
+    if (libraryTab === 'hot')
+      history.replaceState({}, '', issueUrl(location.href, issue))
+    else if (libraryTab === 'lifecycle')
+      history.replaceState({}, '', lifecycleUrl(clean.toString(), lifecycle))
     else if (libraryTab === 'models') {
-      const url = new URL(location.href)
+      const url = clean
       clearLifecycleParams(url)
       if (example)
         history.replaceState({}, '', exampleUrl(url.toString(), example))
@@ -348,20 +408,26 @@ export default function LearningFusion(p: Props) {
         history.replaceState({}, '', url)
       }
     }
-  }, [p.active, p.page, libraryTab, example, lifecycle])
+  }, [p.active, p.page, libraryTab, example, lifecycle, issue])
   useEffect(() => {
     setCamera('isometric')
     if (!exampleActive)
       setExample((v) => (v?.playing ? { ...v, playing: false } : v))
+    if (!issueActive)
+      setIssue((v) => (v.playing ? { ...v, playing: false } : v))
     if (!lifecycleActive)
       setLifecycle((v) => (v.playing ? { ...v, playing: false } : v))
-  }, [exampleActive, lifecycleActive])
+  }, [exampleActive, lifecycleActive, issueActive])
   useEffect(() => {
     const onPop = () => {
-      const life = parseLifecycleLocation(location.href),
+      const hot = parseIssueLocation(location.href),
+        life = parseLifecycleLocation(location.href),
         next = parseExampleLocation(location.href)
       setExample(next)
-      if (life) {
+      if (hot) {
+        setIssue(hot)
+        setLibraryTab('hot')
+      } else if (life) {
         setLifecycle(life)
         setLibraryTab('lifecycle')
       } else if (
@@ -374,6 +440,20 @@ export default function LearningFusion(p: Props) {
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
   }, [])
+  useEffect(() => {
+    if (!p.active || theater) return
+    const reveal = () =>
+      root.current
+        ?.querySelector('.learn-header nav button[aria-current="page"]')
+        ?.scrollIntoView({
+          block: 'nearest',
+          inline: 'nearest',
+          behavior: 'instant',
+        })
+    reveal()
+    window.addEventListener('resize', reveal)
+    return () => window.removeEventListener('resize', reveal)
+  }, [p.active, p.page, libraryTab, theater])
   const [rank, setRank] = useState(0),
     [prompt, setPrompt] = useState(
       'Explain black holes to a curious ten-year-old.',
@@ -487,7 +567,9 @@ export default function LearningFusion(p: Props) {
     if (page !== 'guide') {
       clearExampleUrl()
       clearLifecycleUrl()
+      clearIssueUrl()
     }
+    setIssue((v) => (v.playing ? { ...v, playing: false } : v))
     setLifecycle((v) => (v.playing ? { ...v, playing: false } : v))
     setExample((previous) =>
       previous ? { ...previous, playing: false } : null,
@@ -574,20 +656,27 @@ export default function LearningFusion(p: Props) {
         return
       if (teachingActive && activeLesson) {
         const select = (stage: number) =>
-          lifecycleActive
-            ? selectLifecycleStage(stage)
-            : selectExampleStage(stage, false)
+          issueActive
+            ? selectIssueStage(stage)
+            : lifecycleActive
+              ? selectLifecycleStage(stage)
+              : selectExampleStage(stage, false)
         if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
           e.preventDefault()
           select(
-            lifecycleStage(
+            (issueActive ? issueIndex : lifecycleStage)(
               activeLesson.stage + (e.key === 'ArrowRight' ? 1 : -1),
             ),
           )
           return
         }
-        if (['1', '2', '3', '4', '5', '6'].includes(e.key)) {
-          select(Number(e.key) - 1)
+        if (
+          (issueActive
+            ? ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']
+            : ['1', '2', '3', '4', '5', '6']
+          ).includes(e.key)
+        ) {
+          select(e.key === '0' ? 9 : Number(e.key) - 1)
           return
         }
         if (
@@ -600,7 +689,7 @@ export default function LearningFusion(p: Props) {
         }
         if (e.key.toLowerCase() === 'f') {
           p.sceneRef.current?.focus(
-            `${lifecycleActive ? 'lifecycle' : 'example'}-stage-${activeLesson.stage}`,
+            `${issueActive ? 'issue' : lifecycleActive ? 'lifecycle' : 'example'}-stage-${activeLesson.stage}`,
           )
           setPanel(null)
           return
@@ -736,14 +825,16 @@ export default function LearningFusion(p: Props) {
   return (
     <section
       ref={root}
-      className={`learning-fusion ${theater ? 'learn-cinema' : ''} ${teachingActive ? 'is-model-example' : ''} ${lifecycleActive ? 'is-lifecycle' : ''}`}
+      className={`learning-fusion ${theater ? 'learn-cinema' : ''} ${teachingActive ? 'is-model-example' : ''} ${lifecycleActive ? 'is-lifecycle' : ''} ${issueActive ? 'is-hot-issue' : ''}`}
       style={
         {
-          '--model-accent': lifecycleActive
-            ? phaseInfo(lifecycle.phase).color
-            : example
-              ? findExample(example.id)!.color
-              : '#c6dea0',
+          '--model-accent': issueActive
+            ? hotIssues[issue.stage].color
+            : lifecycleActive
+              ? phaseInfo(lifecycle.phase).color
+              : example
+                ? findExample(example.id)!.color
+                : '#c6dea0',
         } as React.CSSProperties
       }
       hidden={!p.active}
@@ -767,6 +858,11 @@ export default function LearningFusion(p: Props) {
           orbit={p.orbit}
           showLabels={labels && !theater}
           followPayload={follow}
+          issue={issueActive ? issue : null}
+          onIssueStage={(stage, automatic) => {
+            selectIssueStage(stage, automatic)
+            if (!automatic) setPanel('guide')
+          }}
           lifecycle={lifecycleActive ? lifecycle : null}
           onLifecycleStage={(stage, automatic) => {
             selectLifecycleStage(stage, automatic)
@@ -822,12 +918,16 @@ export default function LearningFusion(p: Props) {
                 aria-label={
                   teachingActive && activeLesson
                     ? activeLesson.playing
-                      ? lifecycleActive
-                        ? 'Pause lifecycle walkthrough'
-                        : 'Pause model walkthrough'
-                      : lifecycleActive
-                        ? 'Play lifecycle walkthrough'
-                        : 'Play model walkthrough'
+                      ? issueActive
+                        ? 'Pause hot issues tour'
+                        : lifecycleActive
+                          ? 'Pause lifecycle walkthrough'
+                          : 'Pause model walkthrough'
+                      : issueActive
+                        ? 'Play hot issues tour'
+                        : lifecycleActive
+                          ? 'Play lifecycle walkthrough'
+                          : 'Play model walkthrough'
                     : p.paused
                       ? 'Play timeline'
                       : 'Pause timeline'
@@ -870,7 +970,7 @@ export default function LearningFusion(p: Props) {
                         p.page === id &&
                         !(
                           id === 'guide' &&
-                          ['models', 'lifecycle'].includes(libraryTab)
+                          ['models', 'lifecycle', 'hot'].includes(libraryTab)
                         )
                           ? 'page'
                           : undefined
@@ -913,6 +1013,22 @@ export default function LearningFusion(p: Props) {
                     <Layers3 size={15} />
                     <span>AI lifecycle</span>
                   </button>
+                  <button
+                    aria-label="Hot issues"
+                    aria-current={
+                      p.page === 'guide' && libraryTab === 'hot'
+                        ? 'page'
+                        : undefined
+                    }
+                    onClick={() => {
+                      go('guide')
+                      chooseLibraryTab('hot')
+                      setQuery('')
+                    }}
+                  >
+                    <Flame size={15} />
+                    <span>Hot issues</span>
+                  </button>
                 </nav>
                 <div className="learn-header-tools">
                   <VisualSettings />
@@ -940,6 +1056,21 @@ export default function LearningFusion(p: Props) {
                   </button>
                 </div>
               </header>
+              {issueActive && (
+                <HotIssuesHUD
+                  view={issue}
+                  onChange={changeIssue}
+                  onStage={(stage) => selectIssueStage(stage)}
+                  reduced={reduced}
+                  panelOpen={panel === 'guide'}
+                  onOpen={() => setPanel(panel === 'guide' ? null : 'guide')}
+                  onFocus={() => {
+                    p.sceneRef.current?.focus(`issue-stage-${issue.stage}`)
+                    setPanel(null)
+                  }}
+                  onExit={() => go('explore')}
+                />
+              )}
               {lifecycleActive && (
                 <LifecycleHUD
                   view={lifecycle}
@@ -1364,6 +1495,9 @@ export default function LearningFusion(p: Props) {
                       onExample={changeExample}
                       onChooseExample={selectExample}
                       onCompare={() => setReader('examples')}
+                      issue={issue}
+                      onIssue={changeIssue}
+                      onIssueMethodology={() => setReader('issues')}
                       lifecycle={lifecycle}
                       onLifecycle={changeLifecycle}
                       onLifecycleCompare={() => setReader('lifecycle')}
@@ -1873,9 +2007,11 @@ export default function LearningFusion(p: Props) {
                   ? 'Complete performance workbench'
                   : reader === 'guide'
                     ? 'Complete field guide'
-                    : reader === 'lifecycle'
-                      ? 'Pre-training, post-training and inference'
-                      : 'Six real model workloads'
+                    : reader === 'issues'
+                      ? 'Top ten AI infrastructure issues'
+                      : reader === 'lifecycle'
+                        ? 'Pre-training, post-training and inference'
+                        : 'Six real model workloads'
               }
               onClose={() => setReader(null)}
             >
@@ -1884,6 +2020,8 @@ export default function LearningFusion(p: Props) {
                   p.advancedLab
                 ) : reader === 'guide' ? (
                   p.advancedGuide
+                ) : reader === 'issues' ? (
+                  <HotIssuesMethodology />
                 ) : reader === 'lifecycle' ? (
                   <LifecycleComparison />
                 ) : (
