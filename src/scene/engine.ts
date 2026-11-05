@@ -13,6 +13,8 @@ import type { CameraView, MotionFrame } from '../motion'
 import { buildArchitecture, trafficColors } from './architecture'
 import type { Architecture, Box, SceneLabel } from './architecture'
 import { buildTensorArchitecture } from './tensors'
+import { ExampleWorld } from './examples'
+import type { ExampleView } from '../examples/model'
 
 export interface SceneOptions {
   layer: Layer
@@ -31,6 +33,8 @@ export interface SceneOptions {
   followPayload?: boolean
   onCameraRelease?: () => void
   onRank?: (rank: number) => void
+  example?: ExampleView | null
+  onExampleStage?: (stage: number, automatic?: boolean) => void
   onSelect: (id: string) => void
 }
 export interface PayloadInspection {
@@ -127,6 +131,11 @@ export class InfrastructureEngine {
   private qualityFrames = 0
   private qualityTime = 0
   private texture: THREE.CanvasTexture
+  private exampleWorld: ExampleWorld | null = null
+  private exampleActive = false
+  private exampleElapsed = 0.9
+  private exampleStage = -1
+  private exampleEmitted = false
 
   constructor(
     private container: HTMLDivElement,
@@ -328,7 +337,9 @@ export class InfrastructureEngine {
     )
     this.raycaster.setFromCamera(this.pointer, this.camera)
     const hit = this.raycaster.intersectObjects(
-      [...this.current.pickable, this.packets],
+      this.options().example && this.exampleWorld
+        ? this.exampleWorld.pickable
+        : [...this.current.pickable, this.packets],
       false,
     )[0]
     this.renderer.domElement.style.cursor = hit ? 'pointer' : 'grab'
@@ -347,10 +358,16 @@ export class InfrastructureEngine {
     )
     this.raycaster.setFromCamera(this.pointer, this.camera)
     const hit = this.raycaster.intersectObjects(
-      [...this.current.pickable, this.packets],
+      this.options().example && this.exampleWorld
+        ? this.exampleWorld.pickable
+        : [...this.current.pickable, this.packets],
       false,
     )[0]
     if (!hit || hit.instanceId === undefined) return
+    if (this.options().example) {
+      this.options().onExampleStage?.(hit.object.userData.exampleStage)
+      return
+    }
     if (hit.object === this.packets) {
       this.inspectPacket(hit.instanceId)
       return
@@ -398,6 +415,10 @@ export class InfrastructureEngine {
     this.renderer.setSize(width, height)
   }
   private publishLabels() {
+    if (this.exampleActive && this.exampleWorld) {
+      this.hooks.labels(this.exampleWorld.labels)
+      return
+    }
     const labels = this.current.labels.filter((label) =>
       this.options().traffic === 'collectives' && this.current.key === 'rack'
         ? label.rank !== undefined
@@ -528,7 +549,11 @@ export class InfrastructureEngine {
     this.renderer.domElement.dataset.cameraMoving = 'false'
   }
   focus(id: string, point?: THREE.Vector3) {
-    const annotation = this.current.labels.find((label) => label.id === id)
+    const annotation = (
+      this.options().example && this.exampleWorld
+        ? this.exampleWorld.labels
+        : this.current.labels
+    ).find((label) => label.id === id)
     const target = (
       point ||
       annotation?.position ||
@@ -1014,12 +1039,64 @@ export class InfrastructureEngine {
         this.qualityTime = 0
       }
     }
-    if (!o.paused && !this.reduceMotion) {
-      this.elapsed += delta * (o.speed || 1)
-      if (this.elapsed > ANIMATION_DURATION + 0.65) this.elapsed = 0
+    if (o.example) {
+      if (!this.exampleWorld || this.exampleWorld.model.id !== o.example.id) {
+        this.exampleWorld?.dispose()
+        this.exampleWorld = new ExampleWorld(o.example.id)
+        this.scene.add(this.exampleWorld.group)
+        this.exampleStage = -1
+      }
+      if (!this.exampleActive) {
+        this.exampleActive = true
+        this.exampleStage = -1
+        this.setView('isometric')
+      }
+      this.exampleWorld.group.visible = true
+      this.worlds.forEach((w) => (w.group.visible = false))
+      for (const object of [
+        this.packets,
+        this.trails,
+        this.arrows,
+        this.halo,
+        this.selectionRing,
+      ])
+        object.visible = false
+      if (this.exampleStage !== o.example.stage) {
+        this.exampleStage = o.example.stage
+        this.exampleElapsed = o.example.playing ? 0 : 0.9
+        this.exampleEmitted = false
+        this.publishLabels()
+      }
+      if (o.example.playing && !this.reduceMotion) {
+        this.exampleElapsed += delta
+        if (this.exampleElapsed >= 3 && !this.exampleEmitted) {
+          this.exampleEmitted = true
+          o.onExampleStage?.((o.example.stage + 1) % 6, true)
+        }
+      }
+      this.exampleWorld.update(o.example, this.exampleElapsed / 3)
+    } else {
+      if (this.exampleActive) {
+        this.exampleActive = false
+        if (this.exampleWorld) this.exampleWorld.group.visible = false
+        for (const object of [
+          this.packets,
+          this.trails,
+          this.arrows,
+          this.halo,
+          this.selectionRing,
+        ])
+          object.visible = true
+        this.publishLabels()
+        this.setView('isometric')
+      }
+      if (!o.paused && !this.reduceMotion) {
+        this.elapsed += delta * (o.speed || 1)
+        if (this.elapsed > ANIMATION_DURATION + 0.65) this.elapsed = 0
+      }
+      this.frame = getMotionFrame(this.elapsed, o.traffic, o.params, o.strategy)
+      this.updateWorld(delta)
     }
-    this.frame = getMotionFrame(this.elapsed, o.traffic, o.params, o.strategy)
-    this.updateWorld(delta)
     if (this.flight) {
       const factor = this.reduceMotion ? 1 : 1 - Math.exp(-delta * 5.5)
       this.camera.position.lerp(this.flight.position, factor)
@@ -1045,9 +1122,11 @@ export class InfrastructureEngine {
         !this.flight,
     )
     this.controls.update(delta)
-    this.animateHardware()
-    this.animatePackets()
-    if (o.followPayload && !this.flight && this.halo.visible) {
+    if (!o.example) {
+      this.animateHardware()
+      this.animatePackets()
+    }
+    if (!o.example && o.followPayload && !this.flight && this.halo.visible) {
       this.followTarget.copy(this.halo.position)
       this.followTarget.x += 1.8
       this.cameraOffset.copy(this.camera.position).sub(this.controls.target)
@@ -1068,6 +1147,34 @@ export class InfrastructureEngine {
       .toArray()
       .map((n) => n.toFixed(2))
       .join(',')
+    this.renderer.domElement.dataset.exampleModel = o.example?.id || ''
+    this.renderer.domElement.dataset.exampleStage = o.example
+      ? String(o.example.stage)
+      : ''
+    if (o.example && this.exampleWorld) {
+      this.renderer.domElement.dataset.motionMode = 'model-example'
+      this.renderer.domElement.dataset.motionLayer = 'pipeline'
+      const width = this.container.clientWidth,
+        height = this.container.clientHeight
+      for (const label of this.exampleWorld.labels) {
+        this.projected.copy(label.position).project(this.camera)
+        const x = (this.projected.x * 0.5 + 0.5) * width,
+          y = (-this.projected.y * 0.5 + 0.5) * height
+        this.hooks.project(
+          label.key!,
+          x,
+          y,
+          o.showLabels !== false &&
+            x > 65 &&
+            x < width - 65 &&
+            y > 80 &&
+            y < height - 150 &&
+            this.projected.z < 1,
+        )
+      }
+      this.renderer.render(this.scene, this.camera)
+      return
+    }
     this.renderer.domElement.dataset.motionLayer = o.layer
     this.renderer.domElement.dataset.motionMode = o.traffic
     this.renderer.domElement.dataset.strategy = o.strategy || 'continuous'

@@ -2,6 +2,8 @@
 
 Research reviewed November 4, 2026. The application focuses on **online inference**, with a separate explanation of how training differs. Its reference architecture is deliberately homogeneous to make the relationships understandable; production fleets are heterogeneous.
 
+The six real-model field trips have a separate evidence record in [REAL-MODELS.md](REAL-MODELS.md), including pinned model/code revisions for Kimi K3, Qwen-Image-2.1, MiniMax H3, MiniMax Music 3.0, PersonaPlex, and CosyVoice 2. Their model-specific pipelines and sizing exercises do not reuse the dense 70B lab as a universal performance predictor.
+
 ## Primary sources and their roles
 
 1. **Kwon et al., Efficient Memory Management for Large Language Model Serving with PagedAttention, SOSP 2023.** <https://arxiv.org/abs/2309.06180>

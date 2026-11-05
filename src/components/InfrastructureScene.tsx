@@ -13,6 +13,7 @@ import type { CameraView, MotionFrame } from '../motion'
 import { InfrastructureEngine } from '../scene/engine'
 import type { PayloadInspection, SceneOptions } from '../scene/engine'
 import type { SceneLabel } from '../scene/architecture'
+import { findExample } from '../examples/catalog'
 
 export interface SceneHandle {
   reset: () => void
@@ -158,6 +159,7 @@ export const InfrastructureScene = forwardRef<
   useEffect(() => {
     if (
       !fallback ||
+      props.example ||
       props.active === false ||
       props.paused ||
       window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -178,14 +180,33 @@ export const InfrastructureScene = forwardRef<
       latest.current.onFrame?.(next)
     }, 180)
     return () => clearInterval(timer)
-  }, [fallback, props.active, props.paused])
+  }, [fallback, props.active, props.paused, props.example])
+
+  useEffect(() => {
+    if (
+      !fallback ||
+      props.active === false ||
+      !props.example?.playing ||
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    )
+      return
+    const timer = setInterval(() => {
+      if (!document.hidden)
+        latest.current.onExampleStage?.(
+          ((latest.current.example?.stage || 0) + 1) % 6,
+          true,
+        )
+    }, 3000)
+    return () => clearInterval(timer)
+  }, [fallback, props.active, props.example])
 
   return (
     <div
       ref={host}
       className={`infrastructure-scene enhanced-scene ${props.compact ? 'compact-scene' : ''} ${fallback ? 'scene-fallback' : ''}`}
       data-testid="infrastructure-scene"
-      data-motion-mode={props.traffic}
+      data-motion-mode={props.example ? 'model-example' : props.traffic}
+      data-example-model={props.example?.id || ''}
       data-motion-time={frame.time.toFixed(1)}
     >
       {!fallback &&
@@ -233,9 +254,11 @@ export const InfrastructureScene = forwardRef<
                 if (el) labelElements.current.set(key, el)
                 else labelElements.current.delete(key)
               }}
-              className={`scene-label ${props.selected === label.id ? 'is-selected' : ''} ${moving ? 'moving-payload-label' : ''} ${label.stage === frame.chapterIndex && props.traffic === 'tensors' ? 'active-tensor-stage' : ''}`}
+              className={`scene-label ${label.exampleStage !== undefined ? (props.example?.stage === label.exampleStage ? 'is-selected' : '') : props.selected === label.id ? 'is-selected' : ''} ${moving ? 'moving-payload-label' : ''} ${label.stage === frame.chapterIndex && props.traffic === 'tensors' ? 'active-tensor-stage' : ''}`}
               onClick={() => {
-                if (moving) runtime.current?.inspectPacket()
+                if (label.exampleStage !== undefined)
+                  props.onExampleStage?.(label.exampleStage)
+                else if (moving) runtime.current?.inspectPacket()
                 else if (props.immersive && label.rank !== undefined)
                   props.onRank?.(label.rank)
                 else {
@@ -245,7 +268,11 @@ export const InfrastructureScene = forwardRef<
                 }
               }}
               aria-label={
-                moving ? 'Inspect moving payload' : `Inspect ${title}`
+                label.exampleStage !== undefined
+                  ? `Inspect model stage ${label.exampleStage + 1}: ${title}`
+                  : moving
+                    ? 'Inspect moving payload'
+                    : `Inspect ${title}`
               }
             >
               <span
@@ -352,7 +379,28 @@ export const InfrastructureScene = forwardRef<
           <code>{inspection.formula}</code>
         </aside>
       )}
-      {fallback && (
+      {fallback && props.example && (
+        <div className="fallback-topology example-fallback">
+          <span className="eyebrow">MODEL PIPELINE · 2D FALLBACK</span>
+          <h3>{findExample(props.example.id)!.name}</h3>
+          <p>
+            The same source-backed stages and budgets remain available without
+            WebGL.
+          </p>
+          <div>
+            {findExample(props.example.id)!.stages.map((s, i) => (
+              <button
+                key={s.short}
+                className={props.example?.stage === i ? 'active' : ''}
+                onClick={() => props.onExampleStage?.(i)}
+              >
+                {i + 1}. {s.short}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {fallback && !props.example && (
         <div className="fallback-topology">
           <span className="eyebrow">INTERACTIVE TOPOLOGY · 2D FALLBACK</span>
           <h3>

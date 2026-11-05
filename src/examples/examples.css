@@ -1,0 +1,1029 @@
+.learning-fusion .model-kicker {
+  display: block;
+  font-size: 8px;
+  letter-spacing: 1px;
+  line-height: 1.8;
+  color: var(--model-accent, #c6dea0);
+  margin: 18px 0 8px;
+}
+.learning-fusion .model-section-note {
+  font-size: 11px;
+  line-height: 1.9;
+  color: #8daab8;
+}
+.learning-fusion .model-compare-link,
+.learning-fusion .model-text-link {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  background: transparent;
+  color: #c2dbaf;
+  font-size: 11px;
+  padding: 9px 0;
+  text-align: left;
+}
+.learning-fusion .model-catalog {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.learning-fusion .model-catalog > .model-section-note,
+.learning-fusion .model-catalog > .model-compare-link {
+  grid-column: 1/-1;
+  margin: 0 0 7px;
+}
+.learning-fusion .model-catalog-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+  min-width: 0;
+  padding: 18px 15px;
+  background: linear-gradient(140deg, #203b49b3, #172c3b99);
+  border: 1px solid color-mix(in srgb, var(--model-accent), transparent 70%);
+  border-radius: 8px;
+}
+.learning-fusion .model-catalog-card:hover {
+  background: #2a4653c9;
+  border-color: var(--model-accent);
+  transform: translateY(-2px);
+}
+.learning-fusion .model-catalog-card > span {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 9px;
+  color: #9db6c2;
+}
+.learning-fusion .model-catalog-card small {
+  font-size: 6px;
+  letter-spacing: 0.6px;
+  color: var(--model-accent);
+}
+.learning-fusion .model-catalog-card > strong {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  font-family: 'Manrope Variable', sans-serif;
+  font-weight: 450;
+  font-size: 18px;
+  letter-spacing: -0.5px;
+  color: #dfebdf;
+}
+.learning-fusion .model-catalog-card p {
+  font-size: 11px;
+  line-height: 1.8;
+  color: #9db9c4;
+  margin: 0;
+}
+.learning-fusion .model-catalog-card code {
+  font-size: 8px;
+  color: #88aab8;
+  overflow-wrap: anywhere;
+}
+.learning-fusion .model-catalog-card em {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  color: var(--model-accent);
+  font-size: 9px;
+  font-style: normal;
+  margin-top: auto;
+  padding-top: 4px;
+}
+.learning-fusion.is-model-example .learn-panel:has(.learn-library-content) {
+  width: min(440px, calc(100% - 330px));
+  min-width: 0;
+  max-width: none;
+  max-height: calc(100% - 390px);
+}
+.learning-fusion.is-model-example
+  .learn-library-content
+  > .learn-surface-kicker,
+.learning-fusion.is-model-example .learn-library-content > h2,
+.learning-fusion.is-model-example .learn-library-content > p {
+  display: none;
+}
+.learning-fusion.is-model-example .learn-library-tabs {
+  margin-top: 0;
+}
+.learning-fusion.is-model-example .learn-scope,
+.learning-fusion.is-model-example .learn-metrics,
+.learning-fusion.is-model-example .learn-scale-rail,
+.learning-fusion.is-model-example .learn-narration,
+.learning-fusion.is-model-example .learn-command-deck,
+.learning-fusion.is-model-example .learn-reopen {
+  display: none;
+}
+.learning-fusion .model-study-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+}
+.learning-fusion .model-study-actions > button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  color: #a3c6bb;
+  background: transparent;
+  padding: 6px 0;
+  font-size: 9px;
+}
+.learning-fusion .model-copy-status {
+  display: block;
+  color: #c4dea5;
+  font-size: 10px;
+  margin-bottom: 8px;
+}
+.learning-fusion .model-select-label {
+  display: block;
+  color: #91adb9;
+  font-size: 9px;
+  margin: 8px 0 15px;
+}
+.learning-fusion .model-select-label > select {
+  display: block;
+  width: 100%;
+  font: inherit;
+  font-size: 13px;
+  padding: 10px;
+  border: 1px solid #7595a24d;
+  border-radius: 5px;
+  background: #0c2430;
+  color: #d8e7d8;
+  color-scheme: dark;
+  margin-top: 7px;
+}
+.learning-fusion .model-detail-tabs {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  border-bottom: 1px solid #72939c33;
+  padding-bottom: 7px;
+  margin-bottom: 17px;
+}
+.learning-fusion .model-detail-tabs > button {
+  flex: 1;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #88a6b5;
+  font-size: 10px;
+  padding: 9px 4px;
+  white-space: nowrap;
+}
+.learning-fusion .model-detail-tabs > button[aria-pressed='true'] {
+  color: var(--model-accent);
+  background: color-mix(in srgb, var(--model-accent), transparent 90%);
+}
+.learning-fusion .model-study-content h2 {
+  font-size: 23px;
+  letter-spacing: -0.6px;
+  line-height: 1.5;
+  margin: 9px 0 17px;
+}
+.learning-fusion .model-study-content h3 {
+  color: #d0e2d7;
+  font-size: 14px;
+  line-height: 1.7;
+  font-weight: 450;
+  margin: 16px 0 9px;
+}
+.learning-fusion .model-study-content p {
+  color: #9ab5c3;
+  font-size: 12px;
+  line-height: 1.9;
+  margin: 12px 0;
+}
+.learning-fusion .model-representation {
+  padding: 16px;
+  background: #0c2530b3;
+  border: 1px solid #6c919b55;
+  border-radius: 7px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 17px 0;
+}
+.learning-fusion .model-representation > span {
+  font-size: 7px;
+  letter-spacing: 1px;
+  color: #84aaa3;
+}
+.learning-fusion .model-representation > code {
+  font-size: 11px;
+  line-height: 1.9;
+  color: #b9d8d1;
+  overflow-wrap: anywhere;
+}
+.learning-fusion .model-representation > svg {
+  align-self: center;
+  transform: rotate(90deg);
+  color: var(--model-accent);
+  margin: 3px;
+}
+.learning-fusion .model-evidence {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin: 12px 0 17px;
+}
+.learning-fusion .model-evidence > a {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 9px;
+  line-height: 1.75;
+  color: #9cbd9b;
+  text-decoration: underline;
+  text-decoration-color: #90ad8b44;
+  text-underline-offset: 3px;
+}
+.learning-fusion .model-evidence > a > svg {
+  flex-shrink: 0;
+}
+.learning-fusion .model-stage-operations {
+  border-top: 1px solid #72929b33;
+  margin-top: 18px;
+  padding-top: 3px;
+}
+.learning-fusion .model-stage-operations h3 {
+  color: var(--model-accent);
+  font-size: 10px;
+  margin: 18px 0 5px;
+}
+.learning-fusion .model-stage-operations p {
+  margin: 5px 0 14px;
+  font-size: 11px;
+}
+.learning-fusion .model-facts {
+  background: #17303c88;
+  border: 1px solid #71949e40;
+  border-radius: 6px;
+  margin: 23px 0 16px;
+  padding: 13px;
+}
+.learning-fusion .model-facts summary {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 11px;
+  color: #c9dcbb;
+  cursor: pointer;
+  list-style: none;
+}
+.learning-fusion .model-facts > div {
+  border-top: 1px solid #73969f30;
+  margin-top: 14px;
+}
+.learning-fusion .model-facts p {
+  font-size: 11px;
+}
+.learning-fusion .model-facts .model-evidence {
+  margin-bottom: 4px;
+}
+.learning-fusion .model-request {
+  margin: 14px 0;
+}
+.learning-fusion .model-request > label {
+  display: block;
+  color: #94b1bc;
+  font-size: 10px;
+}
+.learning-fusion .model-request textarea {
+  display: block;
+  width: 100%;
+  resize: vertical;
+  min-height: 90px;
+  max-height: 180px;
+  margin-top: 8px;
+  background: #0d2632;
+  color: #c8ded3;
+  padding: 10px;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.7;
+  border: 1px solid #7399a555;
+  border-radius: 5px;
+}
+.learning-fusion .model-request p {
+  font-size: 10px;
+  color: #8aa5b3;
+}
+.learning-fusion .model-request pre,
+.learning-fusion .model-recipe pre {
+  max-width: 100%;
+  overflow: auto;
+  color: #b9d6d0;
+  border: 1px solid #71929c44;
+  background: #0c202d;
+  font-family: monospace;
+  font-size: 10px;
+  line-height: 1.9;
+  border-radius: 5px;
+  padding: 13px;
+  tab-size: 2;
+}
+.learning-fusion .model-recipe,
+.learning-fusion .model-choice {
+  padding: 14px;
+  border: 1px solid #7b9a9e3d;
+  border-radius: 7px;
+  background: #1c35404d;
+  margin: 15px 0;
+}
+.learning-fusion .model-recipe h3,
+.learning-fusion .model-choice h3 {
+  margin: 1px 0 12px;
+}
+.learning-fusion .model-recipe p,
+.learning-fusion .model-choice p {
+  font-size: 11px;
+}
+.learning-fusion .model-choice > span,
+.learning-fusion .model-measure > span {
+  display: block;
+  color: #a4c39f;
+  font-size: 7px;
+  letter-spacing: 0.8px;
+  margin-top: 15px;
+}
+.learning-fusion .model-choice > p {
+  margin: 6px 0;
+}
+.learning-fusion .model-measure {
+  border-left: 2px solid var(--model-accent);
+  padding-left: 14px;
+  margin: 22px 0;
+}
+.learning-fusion .model-boundary {
+  font-size: 10px;
+  line-height: 1.9;
+  color: #8ca5b1;
+  border-top: 1px solid #70939b33;
+  padding-top: 15px;
+  margin: 22px 0 2px;
+}
+.learning-fusion .model-budget-inputs {
+  border: 1px solid #7c9a9e40;
+  padding: 15px;
+  border-radius: 6px;
+  background: #17303c80;
+  margin: 18px 0;
+}
+.learning-fusion .model-budget-inputs > label {
+  display: block;
+  margin: 4px 0 17px;
+}
+.learning-fusion .model-budget-inputs > label > span {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  color: #99b6c0;
+  font-size: 10px;
+  line-height: 1.7;
+}
+.learning-fusion .model-budget-inputs strong {
+  color: #d3e5be;
+  font-size: 12px;
+  font-weight: 450;
+  text-align: right;
+}
+.learning-fusion .model-budget-inputs small {
+  color: #8eadb5;
+  font-size: 8px;
+}
+.learning-fusion .model-budget-inputs input {
+  display: block;
+  width: 100%;
+  margin: 18px 0 5px;
+  accent-color: var(--model-accent);
+}
+.learning-fusion .model-budget-inputs select {
+  width: 100%;
+  margin-top: 8px;
+  color-scheme: dark;
+  background: #112a37;
+  color: #d0e4d7;
+  border: 1px solid #7899a24d;
+  padding: 9px;
+  border-radius: 4px;
+}
+.learning-fusion .model-budget-results {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+.learning-fusion .model-budget-results > article {
+  border: 1px solid #73949d44;
+  background: #17333f6b;
+  border-radius: 6px;
+  padding: 15px;
+}
+.learning-fusion .model-budget-results > article > span {
+  font-size: 10px;
+  color: #92b1bd;
+}
+.learning-fusion .model-budget-results strong {
+  display: block;
+  color: var(--model-accent);
+  font-size: 28px;
+  letter-spacing: -1px;
+  font-weight: 400;
+  margin: 12px 0;
+}
+.learning-fusion .model-budget-results strong > small {
+  font-size: 11px;
+  letter-spacing: 0;
+  color: #a9c2b8;
+}
+.learning-fusion .model-budget-results code {
+  display: block;
+  font-size: 10px;
+  line-height: 1.9;
+  overflow-wrap: anywhere;
+  background: #0e2633;
+  color: #b5d0cc;
+  padding: 10px;
+  border-radius: 4px;
+}
+.learning-fusion .model-budget-results p {
+  font-size: 10px;
+  color: #86a5b3;
+  margin: 12px 0 1px;
+}
+.learning-fusion .model-source-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.learning-fusion .model-source-list > a {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 7px;
+  border: 1px solid #78979e44;
+  background: #19344166;
+  border-radius: 6px;
+  padding: 13px;
+  font-size: 12px;
+  color: #c5dbbd;
+  line-height: 1.8;
+}
+.learning-fusion .model-source-list > a > small {
+  display: block;
+  flex-basis: 100%;
+  color: #86a5b4;
+  font-size: 9px;
+}
+.learning-fusion .model-scope {
+  position: absolute;
+  left: 30px;
+  top: 97px;
+  z-index: 3;
+  pointer-events: none;
+  max-width: 470px;
+}
+.learning-fusion .model-scope > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 7px;
+  color: var(--model-accent);
+  letter-spacing: 1px;
+  line-height: 1.7;
+}
+.learning-fusion .model-scope i {
+  display: block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--model-accent);
+}
+.learning-fusion .model-scope h1 {
+  color: #dce9df;
+  font-size: 30px;
+  letter-spacing: -1px;
+  line-height: 1.4;
+  margin: 10px 0 6px;
+}
+.learning-fusion .model-scope p {
+  font-size: 12px;
+  line-height: 1.8;
+  color: #95b2be;
+  margin: 0;
+  max-width: 390px;
+}
+.learning-fusion .model-scope code {
+  display: block;
+  font-size: 9px;
+  color: #7397aa;
+  margin-top: 10px;
+  overflow-wrap: anywhere;
+}
+.learning-fusion .model-world-readouts {
+  position: absolute;
+  z-index: 3;
+  top: 245px;
+  left: 30px;
+  display: flex;
+  flex-direction: column;
+  width: 242px;
+  gap: 8px;
+  pointer-events: none;
+}
+.learning-fusion .model-world-readouts > div {
+  border: 1px solid #70939c3d;
+  border-radius: 7px;
+  background: #142936b8;
+  backdrop-filter: blur(11px);
+  padding: 11px 14px;
+}
+.learning-fusion .model-world-readouts span {
+  font-size: 8px;
+  color: #8eadba;
+  line-height: 1.8;
+  display: block;
+}
+.learning-fusion .model-world-readouts strong {
+  display: block;
+  font-size: 23px;
+  letter-spacing: -0.7px;
+  font-weight: 400;
+  color: var(--model-accent);
+  margin-top: 4px;
+}
+.learning-fusion .model-world-readouts small {
+  font-size: 10px;
+  color: #8eaeb1;
+  margin-left: 6px;
+  letter-spacing: 0;
+}
+.learning-fusion .model-now {
+  position: absolute;
+  z-index: 4;
+  left: 30px;
+  bottom: 178px;
+  width: 268px;
+  max-height: calc(100% - 730px);
+  overflow: auto;
+  scrollbar-width: thin;
+  padding: 16px;
+  border: 1px solid #79989f44;
+  border-radius: 8px;
+  background: #142a36ba;
+  backdrop-filter: blur(13px);
+}
+.learning-fusion .model-now > span {
+  font-size: 7px;
+  letter-spacing: 0.7px;
+  color: var(--model-accent);
+}
+.learning-fusion .model-now > h2 {
+  font-size: 17px;
+  letter-spacing: -0.4px;
+  color: #cee1d4;
+  line-height: 1.6;
+  margin: 12px 0;
+}
+.learning-fusion .model-now > code {
+  display: block;
+  border: 1px solid #6a929951;
+  background: #0e263247;
+  border-radius: 5px;
+  padding: 10px;
+  color: #b7d4cd;
+  font-size: 10px;
+  line-height: 1.9;
+  overflow-wrap: anywhere;
+}
+.learning-fusion .model-now > p {
+  font-size: 11px;
+  color: #8dabb9;
+  margin: 12px 0;
+  line-height: 1.8;
+}
+.learning-fusion .model-now > button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 0 0;
+  border: 0;
+  background: transparent;
+  color: var(--model-accent);
+  font-size: 10px;
+}
+.learning-fusion .model-command-deck {
+  position: absolute;
+  z-index: 8;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 32px;
+  width: min(1000px, calc(100% - 65px));
+  background: #18303ddd;
+  backdrop-filter: blur(20px);
+  border: 1px solid #7596a159;
+  border-radius: 12px;
+  padding: 10px 13px;
+  box-shadow: 0 15px 60px #000c172f;
+}
+.learning-fusion .model-stage-dock {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 4px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #78949d2b;
+}
+.learning-fusion .model-stage-dock > button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 5px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #8faebc;
+  font-size: 9px;
+  line-height: 1.7;
+}
+.learning-fusion .model-stage-dock b {
+  font-family: monospace;
+  font-size: 8px;
+  color: #7795a4;
+  font-weight: 400;
+}
+.learning-fusion .model-stage-dock > button[aria-current='step'] {
+  color: var(--model-accent);
+  border-color: color-mix(in srgb, var(--model-accent), transparent 65%);
+  background: color-mix(in srgb, var(--model-accent), transparent 91%);
+}
+.learning-fusion .model-stage-dock > button[aria-current='step'] > b {
+  color: var(--model-accent);
+}
+.learning-fusion .model-playback {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.learning-fusion .model-playback > button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  border-radius: 4px;
+  color: #9ebbbb;
+  font-size: 10px;
+  min-width: 28px;
+  min-height: 30px;
+  padding: 5px 7px;
+}
+.learning-fusion .model-playback > button:first-child {
+  background: var(--model-accent);
+  color: #2e4839;
+  width: 36px;
+  min-height: 34px;
+}
+.learning-fusion .model-playback > span {
+  flex: 1;
+  font-size: 6px;
+  letter-spacing: 0.7px;
+  color: #7e9caa;
+}
+.learning-fusion .model-playback > i {
+  width: 1px;
+  height: 20px;
+  background: #73939e33;
+}
+.learning-fusion .model-playback > button:hover {
+  background: #a6c29320;
+}
+.learning-fusion .model-comparison {
+  padding: 10px 0 15px;
+}
+.learning-fusion .model-comparison > h1 {
+  font-size: 30px;
+  line-height: 1.5;
+  color: #d9e8dc;
+}
+.learning-fusion .model-comparison > p {
+  font-size: 12px;
+  color: #95b3be;
+}
+.learning-fusion .model-comparison-scroll {
+  overflow: auto;
+  max-width: 100%;
+  margin: 22px 0;
+  border: 1px solid #7b9b9c44;
+  border-radius: 6px;
+}
+.learning-fusion .model-comparison table {
+  min-width: 850px;
+  color: #a1bdc4;
+  background: #16313f;
+}
+.learning-fusion .model-comparison th,
+.learning-fusion .model-comparison td {
+  vertical-align: top;
+  font-size: 12px;
+  line-height: 1.9;
+  border-color: #70959e44;
+  padding: 16px;
+}
+.learning-fusion .model-comparison th {
+  color: #d0e3c4;
+  background: #203e47;
+}
+.learning-fusion .model-comparison th code {
+  display: block;
+  font-size: 9px;
+  color: #8cacb8;
+  white-space: normal;
+  margin-top: 8px;
+}
+.learning-fusion .model-comparison td p {
+  font-size: 11px;
+}
+.learning-fusion .model-comparison td strong {
+  font-size: 12px;
+  color: #bdd5b5;
+  font-weight: 450;
+}
+.learning-fusion .model-comparison .model-evidence > a {
+  font-size: 9px;
+}
+.learning-fusion .example-fallback {
+  max-width: 600px;
+}
+.learning-fusion .example-fallback > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.real-model-reference {
+  margin: 24px 0;
+}
+.real-model-reference > h2 {
+  margin: 13px 0;
+  font-size: 25px;
+  line-height: 1.5;
+}
+.real-model-reference > p {
+  font-size: 12px;
+  line-height: 1.9;
+}
+.model-reference-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 20px;
+}
+.model-reference-list > a {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+}
+.model-reference-list strong {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 15px;
+  font-weight: 500;
+}
+.model-reference-list span {
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--muted);
+}
+.model-reference-list code {
+  font-size: 9px;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+}
+@media (max-width: 1100px) {
+  .learning-fusion .model-scope {
+    left: 23px;
+    max-width: 360px;
+  }
+  .learning-fusion .model-scope h1 {
+    font-size: 27px;
+  }
+  .learning-fusion .model-world-readouts {
+    left: 23px;
+    width: 206px;
+  }
+  .learning-fusion .model-world-readouts strong {
+    font-size: 21px;
+  }
+  .learning-fusion .model-now {
+    left: 23px;
+    width: 206px;
+    padding: 12px;
+  }
+  .learning-fusion .model-now > p {
+    display: none;
+  }
+  .learning-fusion .model-stage-dock > button {
+    font-size: 8px;
+    gap: 5px;
+  }
+}
+@media (max-height: 930px) and (min-width: 701px) {
+  .learning-fusion .model-world-readouts {
+    top: 230px;
+  }
+  .learning-fusion .model-world-readouts > div {
+    padding: 8px 12px;
+  }
+  .learning-fusion .model-world-readouts strong {
+    font-size: 19px;
+  }
+  .learning-fusion .model-now {
+    display: none;
+  }
+}
+@media (max-width: 700px) {
+  .model-reference-list {
+    grid-template-columns: 1fr;
+  }
+  .learning-fusion .learn-library-tabs {
+    flex-wrap: wrap;
+  }
+  .learning-fusion .learn-library-tabs > button {
+    flex: 1 1 40%;
+  }
+  .learning-fusion .model-catalog {
+    grid-template-columns: 1fr;
+  }
+  .learning-fusion .model-catalog-card {
+    padding: 15px;
+  }
+  .learning-fusion .model-catalog-card > strong {
+    font-size: 20px;
+  }
+  .learning-fusion .model-catalog-card small {
+    font-size: 7px;
+  }
+  .learning-fusion .model-catalog-card code {
+    font-size: 9px;
+  }
+  .learning-fusion.is-model-example .learn-panel:has(.learn-library-content) {
+    left: 14px;
+    right: 14px;
+    width: auto;
+    max-height: calc(100% - 440px);
+    min-width: 0;
+    bottom: 173px;
+  }
+  .learning-fusion.is-model-example .learn-library-tabs {
+    display: none;
+  }
+  .learning-fusion .model-scope {
+    left: 14px;
+    top: 80px;
+    max-width: calc(100% - 78px);
+  }
+  .learning-fusion .model-scope > span {
+    font-size: 6px;
+  }
+  .learning-fusion .model-scope h1 {
+    font-size: 22px;
+    margin: 7px 0 5px;
+  }
+  .learning-fusion .model-scope > p {
+    display: none;
+  }
+  .learning-fusion .model-scope code {
+    font-size: 8px;
+    margin-top: 5px;
+  }
+  .learning-fusion .model-world-readouts {
+    top: 170px;
+    left: 14px;
+    right: 14px;
+    width: auto;
+    flex-direction: row;
+    gap: 5px;
+  }
+  .learning-fusion .model-world-readouts > div {
+    flex: 1;
+    padding: 8px;
+    min-width: 0;
+    border-radius: 5px;
+  }
+  .learning-fusion .model-world-readouts span {
+    font-size: 6px;
+    line-height: 1.6;
+  }
+  .learning-fusion .model-world-readouts strong {
+    font-size: 17px;
+    margin-top: 5px;
+    letter-spacing: -0.6px;
+  }
+  .learning-fusion .model-world-readouts small {
+    font-size: 7px;
+    margin-left: 4px;
+  }
+  .learning-fusion .model-now {
+    left: 14px;
+    right: 64px;
+    bottom: 181px;
+    width: auto;
+    max-height: 140px;
+    padding: 11px;
+  }
+  .learning-fusion .model-now > h2 {
+    font-size: 14px;
+    margin: 8px 0;
+  }
+  .learning-fusion .model-now > p {
+    display: none;
+  }
+  .learning-fusion .model-now > code {
+    font-size: 9px;
+    padding: 8px;
+  }
+  .learning-fusion:has(.learn-panel) .model-now {
+    display: none;
+  }
+  .learning-fusion .model-command-deck {
+    bottom: 27px;
+    width: calc(100% - 28px);
+    padding: 8px;
+    border-radius: 9px;
+  }
+  .learning-fusion .model-stage-dock {
+    gap: 4px;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    padding-bottom: 7px;
+  }
+  .learning-fusion .model-stage-dock > button {
+    flex-direction: column;
+    padding: 6px 2px;
+    gap: 4px;
+    font-size: 6px;
+    line-height: 1.5;
+  }
+  .learning-fusion .model-stage-dock b {
+    font-size: 9px;
+  }
+  .learning-fusion .model-stage-dock span {
+    min-height: 19px;
+  }
+  .learning-fusion .model-playback {
+    gap: 2px;
+    margin-top: 6px;
+  }
+  .learning-fusion .model-playback > button {
+    padding: 4px;
+    min-width: 25px;
+  }
+  .learning-fusion .model-playback > button:not(:first-child) > span {
+    display: none;
+  }
+  .learning-fusion .model-playback > span {
+    font-size: 5px;
+    line-height: 1.7;
+    letter-spacing: 0.3px;
+  }
+  .learning-fusion .model-study-content h2 {
+    font-size: 20px;
+  }
+  .learning-fusion .model-study-content p {
+    font-size: 12px;
+  }
+  .learning-fusion .model-representation {
+    padding: 12px;
+  }
+  .learning-fusion .model-evidence > a {
+    font-size: 10px;
+  }
+  .learning-fusion .model-comparison > h1 {
+    font-size: 23px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .learning-fusion .model-catalog-card {
+    transition: none;
+    transform: none;
+  }
+}
+@media (max-width: 370px) {
+  .learning-fusion .learn-brand > b {
+    display: none;
+  }
+}

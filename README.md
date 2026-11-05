@@ -20,6 +20,8 @@ The request lens and moving payload labels show actual game requests: tenant, in
 
 Direct links use `?view=explore`, `?view=journey`, `?view=lab`, or `?view=guide`. The header's layout toggle opens the original reading layout; `?view=explore&learn=classic` links to it directly. Layout changes preserve the workload, selected strategy, and explorer's teaching clock. Existing parameterized lab links continue to work.
 
+**Real models** adds six source-backed 3D field trips: **Kimi K3**, **Qwen-Image-2.1**, **MiniMax H3**, **MiniMax Music 3.0**, **nvidia/personaplex-7b-v1**, and **CosyVoice 2**. Follow their distinct data transformations, inspect placement and network traffic, compare serving trade-offs, read versioned startup examples, and change model-specific data budgets. Open `?view=guide&learn=fusion&examples=all`, or link to a model with `example=kimi-k3`, `qwen-image-21`, `minimax-h3`, `minimax-music-3`, `personaplex`, or `cosyvoice-2`. [docs/REAL-MODELS.md](docs/REAL-MODELS.md) records the research, source revisions, calculations, and deployment boundaries.
+
 ## Run locally
 
 Requires Node.js 22.12+ and npm; Node.js 24 LTS is recommended. No GPU, API key, backend, or external service is required.

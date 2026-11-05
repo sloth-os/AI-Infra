@@ -2,6 +2,8 @@
 
 Learning Fusion makes the infrastructure the shared workspace for Explore, Request journey, Trade-off lab, and Field guide. The renderer, hardware, teaching clock, workload, and serving strategy persist between those four views. Switching to Fleet Command pauses the learning world and preserves the game run; returning resumes the same learning canvas.
 
+The **Real models** header entry opens six source-backed field trips inside that same renderer. Each model has a distinct six-stage 3D pipeline, inspectable data representations, serving/source panels, quantitative data exercises, and a comparison reader. The reference infrastructure timeline pauses during a field trip; returning restores it. Case-study controls use their own published formats and do not alter the lab's parameters. See [REAL-MODELS.md](REAL-MODELS.md) for research, version boundaries, and calculations.
+
 ## Learn through the world
 
 | Workspace       | Interaction                                                                                                                                             | What the learner can investigate                                                                                                             |

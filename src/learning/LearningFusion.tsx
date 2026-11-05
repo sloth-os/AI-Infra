@@ -6,6 +6,7 @@ import {
   ArrowUpRight,
   BookOpen,
   Box,
+  Boxes,
   Check,
   ChevronLeft,
   ChevronRight,
@@ -61,6 +62,17 @@ import LearningLab from './LearningLab'
 import LearningLibrary from './LearningLibrary'
 import type { LibraryTab } from './LearningLibrary'
 import './learning.css'
+import { ExampleHUD, ModelComparison } from '../examples/ModelExamples'
+import {
+  defaultExampleInputs,
+  exampleStage,
+  exampleUrl,
+  parseExampleLocation,
+  sanitizeExampleInputs,
+} from '../examples/model'
+import type { ExampleView } from '../examples/model'
+import { findExample } from '../examples/catalog'
+import type { ExampleId } from '../examples/catalog'
 
 export type LearningPage = Exclude<Page, 'game'>
 type Panel =
@@ -199,10 +211,100 @@ export default function LearningFusion(p: Props) {
     [theater, setTheater] = useState(false),
     [webgl, setWebgl] = useState(true)
   const [camera, setCamera] = useState<CameraView>('isometric'),
-    [reader, setReader] = useState<'lab' | 'guide' | null>(null),
+    [reader, setReader] = useState<'lab' | 'guide' | 'examples' | null>(null),
     [help, setHelp] = useState(false)
   const [query, setQuery] = useState(''),
-    [libraryTab, setLibraryTab] = useState<LibraryTab>('concepts')
+    [libraryTab, setLibraryTab] = useState<LibraryTab>(() =>
+      parseExampleLocation(location.href) ||
+      new URLSearchParams(location.search).get('examples') === 'all'
+        ? 'models'
+        : 'concepts',
+    )
+  const [example, setExample] = useState<ExampleView | null>(() =>
+    parseExampleLocation(location.href),
+  )
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const exampleActive =
+    p.active && p.page === 'guide' && libraryTab === 'models' && !!example
+  const clearExampleUrl = () => {
+    const url = new URL(location.href)
+    for (const key of [...url.searchParams.keys()])
+      if (
+        key === 'example' ||
+        key === 'examples' ||
+        key === 'stage' ||
+        key.startsWith('ex_')
+      )
+        url.searchParams.delete(key)
+    history.replaceState({}, '', url)
+  }
+  const changeExample = (view: ExampleView | null) => {
+    closeContext()
+    setFollow(false)
+    setJourneyAuto(false)
+    p.onManual()
+    setExample(
+      view
+        ? {
+            ...view,
+            stage: exampleStage(view.stage),
+            inputs: sanitizeExampleInputs(view.id, view.inputs),
+          }
+        : null,
+    )
+    if (!view) clearExampleUrl()
+  }
+  const selectExample = (id: ExampleId) =>
+    changeExample({
+      id,
+      stage: 0,
+      playing: false,
+      inputs: defaultExampleInputs(id),
+    })
+  const selectExampleStage = (stage: number, playing?: boolean) =>
+    setExample((previous) =>
+      previous
+        ? {
+            ...previous,
+            stage: exampleStage(stage),
+            playing: playing ?? previous.playing,
+          }
+        : null,
+    )
+  const chooseLibraryTab = (tab: LibraryTab) => {
+    setLibraryTab(tab)
+    if (tab !== 'models') clearExampleUrl()
+  }
+  useEffect(() => {
+    if (!p.active || p.page !== 'guide' || libraryTab !== 'models') return
+    if (example)
+      history.replaceState({}, '', exampleUrl(location.href, example))
+    else {
+      const url = new URL(location.href)
+      url.searchParams.set('examples', 'all')
+      history.replaceState({}, '', url)
+    }
+  }, [p.active, p.page, libraryTab, example])
+  useEffect(() => {
+    setCamera('isometric')
+    if (!exampleActive)
+      setExample((previous) =>
+        previous?.playing ? { ...previous, playing: false } : previous,
+      )
+  }, [exampleActive])
+  useEffect(() => {
+    const onPop = () => {
+      const next = parseExampleLocation(location.href)
+      setExample(next)
+      if (
+        next ||
+        new URLSearchParams(location.search).get('examples') === 'all'
+      )
+        setLibraryTab('models')
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
   const [rank, setRank] = useState(0),
     [prompt, setPrompt] = useState(
       'Explain black holes to a curious ten-year-old.',
@@ -313,6 +415,10 @@ export default function LearningFusion(p: Props) {
     return () => clearTimeout(timer)
   }, [journeyAuto, p.active, p.page, p.journeyStep, rag])
   const go = (page: Page) => {
+    if (page !== 'guide') clearExampleUrl()
+    setExample((previous) =>
+      previous ? { ...previous, playing: false } : null,
+    )
     closeContext()
     setFollow(false)
     setTheater(false)
@@ -393,6 +499,33 @@ export default function LearningFusion(p: Props) {
         help
       )
         return
+      if (exampleActive && example) {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+          e.preventDefault()
+          selectExampleStage(
+            exampleStage(example.stage, e.key === 'ArrowRight' ? 1 : -1),
+            false,
+          )
+          return
+        }
+        if (['1', '2', '3', '4', '5', '6'].includes(e.key)) {
+          selectExampleStage(Number(e.key) - 1, false)
+          return
+        }
+        if (
+          e.code === 'Space' &&
+          (e.target as HTMLElement).tagName !== 'BUTTON'
+        ) {
+          e.preventDefault()
+          if (!reduced) setExample({ ...example, playing: !example.playing })
+          return
+        }
+        if (e.key.toLowerCase() === 'f') {
+          p.sceneRef.current?.focus(`example-stage-${example.stage}`)
+          setPanel(null)
+          return
+        }
+      }
       if (e.key === 'Escape') {
         e.preventDefault()
         if (theater) setTheater(false)
@@ -523,7 +656,14 @@ export default function LearningFusion(p: Props) {
   return (
     <section
       ref={root}
-      className={`learning-fusion ${theater ? 'learn-cinema' : ''}`}
+      className={`learning-fusion ${theater ? 'learn-cinema' : ''} ${exampleActive ? 'is-model-example' : ''}`}
+      style={
+        {
+          '--model-accent': example
+            ? findExample(example.id)!.color
+            : '#c6dea0',
+        } as React.CSSProperties
+      }
       hidden={!p.active}
       aria-label="Immersive Learning workspace"
     >
@@ -544,6 +684,11 @@ export default function LearningFusion(p: Props) {
           orbit={p.orbit}
           showLabels={labels && !theater}
           followPayload={follow}
+          example={exampleActive ? example : null}
+          onExampleStage={(stage, automatic) => {
+            selectExampleStage(stage, automatic ? undefined : false)
+            if (!automatic) setPanel('guide')
+          }}
           onSelect={inspect}
           onCameraRelease={() => {
             setFollow(false)
@@ -582,10 +727,27 @@ export default function LearningFusion(p: Props) {
                 Show learning controls<kbd>H</kbd>
               </button>
               <button
-                onClick={() => p.onPaused(!p.paused)}
-                aria-label={p.paused ? 'Play timeline' : 'Pause timeline'}
+                onClick={() => {
+                  if (exampleActive && example) {
+                    if (!reduced)
+                      setExample({ ...example, playing: !example.playing })
+                  } else p.onPaused(!p.paused)
+                }}
+                aria-label={
+                  exampleActive && example
+                    ? example.playing
+                      ? 'Pause model walkthrough'
+                      : 'Play model walkthrough'
+                    : p.paused
+                      ? 'Play timeline'
+                      : 'Pause timeline'
+                }
               >
-                {p.paused ? <Play size={16} /> : <Pause size={16} />}
+                {(exampleActive && example ? !example.playing : p.paused) ? (
+                  <Play size={16} />
+                ) : (
+                  <Pause size={16} />
+                )}
               </button>
             </div>
           ) : (
@@ -606,14 +768,38 @@ export default function LearningFusion(p: Props) {
                   {pages.map(({ id, title, Icon }) => (
                     <button
                       key={id}
-                      onClick={() => go(id)}
-                      aria-current={p.page === id ? 'page' : undefined}
+                      onClick={() => {
+                        if (id === 'guide') chooseLibraryTab('concepts')
+                        go(id)
+                      }}
+                      aria-current={
+                        p.page === id &&
+                        !(id === 'guide' && libraryTab === 'models')
+                          ? 'page'
+                          : undefined
+                      }
                       aria-label={title}
                     >
                       <Icon size={15} />
                       <span>{title}</span>
                     </button>
                   ))}
+                  <button
+                    aria-label="Real models"
+                    aria-current={
+                      p.page === 'guide' && libraryTab === 'models'
+                        ? 'page'
+                        : undefined
+                    }
+                    onClick={() => {
+                      go('guide')
+                      setLibraryTab('models')
+                      setQuery('')
+                    }}
+                  >
+                    <Boxes size={15} />
+                    <span>Real models</span>
+                  </button>
                 </nav>
                 <div className="learn-header-tools">
                   <button
@@ -640,6 +826,26 @@ export default function LearningFusion(p: Props) {
                   </button>
                 </div>
               </header>
+              {exampleActive && example && (
+                <ExampleHUD
+                  view={example}
+                  panelOpen={panel === 'guide'}
+                  reduced={reduced}
+                  onStage={(stage) => {
+                    selectExampleStage(stage, false)
+                    if (panel === 'guide') setPanel('guide')
+                  }}
+                  onPlay={() =>
+                    setExample({ ...example, playing: !example.playing })
+                  }
+                  onOpen={() => setPanel(panel === 'guide' ? null : 'guide')}
+                  onFocus={() => {
+                    p.sceneRef.current?.focus(`example-stage-${example.stage}`)
+                    setPanel(null)
+                  }}
+                  onExit={() => go('explore')}
+                />
+              )}
               <div className="learn-scope">
                 <span>
                   <i />{' '}
@@ -798,20 +1004,24 @@ export default function LearningFusion(p: Props) {
                 >
                   <Minus size={17} />
                 </button>
-                <button
-                  onClick={() => p.onExploded(!p.exploded)}
-                  aria-label="Explode hardware"
-                  aria-pressed={p.exploded}
-                >
-                  <Layers3 size={17} />
-                </button>
-                <button
-                  onClick={() => p.onHeatmap(!p.heatmap)}
-                  aria-label="Toggle load heatmap"
-                  aria-pressed={p.heatmap}
-                >
-                  <Activity size={17} />
-                </button>
+                {!exampleActive && (
+                  <>
+                    <button
+                      onClick={() => p.onExploded(!p.exploded)}
+                      aria-label="Explode hardware"
+                      aria-pressed={p.exploded}
+                    >
+                      <Layers3 size={17} />
+                    </button>
+                    <button
+                      onClick={() => p.onHeatmap(!p.heatmap)}
+                      aria-label="Toggle load heatmap"
+                      aria-pressed={p.heatmap}
+                    >
+                      <Activity size={17} />
+                    </button>
+                  </>
+                )}
                 <button
                   onClick={() => setLabels(!labels)}
                   aria-label={
@@ -1014,7 +1224,11 @@ export default function LearningFusion(p: Props) {
                       query={query}
                       onQuery={setQuery}
                       tab={libraryTab}
-                      onTab={setLibraryTab}
+                      onTab={chooseLibraryTab}
+                      example={example}
+                      onExample={changeExample}
+                      onChooseExample={selectExample}
+                      onCompare={() => setReader('examples')}
                       onReading={() => setReader('guide')}
                       onLocate={(layer, traffic, node) => {
                         p.onLocate(layer, traffic, node)
@@ -1496,7 +1710,9 @@ export default function LearningFusion(p: Props) {
                 </div>
               </div>
               <span className="learn-footnote">
-                REFERENCE ARCHITECTURE · TEACHING TIME · SYNTHETIC PERFORMANCE
+                {exampleActive
+                  ? 'PRIMARY SOURCES · PROPOSED PLACEMENT · DERIVED BUDGETS · TEACHING ANIMATION'
+                  : 'REFERENCE ARCHITECTURE · TEACHING TIME · SYNTHETIC PERFORMANCE'}
               </span>
               <button
                 className="learn-fullscreen"
@@ -1517,12 +1733,20 @@ export default function LearningFusion(p: Props) {
               title={
                 reader === 'lab'
                   ? 'Complete performance workbench'
-                  : 'Complete field guide'
+                  : reader === 'guide'
+                    ? 'Complete field guide'
+                    : 'Six real model workloads'
               }
               onClose={() => setReader(null)}
             >
               <div className="learn-reading-desk">
-                {reader === 'lab' ? p.advancedLab : p.advancedGuide}
+                {reader === 'lab' ? (
+                  p.advancedLab
+                ) : reader === 'guide' ? (
+                  p.advancedGuide
+                ) : (
+                  <ModelComparison />
+                )}
               </div>
             </LearningDialog>
           )}
@@ -1536,6 +1760,13 @@ export default function LearningFusion(p: Props) {
                   THE WORLD IS THE WORKSPACE
                 </span>
                 <h2>Find the part. Follow the data.</h2>
+                <p>
+                  Real models opens six source-backed pipeline field trips. In a
+                  field trip, use 1–6 or the arrow keys to select a stage, Space
+                  to play teaching stages, and F to focus. Data budgets use each
+                  model’s formats; the worlds are schematics and do not execute
+                  model weights.
+                </p>
                 <p>
                   Select hardware to open its explanation. Understand its role,
                   inspect the trade-offs, and change the workload while staying
