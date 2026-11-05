@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ArrowRight,
   ArrowUpRight,
@@ -44,6 +44,9 @@ import type { LucideIcon } from 'lucide-react'
 import { GameScene } from './GameScene'
 import type { GameSceneHandle } from './GameScene'
 import { RequestLens } from './RequestLens'
+import FusionUI from './FusionUI'
+import { pinSpatialCard } from './fusion'
+import type { CameraView, FusionLens, SpatialPin } from './fusion'
 import {
   MISSIONS,
   MODULES,
@@ -65,6 +68,7 @@ import {
 } from './model'
 import type { GameAction, GameState, ModuleType, Progress } from './model'
 import './game.css'
+import './fusion.css'
 
 const moduleIcons: Record<ModuleType, LucideIcon> = {
   prefill: Cpu,
@@ -147,7 +151,25 @@ export default function FleetGame({
   const [state, setState] = useState<GameState>(() => createGame())
   const stateRef = useRef(state)
   stateRef.current = state
-  const [tool, setTool] = useState<ModuleType | null>('prefill')
+  const [fusion, setFusion] = useState(
+    () => new URLSearchParams(location.search).get('ui') !== 'tactical',
+  )
+  const [tool, setTool] = useState<ModuleType | null>(() =>
+    new URLSearchParams(location.search).get('ui') === 'tactical'
+      ? 'prefill'
+      : null,
+  )
+  const [lens, setLens] = useState<FusionLens>('flow')
+  const [labels, setLabels] = useState(true)
+  const [follow, setFollow] = useState(false)
+  const [view, setView] = useState<CameraView>(() =>
+    new URLSearchParams(location.search).get('ui') === 'tactical'
+      ? 'overview'
+      : 'orbit',
+  )
+  const [theater, setTheater] = useState(false)
+  const [requestOpen, setRequestOpen] = useState(false)
+  const [webgl, setWebgl] = useState(true)
   const [selected, setSelected] = useState<number | null>(null)
   const [hovered, setHovered] = useState<number | null>(null)
   const [request, setRequest] = useState<number | null>(null)
@@ -162,6 +184,13 @@ export default function FleetGame({
     root = useRef<HTMLElement>(null)
   const audio = useRef<AudioContext | null>(null)
   const recorded = useRef('')
+  const contextHeight = useRef(360)
+  const contextPin = useRef<SpatialPin | null>(null)
+  const refreshSpatial = useRef<(() => void) | null>(null)
+  const onCardSize = useCallback((height: number) => {
+    contextHeight.current = height
+    refreshSpatial.current?.()
+  }, [])
   const mission = missionById(state.mission),
     metrics = getGameMetrics(state)
   const selectedUnit = state.units.find((u) => u.pad === selected)
@@ -210,6 +239,28 @@ export default function FleetGame({
   }
   const pickPad = (pad: number) => {
     if (!canBuild) return
+    if (fusion) {
+      setTheater(false)
+      setFollow(false)
+      setView('overview')
+      setRequestOpen(false)
+      const existing = stateRef.current.units.find((u) => u.pad === pad)
+      if (existing) {
+        setSelected(pad)
+        setTool(null)
+        return
+      }
+      if (tool) {
+        const next = dispatch({ type: 'build', module: tool, pad })
+        if (next.units.some((u) => u.pad === pad)) {
+          setTool(null)
+          setSelected(null)
+        }
+        return
+      }
+      setSelected(pad)
+      return
+    }
     setSelected(pad)
     const existing = stateRef.current.units.find((u) => u.pad === pad)
     if (existing) {
@@ -234,12 +285,24 @@ export default function FleetGame({
     setDialog(next)
   }
   const chooseMission = (id: string) => {
+    contextPin.current = null
     const next = createGame(id)
     setState(next)
     stateRef.current = next
     setSelected(null)
     setRequest(null)
-    setTool('prefill')
+    setTool(fusion ? null : 'prefill')
+    setRequestOpen(false)
+    setFollow(false)
+    setView(fusion ? 'orbit' : 'overview')
+    setTheater(false)
+    setLens(
+      missionById(id).requirement === 'memory'
+        ? 'memory'
+        : missionById(id).requirement === 'network'
+          ? 'fabric'
+          : 'flow',
+    )
     setDialog(null)
     setSectors(false)
     setSpeed(1)
@@ -247,16 +310,96 @@ export default function FleetGame({
     scene.current?.reset()
   }
   const start = () => {
+    setView('overview')
     dispatch({ type: 'start' })
     setDialog(null)
     setTool(
-      state.units.some((u) => u.type === 'prefill') ? 'decode' : 'prefill',
+      fusion
+        ? null
+        : state.units.some((u) => u.type === 'prefill')
+          ? 'decode'
+          : 'prefill',
     )
+    if (fusion) scene.current?.enter()
   }
   const learn = () => {
     if (playing) dispatch({ type: 'pause' })
+    if (document.fullscreenElement === root.current)
+      void document.exitFullscreen?.().catch(() => {})
     onLearn()
   }
+
+  const dismissContext = () => {
+    contextPin.current = null
+    setSelected(null)
+    setRequestOpen(false)
+    root.current?.style.setProperty('--spatial-ready', '0')
+  }
+  const selectRequest = (id: number | null) => {
+    setRequest(id)
+    setSelected(null)
+    setTool(null)
+    setRequestOpen(fusion)
+    setView('overview')
+  }
+  const cameraView = (next: CameraView) => {
+    setView(next)
+    setFollow(false)
+    if (next !== 'orbit') scene.current?.view(next)
+  }
+  const toggleFusion = () => {
+    const next = !fusion
+    setFusion(next)
+    dismissContext()
+    setTheater(false)
+    setFollow(false)
+    setView('overview')
+    setTool(next ? null : 'prefill')
+    scene.current?.reset()
+    const url = new URL(location.href)
+    url.searchParams.set('ui', next ? 'fusion' : 'tactical')
+    history.replaceState({}, '', url)
+  }
+  const projectContext = (
+    id: string,
+    x: number,
+    y: number,
+    visible: boolean,
+  ) => {
+    if (id !== 'context' || !fusion || !root.current) return
+    const host = root.current,
+      placement = pinSpatialCard(
+        contextPin.current,
+        selected !== null ? `pad-${selected}` : 'request',
+        x,
+        y,
+        host.clientWidth,
+        host.clientHeight,
+        contextHeight.current,
+      )
+    contextPin.current = placement
+    host.style.setProperty('--world-x', `${x}px`)
+    host.style.setProperty('--world-y', `${y}px`)
+    host.style.setProperty('--spatial-x', `${placement.x}px`)
+    host.style.setProperty('--spatial-y', `${placement.y}px`)
+    host.style.setProperty('--spatial-width', `${placement.width}px`)
+    host.style.setProperty('--tether-length', `${placement.tetherLength}px`)
+    host.style.setProperty('--tether-angle', `${placement.tetherAngle}deg`)
+    host.style.setProperty('--anchor-visible', visible ? '1' : '0')
+    host.style.setProperty('--spatial-ready', '1')
+  }
+  refreshSpatial.current = () => {
+    if (!webgl && fusion && (selected !== null || requestOpen) && root.current)
+      projectContext(
+        'context',
+        root.current.clientWidth / 2,
+        root.current.clientHeight * 0.45,
+        false,
+      )
+  }
+  useEffect(() => {
+    refreshSpatial.current?.()
+  }, [webgl, fusion, selected, requestOpen])
 
   useEffect(() => {
     if (!active || state.phase !== 'playing') return
@@ -297,6 +440,18 @@ export default function FleetGame({
       if (dialog) return
       if (e.key === 'Escape') {
         e.preventDefault()
+        if (fusion && theater) {
+          setTheater(false)
+          return
+        }
+        if (fusion && (selected !== null || requestOpen)) {
+          dismissContext()
+          return
+        }
+        if (fusion && tool) {
+          setTool(null)
+          return
+        }
         openDialog('menu')
         return
       }
@@ -304,6 +459,8 @@ export default function FleetGame({
       if (['1', '2', '3', '4'].includes(e.key)) {
         setTool(toolKeys[Number(e.key) - 1])
         setSelected(null)
+        setRequestOpen(false)
+        setTheater(false)
         e.preventDefault()
       } else if (
         e.code === 'Space' &&
@@ -311,11 +468,27 @@ export default function FleetGame({
       ) {
         e.preventDefault()
         dispatch({ type: playing ? 'pause' : 'resume' })
-      } else if (e.key.toLowerCase() === 'r') scene.current?.reset()
-      else if (e.key.toLowerCase() === 'q') scene.current?.rotate(-1)
-      else if (e.key.toLowerCase() === 'e') scene.current?.rotate(1)
-      else if (e.key.toLowerCase() === 'u' && selectedUnit)
+      } else if (e.key.toLowerCase() === 'r') cameraView('overview')
+      else if (e.key.toLowerCase() === 'q') {
+        setFollow(false)
+        setView('overview')
+        scene.current?.rotate(-1)
+      } else if (e.key.toLowerCase() === 'e') {
+        setFollow(false)
+        setView('overview')
+        scene.current?.rotate(1)
+      } else if (e.key.toLowerCase() === 'u' && selectedUnit)
         dispatch({ type: 'upgrade', unit: selectedUnit.id })
+      else if (fusion && e.key.toLowerCase() === 'h') {
+        setTheater(!theater)
+        e.preventDefault()
+      } else if (fusion && e.key.toLowerCase() === 'l') setLabels(!labels)
+      else if (fusion && e.key.toLowerCase() === 'f' && focusedJob) {
+        setFollow(!follow)
+        setView('overview')
+        setSelected(null)
+        setRequestOpen(false)
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -400,7 +573,7 @@ export default function FleetGame({
   return (
     <section
       ref={root}
-      className={`fleet-game ${state.phase === 'briefing' ? 'is-briefing' : ''} ${state.integrity < 35 ? 'integrity-critical' : ''}`}
+      className={`fleet-game ${fusion ? 'is-fusion' : ''} ${theater ? 'is-theater' : ''} ${state.phase === 'briefing' ? 'is-briefing' : ''} ${state.integrity < 35 ? 'integrity-critical' : ''}`}
       hidden={!active}
       aria-label="Fleet Command 3D game"
     >
@@ -411,12 +584,21 @@ export default function FleetGame({
         tool={tool}
         selected={selected}
         focusedJob={focusedJob?.id ?? null}
+        fusion={fusion}
+        lens={lens}
+        showLabels={labels && !theater}
+        followRequest={follow}
+        autoOrbit={view === 'orbit'}
+        requestOpen={requestOpen}
+        onProject={projectContext}
+        onUnavailable={() => setWebgl(false)}
+        onCameraRelease={() => {
+          setFollow(false)
+          setView('overview')
+        }}
         onPad={pickPad}
         onHover={setHovered}
-        onRequest={(id) => {
-          setRequest(id)
-          setTool(null)
-        }}
+        onRequest={selectRequest}
       />
       {active && (
         <>
@@ -443,7 +625,29 @@ export default function FleetGame({
                 : `${mission.name.toUpperCase()} · WAVE ${metrics.wave}`}
             </div>
             <div className="game-header-actions">
-              <button onClick={learn}>
+              <button
+                className="game-fusion-toggle"
+                onClick={toggleFusion}
+                aria-label={
+                  fusion
+                    ? 'Switch to tactical interface'
+                    : 'Switch to immersive interface'
+                }
+                aria-pressed={fusion}
+                title={
+                  fusion
+                    ? 'Switch to tactical interface'
+                    : 'Switch to immersive interface'
+                }
+              >
+                <Layers3 size={15} />
+                <span>{fusion ? 'Fusion' : 'Tactical'}</span>
+              </button>
+              <button
+                onClick={learn}
+                className="game-learning-button"
+                aria-label="Learning mode"
+              >
                 <BookOpen size={15} />
                 <span>Learning mode</span>
                 <ArrowUpRight size={12} />
@@ -1146,6 +1350,73 @@ export default function FleetGame({
               </div>
             </>
           )}
+          {fusion && state.phase !== 'briefing' && (
+            <FusionUI
+              state={state}
+              tool={tool}
+              selected={selected}
+              job={focusedJob}
+              requestOpen={requestOpen}
+              lens={lens}
+              labels={labels}
+              follow={follow}
+              view={view}
+              speed={speed}
+              theater={theater}
+              checks={missionChecks}
+              onAction={dispatch}
+              onTool={setTool}
+              onPad={pickPad}
+              onLens={setLens}
+              onLabels={() => setLabels(!labels)}
+              onFollow={() => {
+                setFollow(!follow)
+                setView('overview')
+                if (!follow) dismissContext()
+              }}
+              onView={cameraView}
+              onFocus={(pad) => {
+                setFollow(false)
+                setView('overview')
+                scene.current?.focus(pad)
+                dismissContext()
+              }}
+              onTheater={() => {
+                setTheater(!theater)
+                setTool(null)
+              }}
+              onMenu={() => openDialog('menu')}
+              onMissions={() => openDialog('missions')}
+              onRequests={() => openDialog('requests')}
+              onRequest={(id) => setRequest(id)}
+              onOpenRequest={() => {
+                setSelected(null)
+                setTool(null)
+                setRequestOpen(true)
+              }}
+              onDismiss={dismissContext}
+              onSpeed={() => setSpeed(speed === 1 ? 2 : 1)}
+              onZoom={(d) => {
+                setFollow(false)
+                setView('overview')
+                scene.current?.zoom(d)
+              }}
+              onCardSize={onCardSize}
+              onBuild={(type, pad) => {
+                const next = dispatch({ type: 'build', module: type, pad })
+                if (next.units.some((u) => u.pad === pad)) {
+                  setTool(null)
+                  setSelected(pad)
+                  setRequestOpen(false)
+                }
+              }}
+              onFullscreen={() => {
+                if (document.fullscreenElement)
+                  void document.exitFullscreen?.().catch(() => {})
+                else void root.current?.requestFullscreen?.().catch(() => {})
+              }}
+            />
+          )}
           <span className="game-model-note">
             GAME-BALANCED TIME & CURRENCY · ANALYTICAL KV SIZES
           </span>
@@ -1248,7 +1519,9 @@ export default function FleetGame({
                   {
                     icon: Cpu,
                     title: 'Build a complete path',
-                    text: 'Select a prefill engine, then click an empty hex or sector button. Add a decode engine so requests can become answers.',
+                    text: fusion
+                      ? 'Click an empty hex to choose a module, or arm a tool in the dock. Add both prefill and decode so requests become answers.'
+                      : 'Select a prefill engine, then click an empty hex or sector button. Add a decode engine so requests can become answers.',
                   },
                   {
                     icon: HardDrive,
@@ -1292,8 +1565,22 @@ export default function FleetGame({
                   <kbd>U</kbd> Upgrade selection
                 </span>
                 <span>
-                  <kbd>ESC</kbd> Game menu
+                  <kbd>ESC</kbd>{' '}
+                  {fusion ? 'Back / mission control' : 'Game menu'}
                 </span>
+                {fusion && (
+                  <>
+                    <span>
+                      <kbd>H</kbd> Cinema / show HUD
+                    </span>
+                    <span>
+                      <kbd>L</kbd> World annotations
+                    </span>
+                    <span>
+                      <kbd>F</kbd> Ride a live request
+                    </span>
+                  </>
+                )}
               </div>
               <p className="game-help-disclaimer">
                 This is a teaching game, not a fleet sizing tool. Token sizes

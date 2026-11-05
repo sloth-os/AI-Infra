@@ -3,7 +3,7 @@ import type { Page } from '@playwright/test'
 import { OrthographicCamera, Vector3 } from 'three'
 
 async function start(page: Page) {
-  await page.goto('/')
+  await page.goto('/?ui=tactical')
   await page.getByRole('button', { name: 'Start mission' }).click()
   await expect(
     page.getByRole('button', { name: 'Pause game', exact: true }),
@@ -91,7 +91,7 @@ test('actual 3D hex clicks build a service, deliver requests, win and save stars
 test('sandbox pause allows upgrades and recycling with real costs; learning mode preserves the run', async ({
   page,
 }) => {
-  await page.goto('/')
+  await page.goto('/?ui=tactical')
   await page.getByRole('button', { name: 'Sandbox', exact: true }).click()
   await page.getByRole('button', { name: 'Start mission' }).click()
   await page.getByRole('button', { name: 'Pause game', exact: true }).click()

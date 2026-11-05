@@ -1,0 +1,2188 @@
+.is-fusion {
+  --fusion-glass: linear-gradient(135deg, #192c38e8, #101c28e8);
+  --fusion-border: #718f9950;
+  --fusion-soft: #9db3bd;
+  --fusion-bright: #e3ede6;
+  --spatial-x: 24px;
+  --spatial-y: 180px;
+  --spatial-width: 312px;
+  --spatial-ready: 0;
+}
+.is-fusion .game-header {
+  height: 74px;
+  border: 0;
+  background: linear-gradient(#0b121ce8, transparent);
+  backdrop-filter: none;
+  padding: 0 30px;
+}
+.game-fusion-toggle {
+  gap: 7px !important;
+}
+.game-fusion-toggle[aria-pressed='true'] {
+  color: #d5efb1 !important;
+  background: #c0eb8c12 !important;
+  border-color: #b2d78b50 !important;
+}
+.is-fusion .game-vignette {
+  background: linear-gradient(
+    180deg,
+    #08101c33,
+    transparent 35%,
+    transparent 70%,
+    #080f19aa
+  );
+}
+.is-fusion.is-briefing .game-vignette {
+  background:
+    linear-gradient(
+      90deg,
+      #0b121cf7,
+      #0b121ce6 24%,
+      #0b121c55 49%,
+      transparent 74%
+    ),
+    linear-gradient(180deg, #0b121c66, transparent 50%, #0b121cbb);
+}
+.is-fusion:not(.is-briefing) > .game-resource-bar,
+.is-fusion .game-left-hud,
+.is-fusion .game-right-hud,
+.is-fusion > .game-request-lens,
+.is-fusion > .game-live-goal,
+.is-fusion > .game-paused-banner,
+.is-fusion > .game-bottom-bar {
+  display: none;
+}
+.is-fusion .game-feedback {
+  bottom: 154px;
+  font-size: 11px;
+  max-width: min(560px, calc(100% - 80px));
+  padding: 6px 13px;
+  border: 0;
+  background: #12222cbb;
+  box-shadow: none;
+  color: #b6c9ba;
+  pointer-events: none;
+}
+.is-fusion .game-feedback:has(+ .fusion-interface) {
+  bottom: 154px;
+}
+.is-fusion .game-model-note {
+  left: 30px;
+  right: auto;
+  transform: none;
+  bottom: 12px;
+  font-size: 6px;
+  letter-spacing: 1px;
+  max-width: calc(100% - 200px);
+}
+.is-fusion .game-world-label {
+  font-size: 9px;
+  padding: 9px 12px;
+  border-color: #72929f44;
+  background: linear-gradient(120deg, #1c303be8, #10212adc);
+  box-shadow: 0 8px 22px #02091322;
+  backdrop-filter: blur(8px);
+}
+.is-fusion .game-world-label small {
+  font-size: 8px;
+  margin-top: 5px;
+  color: #b0c8cb;
+}
+.is-fusion .game-world-label.selected {
+  border-color: #d1ed9b99;
+  box-shadow: 0 0 25px #d1ed9b11;
+}
+.is-fusion .game-world-label .fusion-label-value {
+  display: block;
+  color: var(--lens-color, #b7d796);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 500;
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.is-fusion .game-request-label {
+  border-color: #aecb9177;
+  padding: 8px 11px;
+  font-size: 8px;
+}
+.fusion-pad-tag {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 2;
+  padding: 9px;
+  opacity: 0;
+  pointer-events: none;
+  background: transparent;
+  color: #a8c3cd;
+  will-change: transform;
+}
+.fusion-pad-tag > span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #7799a05c;
+  background: #22404b36;
+  border-radius: 5px;
+  padding: 5px 8px;
+  transform: perspective(500px) rotateX(28deg);
+  font-size: 9px;
+  box-shadow: 0 1px 14px #78b9b509;
+  transition:
+    color 0.18s,
+    border-color 0.18s,
+    background 0.18s;
+}
+.fusion-pad-tag b {
+  font-size: 15px;
+  font-weight: 350;
+  line-height: 1;
+  color: #9fd6bd;
+}
+.fusion-pad-tag:hover > span,
+.fusion-pad-tag:focus-visible > span,
+.fusion-pad-tag.can-build > span {
+  border-color: #b0d18c88;
+  color: #d7e9c9;
+  background: #213c3777;
+}
+.fusion-pad-tag:hover > span {
+  box-shadow: 0 0 20px #a7ca7b20;
+  transform: perspective(500px) rotateX(0deg);
+}
+.fusion-interface {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+.fusion-interface button,
+.fusion-interface [role='region'],
+.fusion-interface section,
+.fusion-interface nav {
+  pointer-events: auto;
+}
+.fusion-interface button {
+  color: inherit;
+  transition:
+    background 0.16s,
+    border-color 0.16s,
+    color 0.16s,
+    box-shadow 0.16s;
+}
+.fusion-interface button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.fusion-mission {
+  position: absolute;
+  top: 97px;
+  left: 30px;
+  width: 267px;
+  padding: 0 0 13px;
+  border-bottom: 1px solid #6c8a8f3d;
+}
+.fusion-mission-overline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #90ada9;
+  font-size: 8px;
+  letter-spacing: 1.5px;
+}
+.fusion-mission-overline > span {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.fusion-mission-overline i,
+.fusion-context-top i,
+.fusion-drawer-heading i,
+.fusion-deck-overline > span > i {
+  width: 4px;
+  height: 4px;
+  display: inline-block;
+  border-radius: 50%;
+  background: #c8e89c;
+  box-shadow: 0 0 10px #a2d78066;
+}
+.fusion-mission-overline button {
+  background: transparent;
+  color: #8fada4;
+  padding: 5px;
+}
+.fusion-mission-name {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: transparent;
+  text-align: left;
+  margin: 8px 0 14px;
+  padding: 0;
+  color: #dae8dd !important;
+  font-family: 'Manrope Variable', sans-serif !important;
+  font-size: 25px;
+  letter-spacing: -0.9px;
+  font-weight: 450;
+}
+.fusion-mission-name svg {
+  color: #91a7a6;
+  transition: transform 0.2s;
+}
+.fusion-mission-name[aria-expanded='true'] svg {
+  transform: rotate(180deg);
+}
+.fusion-mission-progress {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  color: #829c9c;
+  font-size: 8px;
+  gap: 10px;
+}
+.fusion-mission-progress b {
+  font-size: 26px;
+  letter-spacing: -0.8px;
+  font-weight: 400;
+  color: #d2e9bb;
+}
+.fusion-mission-progress small {
+  font-size: 10px;
+  color: #9dbb99;
+}
+.fusion-progress-line {
+  height: 2px;
+  margin-top: 12px;
+  background: #41615a55;
+  overflow: hidden;
+}
+.fusion-progress-line > i {
+  display: block;
+  height: 100%;
+  background: #c6e995;
+  box-shadow: 0 0 15px #c6e99555;
+  transition: width 0.3s;
+}
+.fusion-mission-expanded {
+  margin-top: 12px;
+  padding: 13px;
+  background: var(--fusion-glass);
+  border: 1px solid var(--fusion-border);
+  border-radius: 7px;
+  backdrop-filter: blur(16px);
+}
+.fusion-mission-expanded p {
+  font-size: 12px;
+  line-height: 1.8;
+  margin: 0 0 13px;
+  color: #acbfc4;
+}
+.fusion-mission-expanded > span {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 10px;
+  margin: 7px 0;
+  color: #829ba3;
+}
+.fusion-mission-expanded > span.complete {
+  color: #c8e7a6;
+}
+.fusion-mission-expanded > small {
+  display: block;
+  font-size: 9px;
+  color: #7c9ca6;
+  margin-top: 13px;
+}
+.fusion-resources {
+  position: absolute;
+  top: 92px;
+  right: 30px;
+  display: flex;
+  gap: 0;
+  border: 1px solid #6a89913a;
+  border-radius: 9px;
+  padding: 6px 0;
+  background: linear-gradient(120deg, #162932bb, #12232c66);
+  backdrop-filter: blur(12px);
+}
+.fusion-resources > div {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 19px;
+  border-right: 1px solid #69838b2a;
+}
+.fusion-resources > div:last-child {
+  border-right: 0;
+}
+.fusion-resources > div > svg {
+  color: #9db39a;
+}
+.fusion-resources > div:first-child > svg {
+  color: #dcc491;
+}
+.fusion-resources > div:nth-child(2) > svg {
+  color: #b7a0d7;
+}
+.fusion-resources > div:nth-child(4) > svg {
+  color: #85bdc7;
+}
+.fusion-resources > div > span {
+  font-size: 8px;
+  color: #8ba4aa;
+  letter-spacing: 0.6px;
+}
+.fusion-resources strong {
+  display: block;
+  margin-top: 4px;
+  color: #dce7d9;
+  font-size: 19px;
+  font-weight: 450;
+  line-height: 1.3;
+  letter-spacing: -0.7px;
+  font-variant-numeric: tabular-nums;
+}
+.fusion-resources strong small {
+  font-size: 10px;
+  letter-spacing: 0;
+  color: #87a2a2;
+}
+.fusion-lenses {
+  position: absolute;
+  top: 244px;
+  left: 30px;
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid #72909836;
+  border-radius: 7px;
+  background: #15273199;
+  backdrop-filter: blur(9px);
+}
+.fusion-lenses > button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  min-height: 31px;
+  padding: 7px 11px;
+  border-radius: 4px;
+  background: transparent;
+  color: #87a0aa;
+}
+.fusion-lenses > button[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--lens-color), transparent 87%);
+  color: var(--lens-color);
+}
+.fusion-lenses > button:hover {
+  color: #deebde;
+  background: #86a5a01a;
+}
+.fusion-legend {
+  position: absolute;
+  top: 296px;
+  left: 31px;
+  width: 235px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: #839eaa;
+  font-size: 10px;
+  line-height: 1.8;
+  pointer-events: none;
+}
+.fusion-legend > i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+.fusion-camera-rail {
+  position: absolute;
+  right: 29px;
+  top: 270px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 5px;
+  border: 1px solid #69869132;
+  background: #15263288;
+  border-radius: 8px;
+  backdrop-filter: blur(12px);
+}
+.fusion-camera-rail > button {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 5px;
+  background: transparent;
+  color: #8da8ad;
+}
+.fusion-camera-rail > button:hover,
+.fusion-camera-rail > button[aria-pressed='true'] {
+  background: #b1d99b19;
+  color: #d0e7af;
+}
+.fusion-camera-rail > i {
+  height: 1px;
+  background: #78929530;
+  margin: 4px 6px;
+}
+[data-tip] {
+  position: relative;
+}
+[data-tip]:hover:after {
+  content: attr(data-tip);
+  position: absolute;
+  right: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  background: #1c323def;
+  color: #c6d9d6;
+  border: 1px solid #76939b55;
+  border-radius: 4px;
+  padding: 6px 9px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 10;
+  letter-spacing: 0;
+  font-weight: 400;
+}
+.fusion-request-peek {
+  position: absolute;
+  right: 30px;
+  bottom: 169px;
+  width: 250px;
+  padding: 15px 17px;
+  border: 1px solid #75939544;
+  border-radius: 8px;
+  background: var(--fusion-glass);
+  backdrop-filter: blur(12px);
+  text-align: left;
+  box-shadow: 0 6px 30px #0109141a;
+}
+.fusion-request-peek:hover {
+  border-color: #bddf9277;
+  box-shadow: 0 0 30px #93c98209;
+}
+.fusion-request-peek > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 7px;
+  color: #a7c295;
+  letter-spacing: 1.1px;
+}
+.fusion-request-peek > span > svg:last-child {
+  margin-left: auto;
+  color: #89aaa6;
+}
+.fusion-request-peek > strong {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: #d1e3de;
+  margin-top: 12px;
+  letter-spacing: -0.3px;
+}
+.fusion-request-peek em {
+  font-style: normal;
+  font-weight: 400;
+  font-size: 10px;
+  color: #b4ca9c;
+  letter-spacing: 0;
+}
+.fusion-request-peek > small {
+  display: block;
+  color: #8ca8b2;
+  font-size: 9px;
+  margin-top: 7px;
+}
+.fusion-world-reticle {
+  position: absolute;
+  left: var(--world-x, 50%);
+  top: var(--world-y, 50%);
+  transform: translate(-50%, -50%);
+  width: 48px;
+  height: 48px;
+  border: 1px solid #c6eaa066;
+  border-radius: 50%;
+  box-shadow: 0 0 25px #c6eaa009;
+  pointer-events: none;
+  opacity: var(--anchor-visible, 0);
+}
+.fusion-world-reticle:after,
+.fusion-world-reticle:before {
+  content: '';
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #d0e4b3;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.fusion-world-reticle:before {
+  left: -2px;
+}
+.fusion-world-reticle:after {
+  right: -2px;
+}
+.fusion-world-reticle > span {
+  position: absolute;
+  bottom: -20px;
+  width: 100%;
+  text-align: center;
+  font-size: 8px;
+  color: #c2d9ab;
+  letter-spacing: 1px;
+}
+.fusion-world-tether {
+  position: absolute;
+  left: var(--world-x, 50%);
+  top: var(--world-y, 50%);
+  width: var(--tether-length, 0px);
+  height: 1px;
+  background: linear-gradient(90deg, #c8e6a866, #7aa6b766);
+  transform-origin: 0 0;
+  transform: rotate(var(--tether-angle, 0deg));
+  pointer-events: none;
+  opacity: var(--anchor-visible, 0);
+}
+.fusion-spatial-card {
+  position: absolute;
+  left: var(--spatial-x);
+  top: var(--spatial-y);
+  width: var(--spatial-width);
+  padding: 18px;
+  border: 1px solid #7f9aa858;
+  border-radius: 12px;
+  background: linear-gradient(130deg, #1c303df0, #10212ef0);
+  backdrop-filter: blur(20px);
+  box-shadow:
+    0 22px 65px #01091455,
+    0 1px 0 #c5dbdb16 inset;
+  pointer-events: auto;
+  opacity: var(--spatial-ready);
+  outline: none !important;
+  transform: perspective(1200px) rotateY(-3deg);
+  transform-origin: 0 50%;
+  animation: fusion-surface-in 0.26s ease-out;
+  max-height: calc(100% - 292px);
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #63848a55 transparent;
+}
+.fusion-spatial-card:before {
+  content: '';
+  position: absolute;
+  left: 23px;
+  right: 23px;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--context-color),
+    transparent
+  );
+  opacity: 0.65;
+}
+.fusion-context-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  color: #8eaaa9;
+  margin-bottom: 18px;
+}
+.fusion-context-top > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 7px;
+  letter-spacing: 1.1px;
+}
+.fusion-context-top > span > i {
+  background: var(--context-color);
+}
+.fusion-context-top > button,
+.fusion-drawer-heading > button {
+  display: grid;
+  place-items: center;
+  padding: 3px;
+  background: transparent;
+  color: #8aa7b0;
+}
+.fusion-context-top > button:hover,
+.fusion-drawer-heading > button:hover {
+  color: #dde8d3;
+}
+.fusion-spatial-card h2 {
+  font-size: 20px;
+  font-weight: 450;
+  line-height: 1.35;
+  letter-spacing: -0.8px;
+  color: #dce7de;
+  margin: 0;
+}
+.fusion-spatial-card > p {
+  font-size: 11px;
+  color: #92acb8;
+  line-height: 1.8;
+  margin: 9px 0 16px;
+}
+.fusion-unit-heading {
+  display: flex;
+  gap: 11px;
+  align-items: center;
+  margin-bottom: 19px;
+}
+.fusion-unit-heading > span {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 46px;
+  flex-shrink: 0;
+  border-radius: 9px;
+  border: 1px solid color-mix(in srgb, var(--context-color), transparent 65%);
+  background: color-mix(in srgb, var(--context-color), transparent 92%);
+  color: var(--context-color);
+}
+.fusion-unit-heading h2 {
+  font-size: 18px;
+}
+.fusion-unit-heading small {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 7px;
+  color: #8aa7aa;
+  letter-spacing: 0.9px;
+  margin-top: 7px;
+}
+.fusion-unit-heading small i {
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: #729195;
+}
+.fusion-unit-heading > button {
+  margin-left: auto;
+  flex-shrink: 0;
+  width: 30px !important;
+  height: 34px !important;
+  background: transparent !important;
+}
+.fusion-icon-button {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  background: #87a7aa11;
+  border: 1px solid #8aa7b43d;
+  border-radius: 6px;
+  color: #b0c7c3 !important;
+}
+.fusion-icon-button:hover {
+  background: #afd58b1e;
+  border-color: #afd58b77;
+}
+.fusion-unit-reading {
+  padding: 13px;
+  border: 1px solid #6e8d9750;
+  border-radius: 7px;
+  background: #0b1c2666;
+}
+.fusion-unit-reading > span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #96aeb4;
+  font-size: 9px;
+}
+.fusion-unit-reading strong {
+  font-size: 17px;
+  letter-spacing: -0.6px;
+  font-weight: 450;
+  color: var(--reading-color);
+  white-space: nowrap;
+}
+.fusion-unit-reading > div {
+  height: 3px;
+  border-radius: 3px;
+  background: #4a68714d;
+  margin: 12px 0 8px;
+  overflow: hidden;
+}
+.fusion-unit-reading i {
+  height: 100%;
+  display: block;
+  background: var(--reading-color);
+  box-shadow: 0 0 15px color-mix(in srgb, var(--reading-color), transparent 70%);
+  transition: width 0.2s;
+}
+.fusion-unit-reading > small {
+  font-size: 9px;
+  color: #819ca9;
+  line-height: 1.8;
+  display: block;
+}
+.fusion-module-lesson {
+  font-size: 12px !important;
+  color: #9eb8bd !important;
+  line-height: 1.8 !important;
+  margin: 15px 0 !important;
+}
+.fusion-unit-capacity {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  border-top: 1px solid #6d8d9d33;
+  padding-top: 12px;
+  font-size: 9px;
+  color: #86a3ae;
+  margin: 0 0 17px;
+}
+.fusion-unit-capacity > strong {
+  font-size: 11px;
+  font-weight: 500;
+  color: #c3d6d5;
+}
+.fusion-context-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.fusion-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 1;
+  min-height: 40px;
+  padding: 11px 12px;
+  border: 1px solid #c5e698aa;
+  background: #c3e99b;
+  color: #243a2b !important;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 550;
+}
+.fusion-primary:hover {
+  background: #d8f3b3;
+  box-shadow: 0 0 24px #bedf9b1c;
+}
+.fusion-primary.following {
+  background: #7fcfc6;
+  border-color: #7fcfc6;
+}
+.fusion-construction-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 18px 0 14px;
+}
+.fusion-construction-grid > button {
+  min-width: 0;
+  padding: 13px 11px;
+  border: 1px solid color-mix(in srgb, var(--module-color), transparent 72%);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--module-color), transparent 95%);
+  text-align: left;
+  color: var(--module-color);
+}
+.fusion-construction-grid > button:hover {
+  background: color-mix(in srgb, var(--module-color), transparent 86%);
+  border-color: var(--module-color);
+}
+.fusion-construction-grid > button > span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+.fusion-construction-grid small {
+  font-size: 9px;
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  color: #aec6bd;
+}
+.fusion-construction-grid strong {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  margin-top: 12px;
+  color: #cee0da;
+}
+.fusion-construction-grid em {
+  font-style: normal;
+  display: block;
+  font-size: 9px;
+  color: #87a5b1;
+  line-height: 1.65;
+  margin-top: 6px;
+}
+.fusion-construction-note {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 9px;
+  color: #85a5a6;
+}
+.fusion-spatial-card .game-request-lens {
+  position: static;
+  transform: none;
+  display: block;
+  width: 100%;
+  padding: 0;
+  margin: 0 0 17px;
+  border: 0;
+  background: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+.fusion-spatial-card .game-request-heading > span {
+  font-size: 7px;
+}
+.fusion-spatial-card .game-request-heading > div {
+  gap: 4px;
+}
+.fusion-spatial-card .game-request-heading button {
+  padding: 5px;
+}
+.fusion-spatial-card .game-request-summary {
+  font-size: 12px;
+  margin: 17px 0;
+}
+.fusion-spatial-card .game-request-summary small {
+  font-size: 8px;
+}
+.fusion-spatial-card .game-request-summary > span {
+  font-size: 9px;
+}
+.fusion-spatial-card .game-request-lens li {
+  font-size: 7px;
+  gap: 3px;
+}
+.fusion-spatial-card .game-request-bytes {
+  font-size: 10px;
+  gap: 8px 14px;
+  line-height: 1.6;
+  margin-top: 14px;
+}
+.fusion-spatial-card .game-request-lens p {
+  font-size: 12px;
+  color: #9eb7bf;
+  margin-top: 14px;
+  padding-top: 12px;
+  line-height: 1.8;
+}
+.fusion-spatial-card.is-request {
+  height: 400px;
+  display: flex;
+  flex-direction: column;
+}
+.fusion-spatial-card.is-request > .fusion-context-top,
+.fusion-spatial-card.is-request > .fusion-context-actions {
+  flex-shrink: 0;
+}
+.fusion-spatial-card.is-request .game-request-lens {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+.fusion-spatial-card.is-request .game-request-heading,
+.fusion-spatial-card.is-request .game-request-summary,
+.fusion-spatial-card.is-request ol,
+.fusion-spatial-card.is-request .game-request-bytes {
+  flex-shrink: 0;
+}
+.fusion-follow-badge,
+.fusion-pause-badge {
+  position: absolute;
+  top: 182px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 11px;
+  border: 1px solid #83bcb85c;
+  border-radius: 7px;
+  background: #153439cf;
+  backdrop-filter: blur(10px);
+  color: #9ed6ce;
+  font-size: 8px;
+  letter-spacing: 1px;
+  pointer-events: auto;
+}
+.fusion-follow-badge button,
+.fusion-pause-badge button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 9px;
+  border-radius: 4px;
+  border: 1px solid #8daaa733;
+  background: #94b7b211;
+  color: #c0d7c8;
+  font-size: 9px;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+.fusion-pause-badge {
+  top: 174px;
+  border-color: #9abe7a55;
+  background: #29392bc7;
+  color: #c5dea7;
+}
+.fusion-follow-badge ~ .fusion-pause-badge {
+  top: 240px;
+}
+.fusion-pause-badge small {
+  display: block;
+  font-size: 8px;
+  color: #95ae9d;
+  letter-spacing: 0;
+  margin-top: 5px;
+}
+.fusion-pause-badge button {
+  background: #c5e69c;
+  color: #29402d;
+  border-color: #c5e69c;
+}
+.fusion-control-deck {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - 60px);
+  pointer-events: auto;
+}
+.fusion-deck-overline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 25px;
+  margin: 0 9px 10px;
+  color: #93aaa6;
+}
+.fusion-deck-overline > span {
+  font-size: 7px;
+  letter-spacing: 1.6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.fusion-deck-overline > small {
+  font-size: 6px;
+  letter-spacing: 1px;
+  color: #607f8f;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.fusion-deck-overline > small i {
+  width: 2px;
+  height: 2px;
+  background: #608194;
+  border-radius: 50%;
+}
+.fusion-dock {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 11px;
+  border: 1px solid #7898a454;
+  border-radius: 13px;
+  background: linear-gradient(120deg, #1c323ded, #112430ed);
+  backdrop-filter: blur(20px);
+  box-shadow:
+    0 10px 60px #00081366,
+    0 1px 0 #adc9cd1a inset;
+}
+.fusion-playback {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.fusion-playback > button {
+  width: 39px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  background: transparent;
+  color: #91adb5;
+  border-radius: 7px;
+}
+.fusion-playback > button.fusion-play {
+  background: #c5e89d;
+  color: #2c4430;
+}
+.fusion-playback > button.active {
+  color: #d5f4b3;
+  background: #93c6751a;
+}
+.fusion-playback > button:hover {
+  background: #a5c79a20;
+  color: #d6e7d0;
+}
+.fusion-playback > button.fusion-play:hover {
+  background: #dbf4b6;
+  color: #21372a;
+}
+.fusion-dock-divider {
+  height: 31px;
+  width: 1px;
+  background: #7d9aa43a;
+  flex-shrink: 0;
+}
+.fusion-build-tools {
+  display: flex;
+  gap: 5px;
+}
+.fusion-build-tools > button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 13px;
+  min-height: 53px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--module-color) !important;
+  position: relative;
+}
+.fusion-build-tools > button > span {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.6px;
+  text-align: left;
+}
+.fusion-build-tools small {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0;
+  font-weight: 400;
+  color: #8ba6ac;
+  margin-top: 5px;
+}
+.fusion-build-tools kbd {
+  position: absolute;
+  right: 5px;
+  top: 3px;
+  font-size: 7px;
+  color: #69858f;
+  line-height: 1;
+  font-family: inherit;
+}
+.fusion-build-tools > button:hover,
+.fusion-build-tools > button[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--module-color), transparent 91%);
+  border-color: color-mix(in srgb, var(--module-color), transparent 67%);
+}
+.fusion-system-tools {
+  display: flex;
+  gap: 2px;
+}
+.fusion-system-tools > button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 43px;
+  border-radius: 6px;
+  background: transparent;
+  color: #8ba8b5;
+}
+.fusion-system-tools > button:hover,
+.fusion-system-tools > button[aria-expanded='true'] {
+  color: #c3dfa9;
+  background: #aacb991a;
+}
+.fusion-system-tools [data-tip]:hover:after {
+  bottom: calc(100% + 13px);
+  top: auto;
+  right: 50%;
+  transform: translateX(50%);
+}
+.fusion-tool-hint {
+  position: absolute;
+  bottom: 153px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 12px;
+  border: 1px solid #8baf8f44;
+  border-radius: 5px;
+  background: #182b31cc;
+  backdrop-filter: blur(9px);
+  font-size: 10px;
+  color: #becfb9;
+  pointer-events: auto;
+}
+.fusion-tool-hint > span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+.fusion-tool-hint > button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 7px;
+  background: transparent;
+  padding: 4px;
+  color: #7e9fa6;
+  font-size: 9px;
+}
+.is-fusion:has(.fusion-tool-hint) > .game-feedback {
+  opacity: 0;
+}
+.fusion-world-hint {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 6px;
+  margin: 0 !important;
+  max-width: 650px;
+  text-align: center;
+  font-size: 9px !important;
+  line-height: 1.8 !important;
+  color: #7898a5 !important;
+  pointer-events: none;
+}
+.fusion-drawer {
+  position: absolute;
+  right: 91px;
+  bottom: 151px;
+  width: 350px;
+  max-height: calc(100% - 238px);
+  overflow: auto;
+  padding: 20px;
+  border: 1px solid #76959e5a;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #1c303dee, #10212ef5);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 20px 80px #020a1555;
+  pointer-events: auto;
+  scrollbar-width: thin;
+  animation: fusion-surface-in 0.2s ease-out;
+}
+.fusion-drawer-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.fusion-drawer-heading > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 7px;
+  letter-spacing: 1.1px;
+  color: #94ada6;
+}
+.fusion-drawer h2 {
+  font-size: 23px;
+  font-weight: 450;
+  color: #d5e4d7;
+  letter-spacing: -0.8px;
+  margin: 13px 0 18px;
+}
+.fusion-drawer p {
+  font-size: 12px;
+  line-height: 1.8;
+  color: #96b0bb;
+  margin: 0 0 16px;
+}
+.fusion-research-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.fusion-research-list > button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 12px;
+  border: 1px solid #6e8c9b44;
+  background: #1f374366;
+  border-radius: 7px;
+  text-align: left;
+  color: #a5c6ad;
+}
+.fusion-research-list > button:hover {
+  border-color: #b3ce8b77;
+  background: #8aad7220;
+}
+.fusion-research-list > button > span {
+  flex: 1;
+}
+.fusion-research-list strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: #cbded3;
+}
+.fusion-research-list small {
+  font-size: 10px;
+  line-height: 1.7;
+  color: #8ca8b7;
+  display: block;
+  margin-top: 7px;
+}
+.fusion-research-list b {
+  font-size: 11px;
+  font-weight: 500;
+  color: #b9d79f;
+}
+.fusion-access-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 7px;
+}
+.fusion-access-grid > button {
+  padding: 12px 6px;
+  border: 1px solid color-mix(in srgb, var(--module-color), transparent 45%);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--module-color), transparent 94%);
+  color: var(--module-color);
+  text-align: center;
+}
+.fusion-access-grid > button:hover {
+  background: color-mix(in srgb, var(--module-color), transparent 80%);
+}
+.fusion-access-grid strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 450;
+}
+.fusion-access-grid small {
+  display: block;
+  font-size: 6px;
+  margin-top: 6px;
+  letter-spacing: 0.4px;
+}
+.fusion-drawer-foot {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 8px;
+  color: #769aa4;
+  border-top: 1px solid #64899730;
+  margin-top: 17px;
+  padding-top: 14px;
+  line-height: 1.7;
+}
+.fusion-telemetry-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #64899730;
+}
+.fusion-telemetry-stats span {
+  font-size: 9px;
+  color: #8eabb6;
+  display: block;
+  margin-bottom: 6px;
+}
+.fusion-telemetry-stats strong {
+  font-size: 22px;
+  color: #cddfc8;
+  font-weight: 400;
+  letter-spacing: -0.6px;
+  display: block;
+}
+.fusion-telemetry-stats strong > small {
+  font-size: 10px;
+  color: #8fa9ae;
+  letter-spacing: 0;
+}
+.fusion-drawer h3 {
+  font-size: 11px;
+  font-weight: 450;
+  color: #bdd1ca;
+  margin: 17px 0 9px;
+}
+.fusion-live-requests {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.fusion-live-requests > button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  text-align: left;
+  background: transparent;
+  border-radius: 5px;
+  padding: 9px 7px;
+  color: #a0bdb6;
+}
+.fusion-live-requests > button:hover {
+  background: #8eacb111;
+}
+.fusion-live-requests span {
+  flex: 1;
+  font-size: 10px;
+  color: #c2d7d2;
+}
+.fusion-live-requests small {
+  display: block;
+  font-size: 8px;
+  color: #7597a6;
+  margin-top: 4px;
+}
+.fusion-live-requests em {
+  font-size: 9px;
+  font-style: normal;
+  color: #a8ca90;
+}
+.fusion-fullscreen {
+  position: absolute;
+  right: 30px;
+  bottom: 11px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 6px;
+  letter-spacing: 1px;
+  background: transparent;
+  color: #698998 !important;
+  padding: 0;
+  pointer-events: auto;
+}
+.fusion-theater-return {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 10;
+  padding: 5px;
+  border: 1px solid #819da344;
+  border-radius: 8px;
+  background: #11232cd9;
+  backdrop-filter: blur(12px);
+}
+.fusion-theater-return > button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 38px;
+  padding: 9px 12px;
+  border-radius: 5px;
+  color: #c4dcc1;
+  background: transparent;
+  font-size: 11px;
+}
+.fusion-theater-return > button:hover {
+  background: #b2ce8e1a;
+}
+.fusion-theater-return kbd {
+  font-family: inherit;
+  font-size: 9px;
+  border: 1px solid #80959966;
+  padding: 2px 4px;
+  border-radius: 3px;
+  color: #8fa5ad;
+}
+.is-theater .game-header,
+.is-theater .game-world-label,
+.is-theater .fusion-pad-tag,
+.is-theater .game-feedback,
+.is-theater .game-model-note {
+  display: none;
+}
+@keyframes fusion-surface-in {
+  from {
+    filter: brightness(1.25);
+    transform: perspective(1200px) rotateY(-8deg) translateY(8px);
+  }
+  to {
+    filter: brightness(1);
+    transform: perspective(1200px) rotateY(-3deg) translateY(0);
+  }
+}
+@media (min-width: 1650px) {
+  .fusion-mission {
+    left: 40px;
+    top: 108px;
+    width: 290px;
+  }
+  .fusion-lenses {
+    left: 40px;
+    top: 260px;
+  }
+  .fusion-legend {
+    left: 41px;
+    top: 313px;
+    width: 260px;
+    font-size: 11px;
+  }
+  .fusion-resources {
+    right: 40px;
+    top: 104px;
+  }
+  .fusion-resources > div {
+    padding: 9px 25px;
+  }
+  .fusion-resources strong {
+    font-size: 22px;
+  }
+  .fusion-camera-rail {
+    right: 40px;
+  }
+  .fusion-control-deck {
+    bottom: 40px;
+  }
+  .fusion-dock {
+    gap: 15px;
+    padding: 12px 15px;
+  }
+  .fusion-build-tools > button {
+    padding: 12px 17px;
+  }
+  .fusion-build-tools > button > span {
+    font-size: 10px;
+  }
+  .fusion-build-tools small {
+    font-size: 10px;
+  }
+  .fusion-build-tools svg {
+    width: 23px;
+    height: 23px;
+  }
+  .fusion-request-peek {
+    right: 40px;
+    bottom: 181px;
+    width: 280px;
+  }
+  .fusion-request-peek > small {
+    font-size: 10px;
+  }
+}
+@media (max-width: 1100px) {
+  .fusion-mission {
+    width: 230px;
+    left: 23px;
+  }
+  .fusion-mission-name {
+    font-size: 23px;
+  }
+  .fusion-mission-progress {
+    font-size: 7px;
+  }
+  .fusion-lenses {
+    left: 23px;
+  }
+  .fusion-lenses > button {
+    padding: 7px 9px;
+  }
+  .fusion-legend {
+    left: 24px;
+    width: 215px;
+    font-size: 9px;
+  }
+  .fusion-resources {
+    right: 23px;
+  }
+  .fusion-resources > div {
+    padding: 8px 13px;
+  }
+  .fusion-build-tools > button {
+    padding: 9px 11px;
+    gap: 8px;
+  }
+  .fusion-build-tools > button > span {
+    font-size: 8px;
+  }
+  .fusion-build-tools kbd {
+    display: none;
+  }
+  .fusion-dock {
+    gap: 7px;
+  }
+  .fusion-system-tools > button {
+    width: 32px;
+  }
+  .fusion-request-peek {
+    width: 222px;
+    right: 23px;
+  }
+  .fusion-control-deck {
+    max-width: calc(100% - 40px);
+  }
+  .fusion-spatial-card {
+    transform: none;
+    animation: none;
+  }
+  .fusion-world-hint {
+    max-width: calc(100% - 390px);
+  }
+}
+@media (max-width: 850px) {
+  .fusion-build-tools > button {
+    padding: 8px;
+    gap: 7px;
+  }
+  .fusion-build-tools > button > span {
+    font-size: 7px;
+  }
+  .fusion-build-tools small {
+    font-size: 8px;
+  }
+  .fusion-system-tools > button {
+    width: 29px;
+  }
+  .fusion-playback > button {
+    width: 33px;
+  }
+  .fusion-dock {
+    gap: 5px;
+    padding: 8px;
+  }
+  .fusion-resources > div {
+    padding: 8px 11px;
+    gap: 7px;
+  }
+  .fusion-resources > div > svg {
+    width: 12px;
+  }
+  .fusion-resources strong {
+    font-size: 16px;
+  }
+  .fusion-mission {
+    width: 207px;
+  }
+  .fusion-mission-progress > span:last-child {
+    display: none;
+  }
+  .fusion-camera-rail {
+    right: 20px;
+  }
+  .fusion-request-peek {
+    width: 210px;
+    bottom: 159px;
+  }
+  .fusion-request-peek > small {
+    font-size: 8px;
+  }
+  .fusion-legend {
+    width: 190px;
+  }
+  .fusion-world-hint {
+    display: none;
+  }
+  .fusion-deck-overline > small {
+    display: none;
+  }
+  .fusion-drawer {
+    right: 78px;
+    bottom: 144px;
+  }
+}
+@media (max-height: 780px) and (min-width: 701px) {
+  .fusion-mission {
+    top: 83px;
+  }
+  .fusion-mission-name {
+    margin: 5px 0 8px;
+    font-size: 21px;
+  }
+  .fusion-mission-progress b {
+    font-size: 23px;
+  }
+  .fusion-lenses {
+    top: 209px;
+  }
+  .fusion-legend {
+    top: 259px;
+  }
+  .fusion-resources {
+    top: 81px;
+  }
+  .fusion-camera-rail {
+    top: 224px;
+  }
+  .fusion-camera-rail > button {
+    height: 30px;
+  }
+  .fusion-request-peek {
+    bottom: 149px;
+    padding: 12px;
+  }
+  .fusion-control-deck {
+    bottom: 24px;
+  }
+  .fusion-spatial-card {
+    padding: 15px;
+    max-height: calc(100% - 292px);
+  }
+  .fusion-unit-heading {
+    margin-bottom: 12px;
+  }
+  .fusion-module-lesson {
+    margin: 10px 0 !important;
+    font-size: 11px !important;
+  }
+  .fusion-construction-grid {
+    gap: 6px;
+    margin: 12px 0;
+  }
+  .fusion-construction-grid > button {
+    padding: 10px;
+  }
+  .fusion-construction-grid em {
+    font-size: 8px;
+  }
+  .fusion-spatial-card > p {
+    font-size: 10px;
+    margin-bottom: 12px;
+  }
+}
+@media (max-width: 700px) {
+  .game-learning-button > span,
+  .game-learning-button > svg:last-child {
+    display: none;
+  }
+  .is-fusion {
+    min-height: 700px;
+  }
+  .is-fusion .game-header {
+    height: 62px;
+    padding: 0 15px;
+  }
+  .is-fusion .game-brand > span {
+    width: 30px;
+    height: 32px;
+    border-radius: 8px;
+  }
+  .is-fusion .game-brand > b {
+    font-size: 24px;
+  }
+  .is-fusion .game-brand > small,
+  .is-fusion .game-brand > i {
+    display: none;
+  }
+  .is-fusion .game-header-actions {
+    gap: 6px;
+  }
+  .is-fusion .game-header-actions > button {
+    height: 32px;
+    padding: 8px;
+    font-size: 9px;
+    gap: 4px;
+  }
+  .is-fusion .game-header-actions > button > svg {
+    width: 14px;
+    height: 14px;
+  }
+  .is-fusion .game-header-actions > button:first-child > span {
+    display: none;
+  }
+  .is-fusion .game-header-actions > button:first-child > svg:last-child {
+    display: none;
+  }
+  .is-fusion .game-fusion-toggle > span {
+    display: none;
+  }
+  .is-fusion .game-header-mission {
+    display: none;
+  }
+  .fusion-resources {
+    top: 72px;
+    left: 14px;
+    right: 14px;
+    border-radius: 7px;
+    padding: 3px 0;
+    justify-content: space-around;
+    background: #172a34b8;
+  }
+  .fusion-resources > div {
+    padding: 7px 8px;
+    gap: 7px;
+    flex: 1;
+    justify-content: center;
+  }
+  .fusion-resources > div > span {
+    font-size: 6px;
+    letter-spacing: 0.4px;
+  }
+  .fusion-resources strong {
+    font-size: 16px;
+    margin-top: 3px;
+  }
+  .fusion-resources strong small {
+    font-size: 8px;
+  }
+  .fusion-resources > div > svg {
+    width: 12px;
+    height: 12px;
+  }
+  .fusion-mission {
+    top: 144px;
+    left: 16px;
+    width: 223px;
+    padding-bottom: 10px;
+  }
+  .fusion-mission-overline {
+    font-size: 6px;
+    letter-spacing: 1px;
+  }
+  .fusion-mission-name {
+    font-size: 22px;
+    margin: 5px 0 10px;
+  }
+  .fusion-mission-overline button {
+    display: none;
+  }
+  .fusion-mission-progress {
+    font-size: 7px;
+  }
+  .fusion-mission-progress b {
+    font-size: 24px;
+  }
+  .fusion-mission-progress small {
+    font-size: 9px;
+  }
+  .fusion-mission-progress > span:last-child {
+    display: none;
+  }
+  .fusion-progress-line {
+    margin-top: 7px;
+  }
+  .fusion-mission-expanded {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: calc(100vw - 96px);
+    z-index: 9;
+    box-shadow: 0 10px 40px #08132066;
+  }
+  .fusion-mission-expanded p {
+    font-size: 11px;
+  }
+  .fusion-lenses {
+    top: 261px;
+    left: 15px;
+    gap: 3px;
+    padding: 3px;
+    background: #13252f99;
+  }
+  .fusion-lenses > button {
+    padding: 7px 9px;
+    gap: 5px;
+    min-height: 31px;
+    font-size: 9px;
+  }
+  .fusion-lenses > button > svg {
+    width: 12px;
+    height: 12px;
+  }
+  .fusion-legend {
+    display: none;
+  }
+  .fusion-camera-rail {
+    top: 224px;
+    right: 14px;
+    padding: 3px;
+    gap: 3px;
+    border-radius: 7px;
+    background: #13252f88;
+  }
+  .fusion-camera-rail > button {
+    width: 30px;
+    height: 31px;
+  }
+  .fusion-camera-rail > button > svg {
+    width: 15px;
+    height: 15px;
+  }
+  .fusion-camera-rail > i {
+    margin: 1px 5px;
+  }
+  .fusion-camera-rail [data-tip]:after {
+    display: none;
+  }
+  .fusion-request-peek {
+    display: none;
+  }
+  .fusion-control-deck {
+    width: calc(100% - 28px);
+    max-width: 420px;
+    bottom: 26px;
+  }
+  .fusion-deck-overline {
+    margin: 0 6px 8px;
+  }
+  .fusion-deck-overline > span {
+    font-size: 6px;
+    letter-spacing: 1.1px;
+  }
+  .fusion-dock {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 7px;
+    padding: 7px;
+    border-radius: 10px;
+    background: linear-gradient(120deg, #1b303eec, #102330f5);
+  }
+  .fusion-build-tools {
+    grid-column: 1/-1;
+    grid-row: 1;
+    justify-content: space-between;
+    gap: 4px;
+  }
+  .fusion-build-tools > button {
+    flex: 1;
+    justify-content: center;
+    gap: 7px;
+    padding: 8px 5px;
+    min-height: 48px;
+  }
+  .fusion-build-tools > button > span {
+    font-size: 7px;
+    letter-spacing: 0.3px;
+  }
+  .fusion-build-tools > button > svg {
+    width: 19px;
+    height: 19px;
+    flex-shrink: 0;
+  }
+  .fusion-build-tools small {
+    font-size: 8px;
+    margin-top: 4px;
+  }
+  .fusion-dock-divider {
+    display: none;
+  }
+  .fusion-playback {
+    grid-column: 1;
+    grid-row: 2;
+    gap: 3px;
+  }
+  .fusion-playback > button {
+    height: 34px;
+    width: 34px;
+    border-radius: 5px;
+  }
+  .fusion-playback > button.fusion-play {
+    height: 34px;
+  }
+  .fusion-system-tools {
+    grid-column: 2;
+    grid-row: 2;
+    justify-content: flex-end;
+    gap: 5px;
+  }
+  .fusion-system-tools > button {
+    width: 34px;
+    height: 34px;
+  }
+  .fusion-system-tools [data-tip]:after {
+    display: none;
+  }
+  .fusion-world-reticle {
+    width: 35px;
+    height: 35px;
+  }
+  .fusion-world-reticle > span {
+    font-size: 7px;
+    bottom: -15px;
+  }
+  .fusion-spatial-card {
+    padding: 16px;
+    border-radius: 10px;
+    max-height: calc(100% - 292px);
+    transform: none;
+    animation: none;
+    z-index: 8;
+  }
+  .fusion-spatial-card h2 {
+    font-size: 19px;
+  }
+  .fusion-spatial-card > p {
+    font-size: 11px;
+    margin-bottom: 12px;
+  }
+  .fusion-context-top {
+    margin-bottom: 14px;
+  }
+  .fusion-context-top > span {
+    font-size: 6px;
+    letter-spacing: 0.8px;
+  }
+  .fusion-construction-grid {
+    margin: 14px 0 12px;
+  }
+  .fusion-construction-grid > button {
+    padding: 12px;
+  }
+  .fusion-construction-grid strong {
+    font-size: 12px;
+    margin-top: 9px;
+  }
+  .fusion-construction-grid em {
+    font-size: 10px;
+  }
+  .fusion-construction-note {
+    font-size: 9px;
+  }
+  .fusion-unit-heading {
+    margin-bottom: 15px;
+  }
+  .fusion-module-lesson {
+    font-size: 12px !important;
+  }
+  .fusion-unit-reading > span {
+    font-size: 10px;
+  }
+  .fusion-unit-reading > small {
+    font-size: 10px;
+  }
+  .fusion-primary {
+    min-height: 42px;
+    font-size: 12px;
+  }
+  .fusion-icon-button {
+    height: 42px;
+  }
+  .is-fusion .game-feedback {
+    bottom: 176px;
+    max-width: calc(100% - 40px);
+    font-size: 10px;
+    padding: 5px 10px;
+    line-height: 1.5;
+    background: #15272ec9;
+    white-space: normal;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: max-content;
+    z-index: 4;
+  }
+  .fusion-tool-hint {
+    bottom: 176px;
+    width: max-content;
+    max-width: calc(100% - 40px);
+    font-size: 10px;
+    gap: 6px;
+    padding: 7px 10px;
+  }
+  .fusion-tool-hint > button {
+    margin-left: 3px;
+  }
+  .is-fusion:has(.fusion-spatial-card) > .game-feedback {
+    opacity: 0;
+  }
+  .fusion-follow-badge {
+    top: 151px;
+    left: auto;
+    right: 14px;
+    transform: none;
+    font-size: 6px;
+    letter-spacing: 0.6px;
+    padding: 8px;
+    flex-direction: column;
+    gap: 7px;
+    max-width: 110px;
+  }
+  .fusion-follow-badge > svg {
+    display: none;
+  }
+  .fusion-follow-badge button {
+    font-size: 8px;
+    padding: 6px;
+  }
+  .fusion-pause-badge {
+    top: 322px;
+    padding: 8px 10px;
+    font-size: 7px;
+    z-index: 6;
+  }
+  .fusion-pause-badge small {
+    display: none;
+  }
+  .fusion-pause-badge button {
+    font-size: 9px;
+    padding: 7px 10px;
+  }
+  .fusion-follow-badge ~ .fusion-pause-badge {
+    top: 322px;
+  }
+  .fusion-drawer {
+    left: 14px;
+    right: 14px;
+    bottom: 171px;
+    width: auto;
+    max-height: calc(100% - 298px);
+    padding: 19px;
+    z-index: 9;
+  }
+  .fusion-drawer h2 {
+    font-size: 24px;
+  }
+  .fusion-drawer-heading > span {
+    font-size: 6px;
+  }
+  .fusion-access-grid > button {
+    padding: 14px 6px;
+  }
+  .fusion-access-grid strong {
+    font-size: 14px;
+  }
+  .fusion-access-grid small {
+    font-size: 7px;
+  }
+  .fusion-research-list strong {
+    font-size: 12px;
+  }
+  .fusion-research-list small {
+    font-size: 11px;
+  }
+  .is-fusion .game-world-label {
+    font-size: 7px;
+    padding: 7px 9px;
+  }
+  .is-fusion .game-world-label small {
+    font-size: 7px;
+    margin-top: 4px;
+  }
+  .is-fusion .game-world-label .fusion-label-value {
+    font-size: 9px;
+    margin-top: 4px;
+  }
+  .is-fusion .game-request-label {
+    display: block;
+    font-size: 7px;
+  }
+  .fusion-pad-tag {
+    padding: 6px;
+  }
+  .fusion-pad-tag > span {
+    font-size: 7px;
+    padding: 4px 5px;
+    gap: 3px;
+  }
+  .fusion-pad-tag b {
+    font-size: 12px;
+  }
+  .is-fusion .game-model-note {
+    left: 15px;
+    bottom: 8px;
+    font-size: 4px;
+    letter-spacing: 0.5px;
+    max-width: calc(100% - 100px);
+  }
+  .fusion-fullscreen {
+    right: 15px;
+    bottom: 7px;
+    font-size: 4px;
+    letter-spacing: 0.4px;
+    gap: 4px;
+  }
+  .fusion-fullscreen > svg {
+    width: 11px;
+    height: 11px;
+  }
+  .fusion-world-hint {
+    display: none;
+  }
+  .is-fusion .game-fallback {
+    max-width: calc(100% - 100px);
+    left: 14px;
+    transform: none;
+    top: 330px;
+    padding: 12px;
+  }
+  .is-fusion .game-fallback > div {
+    gap: 4px;
+  }
+  .is-fusion .game-fallback button {
+    padding: 7px 4px;
+  }
+  .is-fusion .game-fallback p {
+    font-size: 9px !important;
+  }
+}
+@media (max-width: 370px) {
+  .fusion-mission {
+    width: 205px;
+  }
+  .fusion-lenses > button {
+    padding: 7px;
+  }
+  .fusion-build-tools > button {
+    gap: 5px;
+    padding: 8px 3px;
+  }
+  .fusion-build-tools > button > svg {
+    width: 16px;
+    height: 16px;
+  }
+  .fusion-system-tools {
+    gap: 3px;
+  }
+  .fusion-system-tools > button {
+    width: 30px;
+  }
+  .fusion-resources > div {
+    padding: 7px 4px;
+    gap: 5px;
+  }
+  .fusion-resources > div > svg {
+    width: 11px;
+  }
+  .fusion-follow-badge {
+    max-width: 93px;
+    font-size: 5px;
+  }
+  .fusion-camera-rail {
+    right: 12px;
+  }
+  .fusion-mission-progress small {
+    font-size: 8px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fusion-interface *,
+  .fusion-pad-tag,
+  .fusion-pad-tag > span,
+  .is-fusion .game-scene {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+  .fusion-spatial-card {
+    transform: none;
+  }
+  .fusion-pad-tag > span {
+    transform: none;
+  }
+}

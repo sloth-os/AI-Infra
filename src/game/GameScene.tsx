@@ -12,11 +12,16 @@ import type { GameSceneOptions } from './scene'
 import { MODULES, PADS, activeOn, getGameMetrics } from './model'
 import { REQUEST_STAGES } from './RequestLens'
 import { kvBytes } from '../model'
+import { FUSION_LENSES, moduleTelemetry } from './fusion'
+import type { CameraView } from './fusion'
 
 export interface GameSceneHandle {
   reset: () => void
   zoom: (direction: number) => void
   rotate: (direction: number) => void
+  enter: () => void
+  view: (view: CameraView) => void
+  focus: (pad: number) => void
 }
 
 export const GameScene = forwardRef<GameSceneHandle, GameSceneOptions>(
@@ -43,17 +48,21 @@ export const GameScene = forwardRef<GameSceneHandle, GameSceneOptions>(
         reset: () => runtime.current?.reset(),
         zoom: (d) => runtime.current?.zoom(d),
         rotate: (d) => runtime.current?.rotate(d),
+        enter: () => runtime.current?.enter(),
+        view: (view) => runtime.current?.view(view),
+        focus: (pad) => runtime.current?.focus(pad),
       }),
       [],
     )
     const focused = props.state.jobs.find((j) => j.id === props.focusedJob)
     const metrics = getGameMetrics(props.state)
     useEffect(() => {
-      if (!props.active || !host.current || runtime.current) return
+      if (fallback || !props.active || !host.current || runtime.current) return
       try {
         runtime.current = new GameRenderer(host.current, () => latest.current, {
           labels: setAnnotations,
           project: (id, x, y, visible) => {
+            latest.current.onProject(id, x, y, visible)
             const el = labels.current.get(id)
             if (!el) return
             el.style.transform = `translate(-50%,-100%) translate(${x}px,${y}px)`
@@ -64,14 +73,16 @@ export const GameScene = forwardRef<GameSceneHandle, GameSceneOptions>(
           },
           lost: () => {
             setFallback(true)
+            latest.current.onUnavailable()
             runtime.current?.dispose()
             runtime.current = null
           },
         })
       } catch {
         setFallback(true)
+        latest.current.onUnavailable()
       }
-    }, [props.active])
+    }, [props.active, fallback])
     useEffect(
       () => () => {
         runtime.current?.dispose()
@@ -81,6 +92,28 @@ export const GameScene = forwardRef<GameSceneHandle, GameSceneOptions>(
     )
     return (
       <div className="game-scene" ref={host} data-testid="game-scene">
+        {props.fusion &&
+          !fallback &&
+          props.state.phase !== 'briefing' &&
+          PADS.filter(
+            (p) => !props.state.units.some((u) => u.pad === p.id),
+          ).map((pad) => (
+            <button
+              key={`pad-${pad.id}`}
+              ref={(el) => {
+                if (el) labels.current.set(`pad-${pad.id}`, el)
+                else labels.current.delete(`pad-${pad.id}`)
+              }}
+              className={`fusion-pad-tag ${props.tool ? 'can-build' : ''}`}
+              aria-label={`Sector ${pad.name}: empty`}
+              onClick={() => props.onPad(pad.id)}
+            >
+              <span>
+                <b>+</b>
+                {pad.name}
+              </span>
+            </button>
+          ))}
         {!fallback && focused && (
           <button
             className="game-world-label game-request-label"
@@ -119,9 +152,22 @@ export const GameScene = forwardRef<GameSceneHandle, GameSceneOptions>(
                   else labels.current.delete(label.id)
                 }}
                 className={`game-world-label ${props.selected === label.pad && label.pad !== null ? 'selected' : ''} ${offline ? 'offline' : ''}`}
-                aria-label={`Inspect ${label.title}`}
-                onClick={() => label.pad !== null && props.onPad(label.pad)}
-                style={{ '--module-color': label.color } as React.CSSProperties}
+                aria-label={
+                  props.fusion && u
+                    ? `Sector ${PADS[u.pad].name}: ${MODULES[u.type].name}`
+                    : `Inspect ${label.title}`
+                }
+                onClick={() =>
+                  label.pad !== null
+                    ? props.onPad(label.pad)
+                    : props.fusion && props.onRequest(focused?.id ?? 0)
+                }
+                style={
+                  {
+                    '--module-color': label.color,
+                    '--lens-color': FUSION_LENSES[props.lens].color,
+                  } as React.CSSProperties
+                }
               >
                 <i />
                 <span>
@@ -137,6 +183,11 @@ export const GameScene = forwardRef<GameSceneHandle, GameSceneOptions>(
                             : `L${u.level} · ${activeOn(props.state, u.id)} active request${activeOn(props.state, u.id) === 1 ? '' : 's'}`
                         : label.subtitle}
                   </small>
+                  {props.fusion && u && (
+                    <em className="fusion-label-value">
+                      {moduleTelemetry(props.state, u, props.lens).value}
+                    </em>
+                  )}
                 </span>
               </button>
             )

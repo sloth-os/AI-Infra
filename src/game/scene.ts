@@ -2,6 +2,8 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { MODULES, PADS, getGameMetrics, activeOn } from './model'
 import type { GameState, ModuleType, Unit, Job } from './model'
+import { moduleTelemetry } from './fusion'
+import type { CameraView, FusionLens } from './fusion'
 
 export interface GameSceneOptions {
   state: GameState
@@ -9,9 +11,18 @@ export interface GameSceneOptions {
   tool: ModuleType | null
   selected: number | null
   focusedJob: number | null
+  fusion: boolean
+  lens: FusionLens
+  showLabels: boolean
+  followRequest: boolean
+  autoOrbit: boolean
+  requestOpen: boolean
   onPad: (pad: number) => void
   onHover: (pad: number | null) => void
   onRequest: (id: number) => void
+  onProject: (id: string, x: number, y: number, visible: boolean) => void
+  onUnavailable: () => void
+  onCameraRelease: () => void
 }
 export interface GameSceneHooks {
   labels: (
@@ -33,6 +44,8 @@ interface UnitVisual {
   fill: THREE.Mesh | null
   light: THREE.Mesh
   born: number
+  gauge: THREE.Line
+  gaugeTrack: THREE.Line
 }
 const tenants = ['#a797f1', '#7bd4d6', '#f0b087'].map((c) => new THREE.Color(c))
 const gate = new THREE.Vector3(-12, 1, 0),
@@ -91,6 +104,19 @@ export class GameRenderer {
   private projected = new THREE.Vector3()
   private color = new THREE.Color()
   private preview = false
+  private flight: {
+    elapsed: number
+    duration: number
+    from: THREE.Vector3
+    to: THREE.Vector3
+    fromTarget: THREE.Vector3
+    toTarget: THREE.Vector3
+    fromZoom: number
+    toZoom: number
+  } | null = null
+  private cameraOffset = new THREE.Vector3()
+  private navigationTarget = new THREE.Vector3()
+  private integrityRing: THREE.Line
 
   constructor(
     private host: HTMLDivElement,
@@ -138,6 +164,7 @@ export class GameRenderer {
     this.controls.maxPolarAngle = 1.25
     this.controls.minZoom = 0.35
     this.controls.maxZoom = 2.3
+    this.controls.addEventListener('start', this.manualCamera)
     this.scene.add(this.unitRoot)
     this.scene.add(this.links)
     const island = new THREE.Mesh(
@@ -154,6 +181,59 @@ export class GameRenderer {
     underside.position.set(1, -1.55, 0)
     underside.rotation.y = Math.PI / 6
     this.scene.add(underside)
+    const ringPoints = (radius: number, y: number, count = 128) =>
+      Array.from(
+        { length: count + 1 },
+        (_, i) =>
+          new THREE.Vector3(
+            1 + Math.cos((i / count) * Math.PI * 2) * radius,
+            y,
+            Math.sin((i / count) * Math.PI * 2) * radius,
+          ),
+      )
+    this.integrityRing = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints(ringPoints(12.15, -0.27)),
+      new THREE.LineBasicMaterial({
+        color: '#a8d8a0',
+        transparent: true,
+        opacity: 0.5,
+      }),
+    )
+    this.scene.add(this.integrityRing)
+    for (const radius of [15.5, 19]) {
+      const line = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints(ringPoints(radius, -1.3)),
+        new THREE.LineDashedMaterial({
+          color: '#719aaf',
+          transparent: true,
+          opacity: 0.16,
+          dashSize: 0.3,
+          gapSize: 0.45,
+        }),
+      )
+      line.computeLineDistances()
+      this.scene.add(line)
+    }
+    const stars = new Float32Array(180 * 3)
+    for (let i = 0; i < 180; i++) {
+      stars[i * 3] = Math.sin(i * 17.13) * 42
+      stars[i * 3 + 1] = 2 + Math.abs(Math.sin(i * 9.31)) * 17
+      stars[i * 3 + 2] = Math.cos(i * 13.17) * 34
+    }
+    const starGeometry = new THREE.BufferGeometry()
+    starGeometry.setAttribute('position', new THREE.BufferAttribute(stars, 3))
+    this.scene.add(
+      new THREE.Points(
+        starGeometry,
+        new THREE.PointsMaterial({
+          color: '#88adc0',
+          size: 0.035,
+          transparent: true,
+          opacity: 0.35,
+          depthWrite: false,
+        }),
+      ),
+    )
     this.padMesh = new THREE.InstancedMesh(
       this.tile,
       new THREE.MeshStandardMaterial({
@@ -230,6 +310,10 @@ export class GameRenderer {
     this.packets.frustumCulled = false
     this.packets.count = 0
     this.scene.add(this.packets)
+    this.packets.boundingSphere = new THREE.Sphere(
+      new THREE.Vector3(0, 2, 0),
+      60,
+    )
     this.focusHalo = new THREE.Mesh(
       new THREE.TorusGeometry(0.55, 0.025, 6, 32),
       this.glow('#deefae'),
@@ -310,6 +394,7 @@ export class GameRenderer {
       spec = MODULES[u.type],
       rotor = new THREE.Group()
     group.userData.signature = `${u.type}:${u.pad}:${u.level}`
+    group.userData.pad = u.pad
     group.position.set(p.x, 0, p.z)
     group.add(rotor)
     const boxes = new Map<
@@ -442,8 +527,42 @@ export class GameRenderer {
     )
     light.position.set(0.9, 0.8, 1)
     group.add(light)
+    const points = Array.from(
+      { length: 65 },
+      (_, i) =>
+        new THREE.Vector3(
+          Math.cos((i / 64) * Math.PI * 2) * 1.8,
+          0.18,
+          Math.sin((i / 64) * Math.PI * 2) * 1.8,
+        ),
+    )
+    const gaugeTrack = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints(points),
+      new THREE.LineBasicMaterial({
+        color: '#7daba4',
+        transparent: true,
+        opacity: 0.16,
+      }),
+    )
+    const gauge = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints(points),
+      new THREE.LineBasicMaterial({
+        color: spec.color,
+        transparent: true,
+        opacity: 0.9,
+      }),
+    )
+    group.add(gaugeTrack, gauge)
     this.unitRoot.add(group)
-    return { group, rotor, fill, light, born: this.visualTime }
+    return {
+      group,
+      rotor,
+      fill,
+      light,
+      born: this.visualTime,
+      gauge,
+      gaugeTrack,
+    }
   }
   private rebuild() {
     const s = this.options().state
@@ -498,6 +617,10 @@ export class GameRenderer {
       ) {
         this.unitRoot.remove(v.group)
         v.group.traverse((o) => {
+          if (o instanceof THREE.Line) {
+            o.geometry.dispose()
+            ;(o.material as THREE.Material).dispose()
+          }
           if (
             o instanceof THREE.Mesh &&
             o.geometry !== this.cube &&
@@ -640,6 +763,17 @@ export class GameRenderer {
         return
       }
     }
+    const moduleHit = this.raycaster
+      .intersectObjects(this.unitRoot.children, true)
+      .find((hit) => hit.object instanceof THREE.Mesh)
+    if (moduleHit) {
+      let object: THREE.Object3D | null = moduleHit.object
+      while (object && object.userData.pad === undefined) object = object.parent
+      if (object?.userData.pad !== undefined) {
+        this.options().onPad(object.userData.pad)
+        return
+      }
+    }
     if (pad !== null) this.options().onPad(pad)
   }
   private lost = (e: Event) => {
@@ -647,13 +781,96 @@ export class GameRenderer {
     this.visible = false
     this.hooks.lost()
   }
+  private manualCamera = () => {
+    this.flight = null
+    this.options().onCameraRelease()
+    this.renderer.domElement.dataset.cameraView = 'free'
+    this.renderer.domElement.dataset.cameraMoving = 'false'
+  }
+  private fly(
+    position: THREE.Vector3,
+    target: THREE.Vector3,
+    zoom: number,
+    duration = 0.85,
+  ) {
+    this.controls.enableDamping = false
+    this.controls.update()
+    this.controls.enableDamping = true
+    if (this.reduceMotion) {
+      this.camera.position.copy(position)
+      this.controls.target.copy(target)
+      this.camera.zoom = zoom
+      this.camera.updateProjectionMatrix()
+      this.controls.update()
+      this.flight = null
+      this.renderer.domElement.dataset.cameraMoving = 'false'
+      return
+    }
+    this.flight = {
+      elapsed: 0,
+      duration,
+      from: this.camera.position.clone(),
+      to: position.clone(),
+      fromTarget: this.controls.target.clone(),
+      toTarget: target.clone(),
+      fromZoom: this.camera.zoom,
+      toZoom: zoom,
+    }
+    this.renderer.domElement.dataset.cameraMoving = 'true'
+  }
+  enter() {
+    if (!this.reduceMotion) {
+      this.camera.position.set(29, 36, 43)
+      this.camera.zoom = this.host.clientWidth < 650 ? 0.55 : 0.8
+      this.camera.updateProjectionMatrix()
+    }
+    this.renderer.domElement.dataset.cameraView = 'overview'
+    this.fly(
+      new THREE.Vector3(24, 29, 34),
+      new THREE.Vector3(0, 0.8, 0),
+      this.host.clientWidth < 650 ? 0.66 : 1,
+      1.25,
+    )
+  }
+  view(view: CameraView) {
+    this.renderer.domElement.dataset.cameraView = view
+    if (view === 'overview')
+      this.fly(
+        new THREE.Vector3(24, 29, 34),
+        new THREE.Vector3(0, 0.8, 0),
+        this.host.clientWidth < 650 ? 0.66 : 1,
+      )
+    else if (view === 'top')
+      this.fly(
+        new THREE.Vector3(1, 44, 12),
+        new THREE.Vector3(1, 0.2, 0),
+        this.host.clientWidth < 650 ? 0.6 : 0.9,
+      )
+  }
+  focus(pad: number) {
+    const p = PADS[pad]
+    if (!p) return
+    this.renderer.domElement.dataset.cameraView = 'focus'
+    const target = new THREE.Vector3(p.x + 1.8, 0.8, p.z)
+    this.fly(
+      target.clone().add(new THREE.Vector3(24, 29, 34)),
+      target,
+      this.host.clientWidth < 650 ? 1.05 : 1.75,
+      1,
+    )
+  }
   reset() {
+    this.flight = null
     this.camera.position.set(24, 29, 34)
     this.controls.target.set(0, 0.8, 0)
     this.camera.zoom = this.host.clientWidth < 650 ? 0.66 : 1
     this.camera.updateProjectionMatrix()
+    this.renderer.domElement.dataset.cameraView = 'overview'
+    this.renderer.domElement.dataset.cameraMoving = 'false'
   }
   zoom(direction: number) {
+    this.flight = null
+    this.renderer.domElement.dataset.cameraMoving = 'false'
     this.camera.zoom = THREE.MathUtils.clamp(
       this.camera.zoom * (direction > 0 ? 1.2 : 1 / 1.2),
       0.35,
@@ -662,6 +879,8 @@ export class GameRenderer {
     this.camera.updateProjectionMatrix()
   }
   rotate(direction: number) {
+    this.flight = null
+    this.renderer.domElement.dataset.cameraMoving = 'false'
     const v = this.camera.position
       .clone()
       .sub(this.controls.target)
@@ -746,7 +965,73 @@ export class GameRenderer {
       this.signature = key
       this.rebuild()
     }
+    if (this.flight) {
+      this.flight.elapsed += dt
+      const t = Math.min(1, this.flight.elapsed / this.flight.duration),
+        ease = t * t * (3 - 2 * t)
+      this.camera.position.lerpVectors(this.flight.from, this.flight.to, ease)
+      this.controls.target.lerpVectors(
+        this.flight.fromTarget,
+        this.flight.toTarget,
+        ease,
+      )
+      this.camera.zoom = THREE.MathUtils.lerp(
+        this.flight.fromZoom,
+        this.flight.toZoom,
+        ease,
+      )
+      this.camera.updateProjectionMatrix()
+      if (t === 1) {
+        this.flight = null
+        this.renderer.domElement.dataset.cameraMoving = 'false'
+      }
+    } else if (o.followRequest && o.focusedJob !== null) {
+      const job = s.jobs.find((j) => j.id === o.focusedJob)
+      if (job) {
+        const visual = this.packetVisuals.get(job.id)
+        if (visual) this.navigationTarget.copy(visual.position)
+        else this.positionFor(job, s, this.navigationTarget)
+        this.navigationTarget.x += 1.8
+        this.cameraOffset.copy(this.camera.position).sub(this.controls.target)
+        this.controls.target.lerp(this.navigationTarget, 1 - Math.exp(-dt * 3))
+        this.camera.position.copy(this.controls.target).add(this.cameraOffset)
+        this.camera.zoom = THREE.MathUtils.damp(
+          this.camera.zoom,
+          this.host.clientWidth < 650 ? 0.9 : 1.35,
+          2,
+          dt,
+        )
+        this.camera.updateProjectionMatrix()
+      }
+      this.renderer.domElement.dataset.cameraView = 'follow'
+    } else if (o.autoOrbit && !this.reduceMotion) {
+      this.cameraOffset
+        .copy(this.camera.position)
+        .sub(this.controls.target)
+        .applyAxisAngle(THREE.Object3D.DEFAULT_UP, dt * 0.075)
+      this.camera.position.copy(this.controls.target).add(this.cameraOffset)
+      this.renderer.domElement.dataset.cameraView = 'orbit'
+    }
     this.controls.update(dt)
+    this.camera.updateMatrixWorld()
+    this.renderer.domElement.dataset.cameraPose = this.camera.position
+      .toArray()
+      .map((v) => v.toFixed(2))
+      .join(',')
+    this.renderer.domElement.dataset.lens = o.lens
+    this.integrityRing.visible = o.fusion
+    this.integrityRing.geometry.setDrawRange(
+      0,
+      Math.ceil((s.integrity / 100) * 128) + 1,
+    )
+    ;(this.integrityRing.material as THREE.LineBasicMaterial).color.set(
+      s.integrity < 35 ? '#ef8d83' : '#a8d8a0',
+    )
+    for (const child of this.links.children)
+      if (child instanceof THREE.Line) {
+        const material = child.material as THREE.LineBasicMaterial
+        material.opacity = o.fusion && o.lens === 'fabric' ? 0.5 : 0.17
+      }
     PADS.forEach((p, i) => {
       const unit = s.units.find((u) => u.pad === p.id)
       this.color.set(
@@ -766,6 +1051,16 @@ export class GameRenderer {
       const unit = s.units.find((u) => u.id === id),
         busy = unit ? activeOn(s, id) : 1,
         offline = unit && unit.offlineUntil > s.time
+      v.gauge.visible = o.fusion
+      v.gaugeTrack.visible = o.fusion
+      if (unit) {
+        const reading = moduleTelemetry(s, unit, o.lens)
+        v.gauge.geometry.setDrawRange(
+          0,
+          reading.ratio > 0 ? Math.ceil(reading.ratio * 64) + 1 : 0,
+        )
+        ;(v.gauge.material as THREE.LineBasicMaterial).color.set(reading.color)
+      } else v.gauge.geometry.setDrawRange(0, 0)
       const scale = this.reduceMotion
         ? 1
         : Math.min(1, 0.3 + (this.visualTime - v.born) * 2.8)
@@ -849,7 +1144,7 @@ export class GameRenderer {
         'request',
         (this.projected.x * 0.5 + 0.5) * this.host.clientWidth,
         (-this.projected.y * 0.5 + 0.5) * this.host.clientHeight,
-        this.projected.z >= -1 && this.projected.z <= 1,
+        o.showLabels && this.projected.z >= -1 && this.projected.z <= 1,
       )
       const routeKey = `${focused.id}:${focused.prefillId}:${focused.decodeId}:${this.signature}`
       if (routeKey !== this.routeKey) {
@@ -908,6 +1203,44 @@ export class GameRenderer {
       this.packets.instanceColor.needsUpdate = true
     this.trails.geometry.attributes.position.needsUpdate = true
     this.trails.geometry.attributes.color.needsUpdate = true
+    if (o.fusion && s.phase !== 'briefing') {
+      for (const pad of PADS) {
+        this.projected.set(pad.x, 0.2, pad.z).project(this.camera)
+        const x = (this.projected.x * 0.5 + 0.5) * this.host.clientWidth,
+          y = (-this.projected.y * 0.5 + 0.5) * this.host.clientHeight
+        this.hooks.project(
+          `pad-${pad.id}`,
+          x,
+          y,
+          o.showLabels &&
+            !s.units.some((u) => u.pad === pad.id) &&
+            x > 20 &&
+            x < this.host.clientWidth - 20 &&
+            y > 90 &&
+            y < this.host.clientHeight - 110,
+        )
+      }
+      if (o.selected !== null || o.requestOpen) {
+        if (o.selected !== null) {
+          const pad = PADS[o.selected]
+          this.projected.set(pad.x, 1.2, pad.z)
+        } else if (focused)
+          this.projected.copy(this.packetVisuals.get(focused.id)!.position)
+        else this.projected.copy(router)
+        this.projected.project(this.camera)
+        const x = (this.projected.x * 0.5 + 0.5) * this.host.clientWidth,
+          y = (-this.projected.y * 0.5 + 0.5) * this.host.clientHeight
+        this.hooks.project(
+          'context',
+          x,
+          y,
+          x > 20 &&
+            x < this.host.clientWidth - 20 &&
+            y > 90 &&
+            y < this.host.clientHeight - 110,
+        )
+      }
+    }
     for (const label of this.labels) {
       this.projected.copy(label.position).project(this.camera)
       const x = (this.projected.x * 0.5 + 0.5) * this.host.clientWidth,
@@ -916,7 +1249,8 @@ export class GameRenderer {
         label.id,
         x,
         y,
-        x > 35 &&
+        o.showLabels &&
+          x > 35 &&
           x < this.host.clientWidth - 35 &&
           y > 80 &&
           y < this.host.clientHeight - 60,
@@ -930,6 +1264,7 @@ export class GameRenderer {
     cancelAnimationFrame(this.raf)
     this.observer.disconnect()
     this.visibility.disconnect()
+    this.controls.removeEventListener('start', this.manualCamera)
     this.controls.dispose()
     const c = this.renderer.domElement
     c.removeEventListener('pointerdown', this.pointerDown)
@@ -947,9 +1282,9 @@ export class GameRenderer {
         o.geometry.dispose()
         if (
           o instanceof THREE.Line ||
+          o instanceof THREE.Points ||
           o === this.padMesh ||
           o === this.packets ||
-          o === this.trails ||
           o === this.ghost
         )
           (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) =>

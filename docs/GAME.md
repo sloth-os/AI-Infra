@@ -63,10 +63,14 @@ This is a small serving district, not a literal 100,000-GPU simulator. Engine ge
 
 ## Controls and accessibility
 
-The 3D world supports click/tap selection, drag orbit, and zoom. Equivalent labeled sector buttons support keyboard and touch input. Native dialogs trap focus and support Escape. Mission control, help, request inspection, and Learning mode pause a running shift. Building, upgrading, research, and recycling remain available while paused. Returning from Learning mode preserves the current run; reloading resets the run while retaining recorded personal bests.
+The default Fusion interface attaches construction and inspection to entities in the world. Its three data lenses expose live slot occupancy, KV reservations, and useful network shares. Overview, top-down, focused framing, request tracking, and cinema mode change the view without replacing the scene. The Tactical interface remains available from the header. See [FUSION.md](FUSION.md) for interaction and rendering details.
+
+The 3D world supports click/tap selection, drag orbit, and zoom. Equivalent labeled sector buttons support keyboard and touch input. Spatial cards and research drawers leave the simulation running and remain available while paused. Native dialogs trap focus and support Escape. Mission control, help, full request details, and Learning mode pause a running shift. Returning from Learning mode preserves the current run; reloading resets the run while retaining recorded personal bests.
 
 Hidden tabs do not advance the simulation. Off-screen or inactive renderers stop drawing. Reduced-motion preferences disable ambient movement and CSS transitions; the pause control freezes meaningful gameplay motion and deadlines. A no-WebGL tactical grid retains the complete simulation, missions, economy, and results.
 
 ## Verification
 
 `tests/game.test.ts` checks valid budgets, rejected actions, immutable updates, pause, deadline losses, memory admission and safe recycling, tenant-scoped reuse, real bandwidth effects, batching throughput, repairs, local progress validation, and a winning strategy for each campaign mission. Browser tests exercise actual 3D raycast construction, a complete first-mission victory, persisted medals, sandbox economy, Learning-mode round trips, mobile controls, live request inspection, and the no-WebGL fallback.
+
+`tests/fusion.test.ts` checks spatial bounds, stable interaction surfaces, tether movement, reserved memory, occupied handoff slots, shared bandwidth, and fault readings. `tests/fusion.spec.ts` exercises the default interface through a complete victory, moving-request inspection, camera flights and tracking, cinema mode, mobile construction, mode transitions, reduced motion, and fallback play.
