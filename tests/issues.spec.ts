@@ -44,6 +44,12 @@ test('all ten issues attach to the current accelerator and selecting another iss
     await expect(page.getByTestId('context-perspective')).toContainText(
       issue.title,
     )
+    await expect(page.locator('.learning-world')).not.toContainText(
+      '0.0 MiB / rank',
+    )
+    await expect(page.locator('.learning-world')).not.toContainText(
+      '17.5 GB of model weights / rank',
+    )
   }
   expect(
     await page.locator(canvas).evaluate((el, old) => el === old, original),

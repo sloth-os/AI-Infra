@@ -798,6 +798,10 @@ export function contextRole(
         'Policy and learner state',
         'Base · adapters · activations · buffers',
       ],
+      tensor: [
+        'Accelerator compute',
+        'Rollout / learner roles on reference hardware',
+      ],
     }
     return labels[id] || null
   }
@@ -868,7 +872,14 @@ export function contextRole(
     }
     return labels[id] || null
   }
-  return null
+  const labels: Record<string, [string, string]> = {
+    hbm: ['HBM resources', 'Weights · request state · workspace'],
+    tensor: [
+      'Accelerator compute',
+      'Reference slots; selected experiments define residency',
+    ],
+  }
+  return labels[id] || null
 }
 
 export function primaryIssueLevel(index: number): Layer {

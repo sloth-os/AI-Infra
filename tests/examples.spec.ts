@@ -56,6 +56,12 @@ test('all six real models inhabit every physical scale on one canvas and do not 
       await expect(page.getByTestId('context-perspective')).toContainText(
         model.name,
       )
+      await expect(page.locator('.learning-world')).not.toContainText(
+        '0.0 MiB / rank',
+      )
+      await expect(page.locator('.learning-world')).not.toContainText(
+        '17.5 GB of model weights / rank',
+      )
     }
     expect(
       await page.locator(canvas).evaluate((el, old) => el === old, original),

@@ -255,7 +255,7 @@ export const InfrastructureScene = forwardRef<
               frame.collectiveStep >= 7
                 ? `Σ = 36 · ${full}/8 chunks complete`
                 : `C${chunk} = ${frame.buffers[label.rank][chunk]} · ${frame.contributions[label.rank][chunk]}/8 contributions`
-          } else if (key === 'kv-bank') {
+          } else if (!props.context && key === 'kv-bank') {
             subtitle = `${frame.shardMiB.toFixed(1)} MiB / rank · ${frame.contextTokens.toLocaleString()} positions`
           }
           return (
