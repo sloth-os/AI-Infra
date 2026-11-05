@@ -1,8 +1,10 @@
 # Research and design notes
 
-Research reviewed November 4, 2026. The application focuses on **online inference**, with a separate explanation of how training differs. Its reference architecture is deliberately homogeneous to make the relationships understandable; production fleets are heterogeneous.
+Core serving research reviewed November 4, 2026; lifecycle research reviewed November 5, 2026. The application includes **online inference**, source-backed **pre-training**, and **post-training** workflows. Its reference architecture is deliberately homogeneous to make the relationships understandable; production fleets are heterogeneous.
 
 The six real-model field trips have a separate evidence record in [REAL-MODELS.md](REAL-MODELS.md), including pinned model/code revisions for Kimi K3, Qwen-Image-2.1, MiniMax H3, MiniMax Music 3.0, PersonaPlex, and CosyVoice 2. Their model-specific pipelines and sizing exercises do not reuse the dense 70B lab as a universal performance predictor.
+
+The three-phase lifecycle has a separate evidence and calculation record in [LIFECYCLE.md](LIFECYCLE.md), covering DP/TP/PP, ZeRO, forward/backward/optimizer state, checkpointing, SFT/DPO/GRPO, LoRA/QLoRA, rollout services and serving. These sizing exercises state their own assumptions and do not reuse the existing serving simulator as a training-performance predictor.
 
 ## Primary sources and their roles
 

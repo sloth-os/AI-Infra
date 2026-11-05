@@ -22,6 +22,8 @@ Direct links use `?view=explore`, `?view=journey`, `?view=lab`, or `?view=guide`
 
 **Real models** adds six source-backed 3D field trips: **Kimi K3**, **Qwen-Image-2.1**, **MiniMax H3**, **MiniMax Music 3.0**, **nvidia/personaplex-7b-v1**, and **CosyVoice 2**. Follow their distinct data transformations, inspect placement and network traffic, compare serving trade-offs, read versioned startup examples, and change model-specific data budgets. Open `?view=guide&learn=fusion&examples=all`, or link to a model with `example=kimi-k3`, `qwen-image-21`, `minimax-h3`, `minimax-music-3`, `personaplex`, or `cosyvoice-2`. [docs/REAL-MODELS.md](docs/REAL-MODELS.md) records the research, source revisions, calculations, and deployment boundaries.
 
+**AI lifecycle** adds three connected 3D workflows for **pre-training, post-training and inference**. Follow forward/backward passes, DP/TP/PP placement, ZeRO state sharding, checkpoints, SFT/DPO/GRPO, rollout/reward/weight-sync loops, request KV and 100,000-GPU replica grouping. Change sizing controls, inspect a microbatch schedule and loss/reward toys, compare network/performance trade-offs, and follow primary sources. Start at `?view=guide&learn=fusion&lifecycle=pretrain` (or `posttrain` / `inference`). [docs/LIFECYCLE.md](docs/LIFECYCLE.md) records sources, formulas, declared assumptions and visual mappings.
+
 ## Run locally
 
 Requires Node.js 22.12+ and npm; Node.js 24 LTS is recommended. No GPU, API key, backend, or external service is required.

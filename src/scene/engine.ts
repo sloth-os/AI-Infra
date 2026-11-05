@@ -15,6 +15,8 @@ import type { Architecture, Box, SceneLabel } from './architecture'
 import { buildTensorArchitecture } from './tensors'
 import { ExampleWorld } from './examples'
 import type { ExampleView } from '../examples/model'
+import type { LifecycleView } from '../lifecycle/model'
+import { lifecycleProfile } from '../lifecycle/catalog'
 
 export interface SceneOptions {
   layer: Layer
@@ -33,6 +35,8 @@ export interface SceneOptions {
   followPayload?: boolean
   onCameraRelease?: () => void
   onRank?: (rank: number) => void
+  lifecycle?: LifecycleView | null
+  onLifecycleStage?: (stage: number, automatic?: boolean) => void
   example?: ExampleView | null
   onExampleStage?: (stage: number, automatic?: boolean) => void
   onSelect: (id: string) => void
@@ -337,7 +341,7 @@ export class InfrastructureEngine {
     )
     this.raycaster.setFromCamera(this.pointer, this.camera)
     const hit = this.raycaster.intersectObjects(
-      this.options().example && this.exampleWorld
+      (this.options().example || this.options().lifecycle) && this.exampleWorld
         ? this.exampleWorld.pickable
         : [...this.current.pickable, this.packets],
       false,
@@ -358,14 +362,17 @@ export class InfrastructureEngine {
     )
     this.raycaster.setFromCamera(this.pointer, this.camera)
     const hit = this.raycaster.intersectObjects(
-      this.options().example && this.exampleWorld
+      (this.options().example || this.options().lifecycle) && this.exampleWorld
         ? this.exampleWorld.pickable
         : [...this.current.pickable, this.packets],
       false,
     )[0]
     if (!hit || hit.instanceId === undefined) return
-    if (this.options().example) {
-      this.options().onExampleStage?.(hit.object.userData.exampleStage)
+    if (this.options().example || this.options().lifecycle) {
+      const o = this.options()
+      ;(o.lifecycle ? o.onLifecycleStage : o.onExampleStage)?.(
+        hit.object.userData.exampleStage,
+      )
       return
     }
     if (hit.object === this.packets) {
@@ -550,7 +557,7 @@ export class InfrastructureEngine {
   }
   focus(id: string, point?: THREE.Vector3) {
     const annotation = (
-      this.options().example && this.exampleWorld
+      (this.options().example || this.options().lifecycle) && this.exampleWorld
         ? this.exampleWorld.labels
         : this.current.labels
     ).find((label) => label.id === id)
@@ -1039,10 +1046,19 @@ export class InfrastructureEngine {
         this.qualityTime = 0
       }
     }
-    if (o.example) {
-      if (!this.exampleWorld || this.exampleWorld.model.id !== o.example.id) {
+    const lesson = o.lifecycle || o.example
+    const profile = o.lifecycle ? lifecycleProfile(o.lifecycle) : o.example?.id
+    const profileId = typeof profile === 'string' ? profile : profile?.id
+    if (lesson && profile) {
+      if (!this.exampleWorld || this.exampleWorld.model.id !== profileId) {
+        if (
+          this.exampleWorld &&
+          this.exampleWorld.model.kind.startsWith('lifecycle-') !==
+            !!o.lifecycle
+        )
+          this.exampleActive = false
         this.exampleWorld?.dispose()
-        this.exampleWorld = new ExampleWorld(o.example.id)
+        this.exampleWorld = new ExampleWorld(profile)
         this.scene.add(this.exampleWorld.group)
         this.exampleStage = -1
       }
@@ -1061,20 +1077,23 @@ export class InfrastructureEngine {
         this.selectionRing,
       ])
         object.visible = false
-      if (this.exampleStage !== o.example.stage) {
-        this.exampleStage = o.example.stage
-        this.exampleElapsed = o.example.playing ? 0 : 0.9
+      if (this.exampleStage !== lesson.stage) {
+        this.exampleStage = lesson.stage
+        this.exampleElapsed = lesson.playing ? 0 : 0.9
         this.exampleEmitted = false
         this.publishLabels()
       }
-      if (o.example.playing && !this.reduceMotion) {
+      if (lesson.playing && !this.reduceMotion) {
         this.exampleElapsed += delta
         if (this.exampleElapsed >= 3 && !this.exampleEmitted) {
           this.exampleEmitted = true
-          o.onExampleStage?.((o.example.stage + 1) % 6, true)
+          ;(o.lifecycle ? o.onLifecycleStage : o.onExampleStage)?.(
+            (lesson.stage + 1) % 6,
+            true,
+          )
         }
       }
-      this.exampleWorld.update(o.example, this.exampleElapsed / 3)
+      this.exampleWorld.update(lesson, this.exampleElapsed / 3)
     } else {
       if (this.exampleActive) {
         this.exampleActive = false
@@ -1122,11 +1141,11 @@ export class InfrastructureEngine {
         !this.flight,
     )
     this.controls.update(delta)
-    if (!o.example) {
+    if (!lesson) {
       this.animateHardware()
       this.animatePackets()
     }
-    if (!o.example && o.followPayload && !this.flight && this.halo.visible) {
+    if (!lesson && o.followPayload && !this.flight && this.halo.visible) {
       this.followTarget.copy(this.halo.position)
       this.followTarget.x += 1.8
       this.cameraOffset.copy(this.camera.position).sub(this.controls.target)
@@ -1151,8 +1170,15 @@ export class InfrastructureEngine {
     this.renderer.domElement.dataset.exampleStage = o.example
       ? String(o.example.stage)
       : ''
-    if (o.example && this.exampleWorld) {
-      this.renderer.domElement.dataset.motionMode = 'model-example'
+    this.renderer.domElement.dataset.lifecyclePhase = o.lifecycle?.phase || ''
+    this.renderer.domElement.dataset.lifecycleMethod = o.lifecycle?.method || ''
+    this.renderer.domElement.dataset.lifecycleStage = o.lifecycle
+      ? String(o.lifecycle.stage)
+      : ''
+    if (lesson && this.exampleWorld) {
+      this.renderer.domElement.dataset.motionMode = o.lifecycle
+        ? 'lifecycle'
+        : 'model-example'
       this.renderer.domElement.dataset.motionLayer = 'pipeline'
       const width = this.container.clientWidth,
         height = this.container.clientHeight

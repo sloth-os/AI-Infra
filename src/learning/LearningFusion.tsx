@@ -73,6 +73,17 @@ import {
 import type { ExampleView } from '../examples/model'
 import { findExample } from '../examples/catalog'
 import type { ExampleId } from '../examples/catalog'
+import { LifecycleHUD, LifecycleComparison } from '../lifecycle/Lifecycle'
+import {
+  clearLifecycleParams,
+  defaultLifecycleView,
+  lifecycleStage,
+  lifecycleUrl,
+  parseLifecycleLocation,
+  sanitizeLifecycleInputs,
+} from '../lifecycle/model'
+import type { LifecycleView } from '../lifecycle/model'
+import { phaseInfo } from '../lifecycle/catalog'
 
 export type LearningPage = Exclude<Page, 'game'>
 type Panel =
@@ -211,21 +222,65 @@ export default function LearningFusion(p: Props) {
     [theater, setTheater] = useState(false),
     [webgl, setWebgl] = useState(true)
   const [camera, setCamera] = useState<CameraView>('isometric'),
-    [reader, setReader] = useState<'lab' | 'guide' | 'examples' | null>(null),
+    [reader, setReader] = useState<
+      'lab' | 'guide' | 'examples' | 'lifecycle' | null
+    >(null),
     [help, setHelp] = useState(false)
   const [query, setQuery] = useState(''),
     [libraryTab, setLibraryTab] = useState<LibraryTab>(() =>
-      parseExampleLocation(location.href) ||
-      new URLSearchParams(location.search).get('examples') === 'all'
-        ? 'models'
-        : 'concepts',
+      parseLifecycleLocation(location.href)
+        ? 'lifecycle'
+        : parseExampleLocation(location.href) ||
+            new URLSearchParams(location.search).get('examples') === 'all'
+          ? 'models'
+          : 'concepts',
     )
   const [example, setExample] = useState<ExampleView | null>(() =>
     parseExampleLocation(location.href),
   )
+  const [lifecycle, setLifecycle] = useState<LifecycleView>(
+    () => parseLifecycleLocation(location.href) || defaultLifecycleView(),
+  )
+  const lifecycleActive =
+    p.active && p.page === 'guide' && libraryTab === 'lifecycle'
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const exampleActive =
     p.active && p.page === 'guide' && libraryTab === 'models' && !!example
+  const teachingActive = exampleActive || lifecycleActive
+  const activeLesson = lifecycleActive
+    ? lifecycle
+    : exampleActive
+      ? example
+      : null
+  const clearLifecycleUrl = () => {
+    const url = new URL(location.href)
+    clearLifecycleParams(url)
+    history.replaceState({}, '', url)
+  }
+  const changeLifecycle = (v: LifecycleView) => {
+    closeContext()
+    setFollow(false)
+    setJourneyAuto(false)
+    p.onManual()
+    setLifecycle({
+      ...v,
+      stage: lifecycleStage(v.stage),
+      playing: reduced ? false : v.playing,
+      inputs: sanitizeLifecycleInputs(v.inputs),
+    })
+  }
+  const selectLifecycleStage = (stage: number, automatic = false) =>
+    setLifecycle((v) => ({
+      ...v,
+      stage: lifecycleStage(stage),
+      playing: automatic ? v.playing : false,
+    }))
+  const toggleLesson = () => {
+    if (reduced) return
+    if (lifecycleActive) setLifecycle((v) => ({ ...v, playing: !v.playing }))
+    else if (exampleActive)
+      setExample((v) => (v ? { ...v, playing: !v.playing } : null))
+  }
   const clearExampleUrl = () => {
     const url = new URL(location.href)
     for (const key of [...url.searchParams.keys()])
@@ -239,6 +294,7 @@ export default function LearningFusion(p: Props) {
     history.replaceState({}, '', url)
   }
   const changeExample = (view: ExampleView | null) => {
+    clearLifecycleUrl()
     closeContext()
     setFollow(false)
     setJourneyAuto(false)
@@ -274,33 +330,44 @@ export default function LearningFusion(p: Props) {
   const chooseLibraryTab = (tab: LibraryTab) => {
     setLibraryTab(tab)
     if (tab !== 'models') clearExampleUrl()
+    if (tab !== 'lifecycle') clearLifecycleUrl()
   }
   useEffect(() => {
-    if (!p.active || p.page !== 'guide' || libraryTab !== 'models') return
-    if (example)
-      history.replaceState({}, '', exampleUrl(location.href, example))
-    else {
+    if (!p.active || p.page !== 'guide') return
+    if (libraryTab === 'lifecycle')
+      history.replaceState({}, '', lifecycleUrl(location.href, lifecycle))
+    else if (libraryTab === 'models') {
       const url = new URL(location.href)
-      url.searchParams.set('examples', 'all')
-      history.replaceState({}, '', url)
+      clearLifecycleParams(url)
+      if (example)
+        history.replaceState({}, '', exampleUrl(url.toString(), example))
+      else {
+        url.searchParams.set('examples', 'all')
+        history.replaceState({}, '', url)
+      }
     }
-  }, [p.active, p.page, libraryTab, example])
+  }, [p.active, p.page, libraryTab, example, lifecycle])
   useEffect(() => {
     setCamera('isometric')
     if (!exampleActive)
-      setExample((previous) =>
-        previous?.playing ? { ...previous, playing: false } : previous,
-      )
-  }, [exampleActive])
+      setExample((v) => (v?.playing ? { ...v, playing: false } : v))
+    if (!lifecycleActive)
+      setLifecycle((v) => (v.playing ? { ...v, playing: false } : v))
+  }, [exampleActive, lifecycleActive])
   useEffect(() => {
     const onPop = () => {
-      const next = parseExampleLocation(location.href)
+      const life = parseLifecycleLocation(location.href),
+        next = parseExampleLocation(location.href)
       setExample(next)
-      if (
+      if (life) {
+        setLifecycle(life)
+        setLibraryTab('lifecycle')
+      } else if (
         next ||
         new URLSearchParams(location.search).get('examples') === 'all'
       )
         setLibraryTab('models')
+      else setLibraryTab('concepts')
     }
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
@@ -415,7 +482,11 @@ export default function LearningFusion(p: Props) {
     return () => clearTimeout(timer)
   }, [journeyAuto, p.active, p.page, p.journeyStep, rag])
   const go = (page: Page) => {
-    if (page !== 'guide') clearExampleUrl()
+    if (page !== 'guide') {
+      clearExampleUrl()
+      clearLifecycleUrl()
+    }
+    setLifecycle((v) => (v.playing ? { ...v, playing: false } : v))
     setExample((previous) =>
       previous ? { ...previous, playing: false } : null,
     )
@@ -499,17 +570,22 @@ export default function LearningFusion(p: Props) {
         help
       )
         return
-      if (exampleActive && example) {
+      if (teachingActive && activeLesson) {
+        const select = (stage: number) =>
+          lifecycleActive
+            ? selectLifecycleStage(stage)
+            : selectExampleStage(stage, false)
         if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
           e.preventDefault()
-          selectExampleStage(
-            exampleStage(example.stage, e.key === 'ArrowRight' ? 1 : -1),
-            false,
+          select(
+            lifecycleStage(
+              activeLesson.stage + (e.key === 'ArrowRight' ? 1 : -1),
+            ),
           )
           return
         }
         if (['1', '2', '3', '4', '5', '6'].includes(e.key)) {
-          selectExampleStage(Number(e.key) - 1, false)
+          select(Number(e.key) - 1)
           return
         }
         if (
@@ -517,11 +593,13 @@ export default function LearningFusion(p: Props) {
           (e.target as HTMLElement).tagName !== 'BUTTON'
         ) {
           e.preventDefault()
-          if (!reduced) setExample({ ...example, playing: !example.playing })
+          toggleLesson()
           return
         }
         if (e.key.toLowerCase() === 'f') {
-          p.sceneRef.current?.focus(`example-stage-${example.stage}`)
+          p.sceneRef.current?.focus(
+            `${lifecycleActive ? 'lifecycle' : 'example'}-stage-${activeLesson.stage}`,
+          )
           setPanel(null)
           return
         }
@@ -656,12 +734,14 @@ export default function LearningFusion(p: Props) {
   return (
     <section
       ref={root}
-      className={`learning-fusion ${theater ? 'learn-cinema' : ''} ${exampleActive ? 'is-model-example' : ''}`}
+      className={`learning-fusion ${theater ? 'learn-cinema' : ''} ${teachingActive ? 'is-model-example' : ''} ${lifecycleActive ? 'is-lifecycle' : ''}`}
       style={
         {
-          '--model-accent': example
-            ? findExample(example.id)!.color
-            : '#c6dea0',
+          '--model-accent': lifecycleActive
+            ? phaseInfo(lifecycle.phase).color
+            : example
+              ? findExample(example.id)!.color
+              : '#c6dea0',
         } as React.CSSProperties
       }
       hidden={!p.active}
@@ -684,6 +764,11 @@ export default function LearningFusion(p: Props) {
           orbit={p.orbit}
           showLabels={labels && !theater}
           followPayload={follow}
+          lifecycle={lifecycleActive ? lifecycle : null}
+          onLifecycleStage={(stage, automatic) => {
+            selectLifecycleStage(stage, automatic)
+            if (!automatic) setPanel('guide')
+          }}
           example={exampleActive ? example : null}
           onExampleStage={(stage, automatic) => {
             selectExampleStage(stage, automatic ? undefined : false)
@@ -728,22 +813,28 @@ export default function LearningFusion(p: Props) {
               </button>
               <button
                 onClick={() => {
-                  if (exampleActive && example) {
-                    if (!reduced)
-                      setExample({ ...example, playing: !example.playing })
-                  } else p.onPaused(!p.paused)
+                  if (teachingActive) toggleLesson()
+                  else p.onPaused(!p.paused)
                 }}
                 aria-label={
-                  exampleActive && example
-                    ? example.playing
-                      ? 'Pause model walkthrough'
-                      : 'Play model walkthrough'
+                  teachingActive && activeLesson
+                    ? activeLesson.playing
+                      ? lifecycleActive
+                        ? 'Pause lifecycle walkthrough'
+                        : 'Pause model walkthrough'
+                      : lifecycleActive
+                        ? 'Play lifecycle walkthrough'
+                        : 'Play model walkthrough'
                     : p.paused
                       ? 'Play timeline'
                       : 'Pause timeline'
                 }
               >
-                {(exampleActive && example ? !example.playing : p.paused) ? (
+                {(
+                  teachingActive && activeLesson
+                    ? !activeLesson.playing
+                    : p.paused
+                ) ? (
                   <Play size={16} />
                 ) : (
                   <Pause size={16} />
@@ -774,7 +865,10 @@ export default function LearningFusion(p: Props) {
                       }}
                       aria-current={
                         p.page === id &&
-                        !(id === 'guide' && libraryTab === 'models')
+                        !(
+                          id === 'guide' &&
+                          ['models', 'lifecycle'].includes(libraryTab)
+                        )
                           ? 'page'
                           : undefined
                       }
@@ -793,19 +887,35 @@ export default function LearningFusion(p: Props) {
                     }
                     onClick={() => {
                       go('guide')
-                      setLibraryTab('models')
+                      chooseLibraryTab('models')
                       setQuery('')
                     }}
                   >
                     <Boxes size={15} />
                     <span>Real models</span>
                   </button>
+                  <button
+                    aria-label="AI lifecycle"
+                    aria-current={
+                      p.page === 'guide' && libraryTab === 'lifecycle'
+                        ? 'page'
+                        : undefined
+                    }
+                    onClick={() => {
+                      go('guide')
+                      chooseLibraryTab('lifecycle')
+                      setQuery('')
+                    }}
+                  >
+                    <Layers3 size={15} />
+                    <span>AI lifecycle</span>
+                  </button>
                 </nav>
                 <div className="learn-header-tools">
                   <button
                     onClick={() => {
                       go('guide')
-                      setLibraryTab('glossary')
+                      chooseLibraryTab('glossary')
                     }}
                     aria-label="Search learning library"
                   >
@@ -826,6 +936,22 @@ export default function LearningFusion(p: Props) {
                   </button>
                 </div>
               </header>
+              {lifecycleActive && (
+                <LifecycleHUD
+                  view={lifecycle}
+                  onChange={changeLifecycle}
+                  onStage={selectLifecycleStage}
+                  reduced={reduced}
+                  panelOpen={panel === 'guide'}
+                  onOpen={() => setPanel(panel === 'guide' ? null : 'guide')}
+                  onFocus={() =>
+                    p.sceneRef.current?.focus(
+                      `lifecycle-stage-${lifecycle.stage}`,
+                    )
+                  }
+                  onExit={() => go('explore')}
+                />
+              )}
               {exampleActive && example && (
                 <ExampleHUD
                   view={example}
@@ -1004,7 +1130,7 @@ export default function LearningFusion(p: Props) {
                 >
                   <Minus size={17} />
                 </button>
-                {!exampleActive && (
+                {!teachingActive && (
                   <>
                     <button
                       onClick={() => p.onExploded(!p.exploded)}
@@ -1229,6 +1355,9 @@ export default function LearningFusion(p: Props) {
                       onExample={changeExample}
                       onChooseExample={selectExample}
                       onCompare={() => setReader('examples')}
+                      lifecycle={lifecycle}
+                      onLifecycle={changeLifecycle}
+                      onLifecycleCompare={() => setReader('lifecycle')}
                       onReading={() => setReader('guide')}
                       onLocate={(layer, traffic, node) => {
                         p.onLocate(layer, traffic, node)
@@ -1735,7 +1864,9 @@ export default function LearningFusion(p: Props) {
                   ? 'Complete performance workbench'
                   : reader === 'guide'
                     ? 'Complete field guide'
-                    : 'Six real model workloads'
+                    : reader === 'lifecycle'
+                      ? 'Pre-training, post-training and inference'
+                      : 'Six real model workloads'
               }
               onClose={() => setReader(null)}
             >
@@ -1744,6 +1875,8 @@ export default function LearningFusion(p: Props) {
                   p.advancedLab
                 ) : reader === 'guide' ? (
                   p.advancedGuide
+                ) : reader === 'lifecycle' ? (
+                  <LifecycleComparison />
                 ) : (
                   <ModelComparison />
                 )}
@@ -1761,11 +1894,13 @@ export default function LearningFusion(p: Props) {
                 </span>
                 <h2>Find the part. Follow the data.</h2>
                 <p>
-                  Real models opens six source-backed pipeline field trips. In a
-                  field trip, use 1–6 or the arrow keys to select a stage, Space
-                  to play teaching stages, and F to focus. Data budgets use each
-                  model’s formats; the worlds are schematics and do not execute
-                  model weights.
+                  AI lifecycle follows pre-training, post-training and
+                  inference, with SFT, DPO and GRPO recipes. Real models opens
+                  six source-backed pipeline field trips. In a field trip, use
+                  1–6 or the arrow keys to select a stage, Space to play
+                  teaching stages, and F to focus. Data budgets use each model’s
+                  formats; the worlds are schematics and do not execute model
+                  weights.
                 </p>
                 <p>
                   Select hardware to open its explanation. Understand its role,

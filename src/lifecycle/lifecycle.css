@@ -1,0 +1,551 @@
+.learning-fusion .life-phase-switch {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  min-width: 0;
+  padding: 5px;
+  border: 1px solid #7fa2b33d;
+  border-radius: 7px;
+  background: #122b39cc;
+}
+.learning-fusion .life-phase-switch > button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: #91abba;
+  padding: 9px 6px;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.learning-fusion .life-phase-switch > button > span {
+  font: 8px monospace;
+  color: #7793a4;
+}
+.learning-fusion .life-phase-switch > button[aria-pressed='true'] {
+  color: var(--phase-color);
+  background: color-mix(in srgb, var(--phase-color), transparent 91%);
+  border-color: color-mix(in srgb, var(--phase-color), transparent 65%);
+}
+.learning-fusion .life-scope {
+  width: 405px;
+  max-width: 405px;
+}
+.learning-fusion .life-scope .life-phase-switch {
+  pointer-events: auto;
+  margin: 14px 0 9px;
+}
+.learning-fusion .life-scope .life-phase-switch > button {
+  font-size: 10px;
+}
+.learning-fusion .life-world-legend {
+  display: block;
+  font-size: 8px;
+  color: #83a4b5;
+  line-height: 1.9;
+}
+.learning-fusion .life-world-readouts {
+  top: 321px;
+  width: 248px;
+}
+.learning-fusion.is-lifecycle .model-now {
+  max-height: calc(100% - 810px);
+}
+.learning-fusion.is-lifecycle .learn-library-tabs {
+  display: none;
+}
+.learning-fusion.is-lifecycle .learn-panel:has(.life-study) {
+  top: 222px;
+  max-height: calc(100% - 390px);
+}
+.learning-fusion .life-references {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 12px 0;
+}
+.learning-fusion .life-references > a {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 10px;
+  color: var(--model-accent, #c6dea0);
+  line-height: 1.7;
+  text-decoration: none;
+}
+.learning-fusion .life-references > a:hover {
+  text-decoration: underline;
+}
+.learning-fusion .life-explanation {
+  border-top: 1px solid #7999a023;
+  margin-top: 13px;
+}
+.learning-fusion .life-explanation > p {
+  margin-top: 6px;
+}
+.learning-fusion .life-lab .model-budget-inputs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 12px;
+}
+.learning-fusion .life-lab .model-budget-inputs > label {
+  font-size: 10px;
+  line-height: 1.8;
+  color: #9db7c7;
+  min-width: 0;
+}
+.learning-fusion .life-lab .model-budget-inputs > label:first-child {
+  grid-column: 1/-1;
+}
+.learning-fusion .life-lab .model-budget-inputs select {
+  font-size: 11px;
+}
+.learning-fusion .life-lab .model-budget-inputs input[type='number'] {
+  width: 100%;
+  background: #102b38;
+  color: #d9e6dd;
+  border: 1px solid #6f97aa66;
+  border-radius: 5px;
+  padding: 9px;
+  margin-top: 8px;
+  font-size: 12px;
+}
+.learning-fusion .life-check {
+  display: flex !important;
+  gap: 9px;
+  align-items: center;
+  grid-column: 1/-1;
+  font-size: 11px;
+  line-height: 1.7;
+  color: #b7cbd1;
+  padding: 8px 0;
+}
+.learning-fusion .life-check > input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: var(--model-accent);
+}
+.learning-fusion .life-state-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 16px 0;
+}
+.learning-fusion .life-state-bars > div {
+  display: grid;
+  grid-template-columns: 55px 1fr 82px;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 6px;
+  border-radius: 4px;
+  background: #14303b;
+  font-size: 9px;
+  color: #a0bac7;
+}
+.learning-fusion .life-state-bars > div[data-selected='true'] {
+  outline: 1px solid var(--model-accent);
+  color: var(--model-accent);
+}
+.learning-fusion .life-state-bars i {
+  height: 9px;
+  background: linear-gradient(90deg, #5c83a2, var(--model-accent));
+  border-radius: 2px;
+}
+.learning-fusion .life-state-bars strong {
+  font-weight: 400;
+  text-align: right;
+  font-size: 10px;
+}
+.learning-fusion .life-toy {
+  border: 1px solid #7c9cab44;
+  background: #142f3b99;
+  border-radius: 7px;
+  padding: 12px;
+  margin: 20px 0;
+  min-width: 0;
+}
+.learning-fusion .life-toy .model-kicker {
+  margin-top: 4px;
+}
+.learning-fusion .life-toy > output {
+  display: block;
+  margin: 12px 0;
+  color: var(--model-accent);
+  font-size: 12px;
+}
+.learning-fusion .life-token-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 15px 0;
+}
+.learning-fusion .life-token-strip > span {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 10px 6px;
+  background: #203340;
+  border: 1px solid #809fb733;
+  border-radius: 4px;
+  color: #8097a3;
+}
+.learning-fusion .life-token-strip > span[data-active='true'] {
+  color: #d3b3ef;
+  border-color: #d3b3ef88;
+  background: #d3b3ef16;
+}
+.learning-fusion .life-token-strip code {
+  font-size: 10px;
+}
+.learning-fusion .life-token-strip small {
+  font-size: 8px;
+}
+.learning-fusion .life-range {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 10px;
+  line-height: 1.7;
+  color: #a1bac9;
+  margin: 13px 0;
+}
+.learning-fusion .life-range > output {
+  margin-left: auto;
+  color: var(--model-accent);
+}
+.learning-fusion .life-range > input {
+  width: 100%;
+  margin: 0;
+  accent-color: var(--model-accent);
+}
+.learning-fusion .life-reward-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+  margin: 13px 0;
+}
+.learning-fusion .life-reward-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-radius: 5px;
+  border: 1px solid #7492a944;
+  background: #254358;
+  padding: 9px 5px;
+  color: #a3c4df;
+  text-align: center;
+}
+.learning-fusion .life-reward-grid > div[data-positive='true'] {
+  border-color: #c6dea077;
+  color: #c6dea0;
+  background: #344735;
+}
+.learning-fusion .life-reward-grid span {
+  font-size: 8px;
+}
+.learning-fusion .life-reward-grid code,
+.learning-fusion .life-reward-grid strong {
+  font-size: 10px;
+  font-weight: 450;
+}
+.learning-fusion .life-schedule-scroll {
+  overflow: auto;
+  max-width: 100%;
+  padding: 5px 1px 9px;
+  scrollbar-width: thin;
+}
+.learning-fusion .life-schedule {
+  width: max-content;
+}
+.learning-fusion .life-schedule > div {
+  display: grid;
+  grid-template-columns: 32px repeat(var(--slots), 26px);
+  gap: 2px;
+  margin-bottom: 3px;
+}
+.learning-fusion .life-schedule b {
+  align-self: center;
+  color: #a8c1c9;
+  font-size: 8px;
+  font-weight: 400;
+}
+.learning-fusion .life-schedule span {
+  background: #112532;
+  color: #657b89;
+  font: 8px monospace;
+  text-align: center;
+  padding: 9px 1px;
+  border-radius: 2px;
+}
+.learning-fusion .life-schedule span[data-kind='forward'] {
+  background: #3b617e;
+  color: #c4dff3;
+}
+.learning-fusion .life-schedule span[data-kind='backward'] {
+  background: #5e4776;
+  color: #ead9fa;
+}
+.learning-fusion .life-schedule span[data-current='true'] {
+  outline: 1px solid #e6d7a8;
+  outline-offset: -1px;
+}
+.learning-fusion .life-traffic-map {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.learning-fusion .life-traffic-map > article {
+  display: flex;
+  gap: 13px;
+  align-items: flex-start;
+  padding: 11px 10px;
+  border: 1px solid #7a9ca43b;
+  border-radius: 6px;
+  background: #18333e77;
+}
+.learning-fusion .life-traffic-map b {
+  font-size: 11px;
+  color: #c7d9d8;
+  font-weight: 500;
+}
+.learning-fusion .life-traffic-map p {
+  margin: 6px 0 1px;
+  font-size: 11px;
+}
+.learning-fusion .life-network-glyph {
+  display: flex;
+  align-items: center;
+  color: var(--model-accent);
+  font-size: 8px;
+  margin-top: 5px;
+}
+.learning-fusion .life-network-glyph i {
+  display: block;
+  width: 18px;
+  height: 1px;
+  background: var(--model-accent);
+  opacity: 0.5;
+}
+.learning-fusion .life-study .model-source-list > article {
+  padding: 13px;
+  border: 1px solid #7b9aa544;
+  border-radius: 6px;
+  background: #19344166;
+}
+.learning-fusion .life-study .model-source-list > article > span {
+  display: block;
+  font-size: 9px;
+  color: #86a5b4;
+  margin-bottom: 7px;
+}
+.learning-fusion .life-study .model-source-list > article > a {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #c5dbbd;
+  line-height: 1.8;
+  text-decoration: none;
+}
+.learning-fusion .life-study .model-source-list > article > p {
+  font-size: 11px;
+  margin-bottom: 1px;
+}
+.learning-fusion .life-comparison-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 30px 0;
+}
+.learning-fusion .life-comparison-grid > article {
+  border: 1px solid color-mix(in srgb, var(--phase-color), transparent 60%);
+  background: #1b3442aa;
+  border-radius: 9px;
+  padding: 22px;
+}
+.learning-fusion .life-comparison-grid > article > span {
+  color: var(--phase-color);
+  font-size: 10px;
+}
+.learning-fusion .life-comparison-grid h2 {
+  font-size: 19px;
+  line-height: 1.6;
+  margin: 14px 0;
+}
+.learning-fusion .life-comparison-grid h3 {
+  font-size: 11px;
+  margin: 20px 0 0;
+  color: #c7d9d1;
+}
+.learning-fusion .life-comparison-grid p {
+  font-size: 12px;
+}
+.learning-fusion .life-comparison-grid a {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--phase-color);
+  font-size: 11px;
+  margin-top: 20px;
+}
+.learning-fusion .life-comparison-table {
+  overflow: auto;
+}
+.learning-fusion .life-comparison-table table {
+  min-width: 700px;
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+}
+.learning-fusion .life-comparison-table th,
+.learning-fusion .life-comparison-table td {
+  text-align: left;
+  vertical-align: top;
+  border: 1px solid #7597a344;
+  padding: 13px;
+  font-size: 11px;
+  line-height: 1.9;
+  color: #a4bfcd;
+}
+.learning-fusion .life-comparison-table th {
+  color: #c9ddcf;
+  font-weight: 450;
+  background: #1d3744;
+}
+@media (max-height: 980px) {
+  .learning-fusion.is-lifecycle .model-now {
+    display: none;
+  }
+}
+@media (max-width: 1000px) {
+  .learning-fusion .life-scope {
+    max-width: 370px;
+  }
+  .learning-fusion .life-scope .life-phase-switch > button {
+    font-size: 9px;
+  }
+  .learning-fusion .life-world-readouts {
+    top: 320px;
+  }
+  .learning-fusion .life-comparison-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 700px) {
+  .learning-fusion .life-scope {
+    top: 80px;
+    left: 17px;
+    max-width: calc(100% - 68px);
+    width: 360px;
+  }
+  .learning-fusion .life-scope h1 {
+    font-size: 23px;
+    margin: 4px 0;
+  }
+  .learning-fusion .life-scope p {
+    font-size: 10px;
+  }
+  .learning-fusion .life-scope .life-phase-switch {
+    margin: 8px 0 0;
+    padding: 3px;
+  }
+  .learning-fusion .life-scope .life-phase-switch > button {
+    padding: 7px 4px;
+    font-size: 9px;
+  }
+  .learning-fusion .life-scope .life-phase-switch > button > svg,
+  .learning-fusion .life-world-legend {
+    display: none;
+  }
+  .learning-fusion.is-lifecycle .learn-camera {
+    top: 300px;
+  }
+  .learning-fusion .life-world-readouts {
+    top: 200px;
+    left: 17px;
+    width: calc(100% - 34px);
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+  }
+  .learning-fusion .life-world-readouts > div {
+    padding: 7px 8px;
+  }
+  .learning-fusion .life-world-readouts span {
+    font-size: 7px;
+    line-height: 1.5;
+  }
+  .learning-fusion .life-world-readouts strong {
+    overflow-wrap: anywhere;
+    font-size: 14px;
+    letter-spacing: -0.4px;
+  }
+  .learning-fusion .life-world-readouts small {
+    font-size: 7px;
+    margin-left: 3px;
+  }
+  .learning-fusion.is-lifecycle .learn-panel:has(.life-study) {
+    top: auto;
+    bottom: 173px;
+    max-height: calc(100% - 485px);
+    width: calc(100% - 26px);
+  }
+  .learning-fusion .life-study .life-phase-switch {
+    display: none;
+  }
+  .learning-fusion .life-study .model-study-actions {
+    margin-top: 5px;
+  }
+}
+@media (max-width: 480px) {
+  .learning-fusion .learn-brand > b {
+    display: none;
+  }
+  .learning-fusion .life-phase-switch > button {
+    font-size: 9px;
+  }
+  .learning-fusion .life-phase-switch > button > span {
+    display: none;
+  }
+  .learning-fusion .life-lab .model-budget-inputs {
+    grid-template-columns: 1fr;
+  }
+  .learning-fusion .life-study .model-detail-tabs > button {
+    font-size: 9px;
+    padding-left: 2px;
+    padding-right: 2px;
+  }
+}
+@media (max-height: 650px) and (min-width: 701px) {
+  .learning-fusion .life-world-readouts {
+    top: 280px;
+    flex-direction: row;
+    width: 550px;
+  }
+  .learning-fusion .life-world-readouts > div {
+    flex: 1;
+  }
+  .learning-fusion .life-world-legend {
+    display: none;
+  }
+  .learning-fusion.is-lifecycle .learn-panel:has(.life-study) {
+    top: 120px;
+    max-height: calc(100% - 300px);
+  }
+}
+
+.real-model-reference.life-reference .model-reference-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+@media (max-width: 700px) {
+  .real-model-reference.life-reference .model-reference-list {
+    grid-template-columns: 1fr;
+  }
+}

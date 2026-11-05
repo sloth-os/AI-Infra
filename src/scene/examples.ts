@@ -2,6 +2,8 @@ import * as THREE from 'three'
 import { findExample } from '../examples/catalog.ts'
 import type { ExampleId, ModelExample } from '../examples/catalog'
 import type { ExampleView } from '../examples/model'
+import type { LifecycleView } from '../lifecycle/model'
+import { lifecycleMetrics, pipelineSchedule } from '../lifecycle/model.ts'
 import type { SceneLabel } from './architecture'
 
 const positions = [
@@ -21,13 +23,22 @@ interface Tile {
   d: number
 }
 
+export interface PipelineProfile {
+  id: string
+  kind:
+    | ModelExample['kind']
+    | `lifecycle-${'pretrain' | 'posttrain' | 'inference'}`
+  color: string
+  stages: { short: string; output: string }[]
+}
+
 // One explanatory pipeline in the existing renderer. Geometry represents public
 // model components, not a vendor's physical inventory or an executed inference.
 export class ExampleWorld {
   readonly group = new THREE.Group()
   readonly pickable: THREE.InstancedMesh[] = []
   readonly labels: SceneLabel[] = []
-  readonly model: ModelExample
+  readonly model: PipelineProfile
   private ring: THREE.Mesh
   private packets: THREE.InstancedMesh
   private routes: THREE.CatmullRomCurve3[] = []
@@ -41,9 +52,10 @@ export class ExampleWorld {
     []
   private lastStage = -1
   private lastResolution = 0
+  private pipeline: ReturnType<typeof pipelineSchedule> | null = null
 
-  constructor(id: ExampleId) {
-    this.model = findExample(id)!
+  constructor(profile: ExampleId | PipelineProfile) {
+    this.model = typeof profile === 'string' ? findExample(profile)! : profile
     const batches = new Map<
       string,
       { color: string; stage: number; role?: string; items: Tile[] }
@@ -70,15 +82,17 @@ export class ExampleWorld {
       box(i, 0, 0.18, 0, 4.9, 0.12, 4.7, '#365561')
       box(i, -2.3, 0.3, 0, 0.055, 0.1, 4.3, c)
       this.labels.push({
-        id: `example-stage-${i}`,
-        key: `example-stage-${i}`,
+        id: `${this.model.kind.startsWith('lifecycle-') ? 'lifecycle' : 'example'}-stage-${i}`,
+        key: `${this.model.kind.startsWith('lifecycle-') ? 'lifecycle' : 'example'}-stage-${i}`,
         exampleStage: i,
         title: this.model.stages[i].short,
         subtitle: this.model.stages[i].output,
         position: new THREE.Vector3(positions[i][0], 2.6, positions[i][1]),
       })
       // A different symbol for each model phase, rather than six identical racks.
-      if (this.model.kind === 'moe' && i === 3) {
+      if (this.model.kind.startsWith('lifecycle-')) {
+        this.buildLifecycle(i, box)
+      } else if (this.model.kind === 'moe' && i === 3) {
         const active = new Set(
           Array.from({ length: 16 }, (_, k) => (k * 53 + 11) % 896),
         )
@@ -285,7 +299,12 @@ export class ExampleWorld {
     }
     for (let i = 0; i < 6; i++) {
       const a = positions[i],
-        b = positions[(i + 1) % 6]
+        b =
+          positions[
+            this.model.kind === 'lifecycle-inference' && i === 5
+              ? 1
+              : (i + 1) % 6
+          ]
       const curve = new THREE.CatmullRomCurve3([
         new THREE.Vector3(a[0], 0.55, a[1]),
         new THREE.Vector3((a[0] + b[0]) / 2, 1.45, (a[1] + b[1]) / 2),
@@ -347,15 +366,293 @@ export class ExampleWorld {
     this.packets.frustumCulled = false
     this.group.add(this.packets)
   }
-  update(view: ExampleView, phase: number) {
+  private buildLifecycle(
+    i: number,
+    box: (
+      stage: number,
+      x: number,
+      y: number,
+      z: number,
+      w: number,
+      h: number,
+      d: number,
+      color: string,
+      role?: string,
+    ) => void,
+  ) {
+    const blue = '#9ac5e8',
+      violet = '#c7a2e5',
+      green = '#b9d49b',
+      gold = '#e1c88b'
+    const grid = (
+      role: string,
+      n: number,
+      color: string,
+      y = 0.65,
+      h = 0.35,
+      columns = 4,
+      zOffset = 0,
+    ) => {
+      for (let k = 0; k < n; k++)
+        box(
+          i,
+          ((k % columns) - (columns - 1) / 2) * (columns > 4 ? 0.52 : 0.9),
+          y,
+          (Math.floor(k / columns) - (Math.ceil(n / columns) - 1) / 2) *
+            (Math.ceil(n / columns) > 4 ? 0.5 : 0.8) +
+            zOffset,
+          columns > 4 ? 0.43 : 0.67,
+          h,
+          Math.ceil(n / columns) > 4 ? 0.41 : 0.57,
+          color,
+          role,
+        )
+    }
+    const layers = (role: string, color: string, n = 8) => {
+      for (let k = 0; k < n; k++)
+        box(i, 0, 0.5 + k * 0.19, 0, 3.3, 0.075, 2.4, color, role)
+    }
+    if (this.model.kind === 'lifecycle-pretrain') {
+      if (i === 0) {
+        grid('corpus-shard', 12, blue, 0.65, 0.45)
+        for (let k = 0; k < 16; k++)
+          box(
+            i,
+            ((k % 8) - 3.5) * 0.43,
+            1.3,
+            Math.floor(k / 8) * 0.45 - 0.2,
+            0.32,
+            0.09,
+            0.3,
+            green,
+            'token-id',
+          )
+      } else if (i === 1) {
+        grid('dp-replica', 16, blue)
+        for (let k = 0; k < 8; k++)
+          box(i, (k - 3.5) * 0.5, 1.25, -1.65, 0.36, 0.25, 0.4, gold, 'tp-rank')
+        for (let k = 0; k < 8; k++)
+          box(i, 0, 1.65 + k * 0.13, 0.4, 3.5, 0.06, 1.9, violet, 'pp-stage')
+      } else if (i === 2) {
+        layers('forward-layer', blue)
+        grid('activation-tile', 16, green, 2.1, 0.08)
+      } else if (i === 3) {
+        layers('backward-layer', violet)
+        grid('saved-activation', 16, blue, 2.1, 0.15)
+      } else if (i === 4) {
+        grid('gradient-shard', 8, violet, 0.65, 0.35)
+        for (let k = 0; k < 3; k++)
+          box(i, (k - 1) * 1.2, 1.6, 0, 0.9, 1.2, 2.8, gold, 'optimizer-state')
+      } else {
+        grid('checkpoint-shard', 12, gold, 0.85, 0.8)
+        box(i, -0.7, 1.75, 0, 1, 0.2, 1.7, blue, 'serving-artifact')
+        box(i, 0.7, 1.75, 0, 1, 0.2, 1.7, green, 'serving-artifact')
+      }
+    } else if (this.model.kind === 'lifecycle-posttrain') {
+      const grpo = this.model.id.endsWith(':grpo'),
+        dpo = this.model.id.endsWith(':dpo')
+      if (i === 0) {
+        grid('prompt-data', 8, blue, 0.6, 0.2)
+        grid(
+          dpo ? 'rejected-data' : 'response-data',
+          8,
+          dpo ? gold : violet,
+          1.1,
+          0.2,
+        )
+      } else if (i === 1) {
+        layers('frozen-base', blue)
+        for (let k = 0; k < 8; k++)
+          box(
+            i,
+            1.85,
+            0.5 + k * 0.19,
+            0,
+            0.18,
+            0.09,
+            2.4,
+            violet,
+            'adapter-layer',
+          )
+        if (grpo) grid('rollout-replica', 8, green, 2.3, 0.3)
+        if (dpo) box(i, -1.9, 1.1, 0, 0.18, 1.5, 2.4, gold, 'reference-policy')
+      } else if (i === 2 && grpo) grid('rollout-sample', 16, blue, 1.0, 1.0)
+      else if (i === 2 && dpo) {
+        for (let k = 0; k < 4; k++)
+          box(
+            i,
+            (k - 1.5) * 1.05,
+            1,
+            0,
+            0.75,
+            1.25,
+            2.5,
+            k < 2 ? violet : blue,
+            'pair-score',
+          )
+      } else if (i === 2) {
+        grid('teacher-token', 12, blue, 0.65, 0.3)
+        grid('response-mask', 4, violet, 1.2, 0.15)
+      } else if (i === 3 && grpo) grid('reward-sample', 16, gold, 0.8, 0.5)
+      else if (i === 3) {
+        grid('loss-target', dpo ? 2 : 8, violet, 0.8, 0.7, dpo ? 2 : 4)
+        box(i, 0, 1.6, 0, 2, 0.18, 1.6, gold, 'loss-scalar')
+      } else if (i === 4) {
+        layers('policy-layer', violet)
+        grid('policy-gradient', 8, gold, 2.1, 0.12)
+      } else {
+        grid('published-policy', 8, green, 0.65, 0.4)
+        box(i, 0, 1.6, 0, 2.4, 0.25, 2.4, violet, 'policy-version')
+      }
+    } else {
+      if (i === 0) layers('serving-weights', blue, 10)
+      else if (i === 1) {
+        grid('independent-replica', 16, blue, 0.8, 0.65)
+        grid('queued-request', 8, gold, 1.7, 0.12)
+      } else if (i === 2) {
+        grid('prefill-token', 16, blue, 0.65, 0.22)
+        grid('prefill-kv', 16, green, 1.2, 0.2)
+      } else if (i === 3) {
+        grid('kv-page', 64, green, 0.65, 0.4, 8)
+        for (let k = 0; k < 8; k++)
+          box(i, (k - 3.5) * 0.5, 1.4, -1.7, 0.3, 0.25, 0.3, gold, 'new-token')
+      } else if (i === 4) {
+        for (let k = 0; k < 16; k++)
+          box(
+            i,
+            ((k % 4) - 1.5) * 0.9,
+            0.8,
+            Math.floor(k / 4) * 0.8 - 1.2,
+            0.6,
+            0.5,
+            0.55,
+            green,
+            'kv-handoff',
+          )
+        for (let k = 0; k < 8; k++)
+          box(i, (k - 3.5) * 0.5, 1.7, 0, 0.3, 0.25, 0.3, gold, 'stream-token')
+        box(i, 0, 0.65, 0, 3.2, 0.4, 2.8, blue, 'local-state')
+      } else {
+        layers('warm-weights', blue)
+        grid('retiring-kv', 16, green, 2.4, 0.15)
+      }
+    }
+  }
+  private updateLifecycle(view: LifecycleView, phase: number) {
+    const p = view.inputs,
+      m = lifecycleMetrics(p)
+    const forward = new THREE.Color('#9ac5e8'),
+      backward = new THREE.Color('#c7a2e5'),
+      gold = new THREE.Color('#e1c88b'),
+      green = new THREE.Color('#b9d49b')
+    if (
+      !this.pipeline ||
+      this.pipeline.length !== p.pp ||
+      this.pipeline[0].length !== 2 * (p.pp + p.accumulation - 1)
+    )
+      this.pipeline = pipelineSchedule(p.pp, p.accumulation)
+    const schedule = this.pipeline
+    const tick = Math.min(schedule[0].length - 1, p.scheduleSlot)
+    for (const mesh of this.pickable) {
+      const role = mesh.userData.role
+      const max = mesh.instanceMatrix.count
+      const material = mesh.material as THREE.MeshStandardMaterial
+      const selected = mesh.userData.exampleStage === view.stage
+      material.emissive.set(selected ? this.model.color : '#000000')
+      material.emissiveIntensity = selected ? 0.08 : 0
+      if (
+        role === 'forward-layer' ||
+        role === 'backward-layer' ||
+        role === 'policy-layer'
+      ) {
+        const cursor = Math.min(max - 1, Math.floor((phase % 1) * max))
+        for (let k = 0; k < max; k++)
+          mesh.setColorAt(
+            k,
+            selected &&
+              k === (role === 'backward-layer' ? max - 1 - cursor : cursor)
+              ? gold
+              : role === 'forward-layer'
+                ? forward
+                : backward,
+          )
+      }
+      if (role === 'dp-replica') mesh.count = Math.min(max, p.dp)
+      if (role === 'tp-rank') mesh.count = p.tp
+      if (role === 'pp-stage') {
+        mesh.count = p.pp
+        for (let k = 0; k < mesh.count; k++)
+          mesh.setColorAt(
+            k,
+            schedule[k][tick].kind === 'backward'
+              ? backward
+              : schedule[k][tick].kind === 'forward'
+                ? forward
+                : new THREE.Color('#536878'),
+          )
+      }
+      if (role === 'saved-activation') mesh.count = p.checkpoint ? 4 : 16
+      if (role === 'optimizer-state') {
+        const fraction = m.state / m.states[0].bytes
+        mesh.scale.y = 0.15 + 0.85 * fraction
+        mesh.position.y = 0.4 * (1 - mesh.scale.y)
+      }
+      if (role === 'rollout-sample' || role === 'reward-sample') {
+        mesh.count = p.group
+        for (let k = 0; k < mesh.count; k++)
+          mesh.setColorAt(
+            k,
+            role === 'reward-sample'
+              ? p.equalRewards
+                ? gold
+                : k < p.group / 2
+                  ? forward
+                  : green
+              : forward,
+          )
+      }
+      if (role === 'rollout-replica')
+        mesh.count = Math.min(max, p.rolloutReplicas)
+      if (role === 'adapter-layer') {
+        mesh.visible = p.tuning === 'lora'
+        mesh.scale.x = p.rank / 16
+        mesh.position.x =
+          positions[1][0] * (1 - mesh.scale.x) + 1.85 * (1 - mesh.scale.x)
+      }
+      if (role === 'frozen-base')
+        material.color.copy(p.tuning === 'full' ? backward : forward)
+      if (role === 'independent-replica') mesh.count = Math.min(max, m.replicas)
+      if (role === 'queued-request') mesh.count = Math.min(max, p.batch)
+      if (role === 'kv-page' || role === 'prefill-kv') {
+        // Bounded glyph occupancy; true byte capacity is printed in the HUD/lab.
+        const occupancy = Math.min(
+          1,
+          (p.prompt + (role === 'kv-page' ? p.output * (phase % 1) : 0)) / 4096,
+        )
+        mesh.count = Math.max(1, Math.ceil(max * occupancy))
+      }
+      if (role === 'kv-handoff') {
+        mesh.visible = p.disaggregated
+        mesh.position.y = selected ? Math.sin(phase * Math.PI) * 0.8 : 0
+      }
+      if (role === 'local-state') mesh.visible = !p.disaggregated
+      if (role === 'retiring-kv')
+        mesh.count = selected ? Math.ceil(max * (1 - (phase % 1))) : max
+      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true
+    }
+  }
+  update(view: ExampleView | LifecycleView, phase: number) {
     const stage = view.stage
+    const activeRoute =
+      'phase' in view && view.phase === 'pretrain' && stage === 3 ? 2 : stage
     if (stage !== this.lastStage) {
       this.ring.position.set(positions[stage][0], 0.29, positions[stage][1])
       this.routeMaterials.forEach(
-        (m, i) => (m.opacity = i === stage ? 0.95 : 0.18),
+        (m, i) => (m.opacity = i === activeRoute ? 0.95 : 0.18),
       )
       this.lastStage = stage
     }
+    if ('phase' in view) this.updateLifecycle(view, phase)
     this.ring.scale.setScalar(1 + Math.sin(phase * 6) * 0.018)
     const lanes = this.model.kind === 'duplex' ? 2 : 1
     this.packets.count = lanes * 12
@@ -368,7 +665,17 @@ export class ExampleWorld {
             0.9,
             -4 + (lane ? t : 1 - t) * 8,
           )
-        else this.routes[stage].getPoint(t, this.point)
+        else
+          this.routes[
+            'phase' in view && view.phase === 'pretrain' && stage === 3
+              ? 2
+              : stage
+          ].getPoint(
+            'phase' in view && view.phase === 'pretrain' && stage === 3
+              ? 1 - t
+              : t,
+            this.point,
+          )
         this.matrix.compose(
           this.point,
           this.rotation,
@@ -389,6 +696,7 @@ export class ExampleWorld {
     // attention or predict measured wall-clock performance.
     if (
       this.model.kind === 'image' &&
+      'resolution' in view.inputs &&
       view.inputs.resolution !== this.lastResolution
     ) {
       const factor = 0.45 + (view.inputs.resolution / 2048) * 0.55
@@ -404,10 +712,10 @@ export class ExampleWorld {
         })
       this.lastResolution = view.inputs.resolution
     }
-    if (this.model.kind === 'tts')
+    if (this.model.kind === 'tts' && 'hop' in view.inputs)
       this.pickable
         .filter((m) => m.userData.tokenGrid)
-        .forEach((m) => (m.count = view.inputs.hop))
+        .forEach((m) => (m.count = 'hop' in view.inputs ? view.inputs.hop : 25))
   }
   dispose() {
     const geometries = new Set<THREE.BufferGeometry>(),

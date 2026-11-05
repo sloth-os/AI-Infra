@@ -63,6 +63,7 @@ import type { MotionFrame } from './motion'
 import FleetGame from './game/Game'
 import LearningFusion from './learning/LearningFusion'
 import { ModelReferenceSection } from './examples/ModelExamples'
+import { LifecycleReferenceSection } from './lifecycle/Lifecycle'
 import { journeyScene } from './learning/model'
 
 const layerIcons: Record<Layer, LucideIcon> = {
@@ -2000,6 +2001,7 @@ function GuideView({ onExplore }: { onExplore: (layer: Layer) => void }) {
           mix hardware, models, replicas, and training jobs.
         </p>
       </section>
+      <LifecycleReferenceSection />
       <ModelReferenceSection />
       <section className="layer-guide-grid">
         {layers.map((l, i) => {

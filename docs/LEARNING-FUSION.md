@@ -62,3 +62,9 @@ The header's layout toggle preserves parameters, strategy, selection, and the ex
 - `InfrastructureScene.tsx` lazily creates the runtime on first activation and retains it across workspace changes. `src/scene/engine.ts` handles projection, picking, camera interpolation, payload following, and rendering.
 
 Pure tests cover stage mapping, optional retrieval, exact collective snapshots, parallelism distinctions, parameterized URLs, strategy/model consistency, KV payload bytes, and stable placement. Browser tests exercise all four workspaces, shared model changes and reload, synchronized algorithms, local prompt handling, complete readers, camera tracking, cinema, layout continuity, mobile bounds, reduced motion, and unavailable WebGL. The existing game and classic-learning suites guard the preserved interfaces. No runtime dependencies or external services were added.
+
+## AI lifecycle workflows
+
+**AI lifecycle** opens pre-training, post-training and inference in the same persistent learning canvas. Each phase has six 3D stages and a flow, sizing, network/choices and evidence reader. SFT, DPO and GRPO switch post-training data, loss and infrastructure roles. Topology, sharding, LoRA, rollout and KV controls change both the declared calculations and aggregate world glyphs. The comparison reader connects the artifacts across all three phases.
+
+In a lifecycle lesson, **1–6 / arrows** select a stage, **Space** controls lesson playback, and **F** focuses the selected platform. Cinema also controls the lesson clock; the original request timeline stays frozen. **World/Details**, mobile access, reduced motion, shared URLs and 2D fallback follow the existing field-trip conventions. [LIFECYCLE.md](LIFECYCLE.md) documents source revisions, formulas, visual aggregation and verification.

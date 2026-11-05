@@ -5,8 +5,15 @@ import { conceptWorld } from './model'
 import { ModelCatalog, ModelStudy } from '../examples/ModelExamples'
 import type { ExampleId } from '../examples/catalog'
 import type { ExampleView } from '../examples/model'
+import { LifecycleStudy } from '../lifecycle/Lifecycle'
+import type { LifecycleView } from '../lifecycle/model'
 
-export type LibraryTab = 'concepts' | 'glossary' | 'sources' | 'models'
+export type LibraryTab =
+  | 'concepts'
+  | 'glossary'
+  | 'sources'
+  | 'models'
+  | 'lifecycle'
 const detailWorlds: Record<string, { layer: Layer; traffic: Traffic }> = {
   gateway: { layer: 'fleet', traffic: 'requests' },
   scheduler: { layer: 'fleet', traffic: 'requests' },
@@ -29,6 +36,9 @@ export default function LearningLibrary({
   onExample,
   onChooseExample,
   onCompare,
+  lifecycle,
+  onLifecycle,
+  onLifecycleCompare,
 }: {
   query: string
   onQuery: (q: string) => void
@@ -40,6 +50,9 @@ export default function LearningLibrary({
   onExample: (v: ExampleView | null) => void
   onChooseExample: (id: ExampleId) => void
   onCompare: () => void
+  lifecycle: LifecycleView
+  onLifecycle: (view: LifecycleView) => void
+  onLifecycleCompare: () => void
 }) {
   const match = (value: string) =>
     value.toLowerCase().includes(query.toLowerCase())
@@ -68,7 +81,7 @@ export default function LearningLibrary({
           ? 'Explore how text, images, video, music, and speech move through real model pipelines.'
           : 'Find the idea, then locate the part of the infrastructure where it matters.'}
       </p>
-      {!(tab === 'models' && example) && (
+      {tab !== 'lifecycle' && !(tab === 'models' && example) && (
         <label className="learn-library-search">
           <Search size={16} />
           <input
@@ -88,21 +101,35 @@ export default function LearningLibrary({
         className="learn-library-tabs"
         aria-label="Learning library sections"
       >
-        {(['concepts', 'glossary', 'sources', 'models'] as LibraryTab[]).map(
-          (t) => (
-            <button key={t} aria-pressed={t === tab} onClick={() => onTab(t)}>
-              {t === 'concepts'
+        {(
+          [
+            'concepts',
+            'glossary',
+            'sources',
+            'models',
+            'lifecycle',
+          ] as LibraryTab[]
+        ).map((t) => (
+          <button key={t} aria-pressed={t === tab} onClick={() => onTab(t)}>
+            {t === 'lifecycle'
+              ? 'AI lifecycle'
+              : t === 'concepts'
                 ? 'Problems & solutions'
                 : t === 'glossary'
                   ? 'Glossary'
                   : t === 'models'
                     ? 'Real models'
                     : 'Primary sources'}
-            </button>
-          ),
-        )}
+          </button>
+        ))}
       </nav>
-      {tab === 'models' ? (
+      {tab === 'lifecycle' ? (
+        <LifecycleStudy
+          view={lifecycle}
+          onChange={onLifecycle}
+          onCompare={onLifecycleCompare}
+        />
+      ) : tab === 'models' ? (
         example ? (
           <ModelStudy
             view={example}
