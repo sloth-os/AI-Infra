@@ -11,6 +11,8 @@ import {
 import { duration, formatNumber, kvBytes, simulate } from '../model'
 import type { Parameters, Strategy } from '../model'
 import { learningScenarioUrl } from './model'
+import LearningChallenges from './LearningChallenges'
+import type { LearningChallenge } from './challenges'
 
 export const strategyNames: Record<Strategy, string> = {
   static: 'Static batching',
@@ -98,6 +100,7 @@ export default function LearningLab({
   onParameters,
   onPreset,
   onWorkbench,
+  onChallengeWorld,
 }: {
   params: Parameters
   strategy: Strategy
@@ -105,6 +108,7 @@ export default function LearningLab({
   onParameters: (p: Parameters) => void
   onPreset: (id: string) => void
   onWorkbench: () => void
+  onChallengeWorld?: (challenge: LearningChallenge) => void
 }) {
   const [copied, setCopied] = useState(false)
   const result = simulate(params, strategy),
@@ -138,6 +142,15 @@ export default function LearningLab({
         Change the workload. Compare three serving strategies. The world’s load
         overlay and payload sizes use the same parameters.
       </p>
+      <LearningChallenges
+        params={params}
+        strategy={strategy}
+        onLoad={(c) => {
+          onParameters({ ...c.initial })
+          onStrategy(c.strategy)
+          onChallengeWorld?.(c)
+        }}
+      />
       <div className="learn-presets">
         {[
           ['baseline', 'Baseline'],

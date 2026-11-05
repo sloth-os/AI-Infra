@@ -1,6 +1,16 @@
 import { kvBytes } from '../model.ts'
 
 export type ModuleType = 'prefill' | 'decode' | 'cache' | 'fabric'
+export type DispatchPolicy = 'fifo' | 'deadline' | 'shortest'
+export type ContractId = 'steady' | 'reserve' | 'balanced'
+export const SURGE = {
+  cost: 60,
+  duration: 6,
+  cooldown: 22,
+  multiplier: 1.75,
+  power: 2,
+  recharge: 2,
+} as const
 export type GamePhase = 'briefing' | 'playing' | 'paused' | 'victory' | 'defeat'
 export type JobPhase =
   | 'queued'
@@ -99,6 +109,7 @@ export interface Job {
   generated: number
   completedAt: number | null
   cacheHit: boolean
+  surged?: boolean
 }
 export interface GameEvent {
   id: number
@@ -299,6 +310,18 @@ export interface GameState {
   batching: boolean
   prefixReuse: boolean
   powerUpgrades: number
+  dispatchPolicy: DispatchPolicy
+  memoryBackfill: boolean
+  energy: number
+  surgeUnit: number | null
+  surgeUntil: number
+  surgeReadyAt: number
+  surgeUses: number
+  surgedCompletions: number
+  streak: number
+  bestStreak: number
+  claimed: ContractId[]
+  drillReadyAt: number
   units: Unit[]
   jobs: Job[]
   events: GameEvent[]
@@ -321,6 +344,11 @@ export type GameAction =
   | { type: 'repair'; unit: number }
   | { type: 'research'; research: 'batching' | 'prefix' | 'power' }
   | { type: 'finish' }
+  | { type: 'dispatch'; policy: DispatchPolicy }
+  | { type: 'backfill'; enabled: boolean }
+  | { type: 'surge'; unit: number }
+  | { type: 'claim'; contract: ContractId }
+  | { type: 'drill'; kind: 'burst' | 'context' }
 
 export function missionById(id: string): Mission {
   return MISSIONS.find((m) => m.id === id) || SANDBOX
@@ -341,6 +369,60 @@ export function prefillRate(unit: Unit) {
 }
 export function decodeRate(unit: Unit) {
   return 48 * (1 + 0.55 * (unit.level - 1))
+}
+export function surgeFactor(s: GameState, unit: Unit) {
+  return s.surgeUnit === unit.id &&
+    s.time < s.surgeUntil &&
+    unit.offlineUntil <= s.time
+    ? SURGE.multiplier
+    : 1
+}
+export function dispatchQueue(s: GameState, jobs: Job[]) {
+  return [...jobs].sort((a, b) => {
+    const priority =
+      s.dispatchPolicy === 'deadline'
+        ? a.born + a.deadline - b.born - b.deadline
+        : s.dispatchPolicy === 'shortest'
+          ? a.input - b.input
+          : a.born - b.born
+    return priority || a.born - b.born || a.id - b.id
+  })
+}
+export function serviceContracts(s: GameState) {
+  return [
+    {
+      id: 'steady' as const,
+      title: 'Steady hands',
+      detail: 'Deliver 10 requests in a row without a miss.',
+      progress: Math.min(10, s.bestStreak),
+      goal: 10,
+      reward: 40,
+      ready: s.bestStreak >= 10,
+    },
+    {
+      id: 'reserve' as const,
+      title: 'Reserve operator',
+      detail: 'Deliver 3 requests that actually used a capacity surge.',
+      progress: Math.min(3, s.surgedCompletions),
+      goal: 3,
+      reward: 45,
+      ready: s.surgedCompletions >= 3,
+    },
+    {
+      id: 'balanced' as const,
+      title: 'Balanced district',
+      detail:
+        'Deliver 10 with batching installed, a KV bank, and at least 400 Gb/s fabric.',
+      progress: Math.min(10, s.served),
+      goal: 10,
+      reward: 80,
+      ready:
+        s.served >= 10 &&
+        s.batching &&
+        s.units.some((u) => u.type === 'cache') &&
+        getGameMetrics(s).bandwidth >= 400,
+    },
+  ]
 }
 export function decodeSlots(s: GameState, u: Unit) {
   return s.batching ? Math.min(4, u.level + 1) : 1
@@ -367,12 +449,14 @@ export function getGameMetrics(s: GameState) {
     m.network +
     s.units
       .filter((u) => u.type === 'fabric' && u.offlineUntil <= s.time)
-      .reduce((sum, u) => sum + u.level * 200, 0)
+      .reduce((sum, u) => sum + u.level * 200 * surgeFactor(s, u), 0)
   return {
     memory,
     used,
     bandwidth,
-    power: s.units.reduce((sum, u) => sum + unitPower(u), 0),
+    power:
+      s.units.reduce((sum, u) => sum + unitPower(u), 0) +
+      (s.time < s.surgeUntil ? SURGE.power : 0),
     maxPower: 18 + s.powerUpgrades * 8,
     queued: s.jobs.filter((j) => j.phase === 'queued').length,
     transfers: s.jobs.filter((j) => j.phase === 'transfer').length,
@@ -421,6 +505,18 @@ export function createGame(mission = MISSIONS[0].id): GameState {
     batching: false,
     prefixReuse: false,
     powerUpgrades: 0,
+    dispatchPolicy: 'fifo',
+    memoryBackfill: false,
+    energy: 100,
+    surgeUnit: null,
+    surgeUntil: 0,
+    surgeReadyAt: 0,
+    surgeUses: 0,
+    surgedCompletions: 0,
+    streak: 0,
+    bestStreak: 0,
+    claimed: [],
+    drillReadyAt: 0,
     units: m.starter.map((u, i) => ({
       id: i + 1,
       pad: u.pad,
@@ -457,6 +553,7 @@ function clone(s: GameState): GameState {
     units: s.units.map((u) => ({ ...u, prefixes: [...u.prefixes] })),
     jobs: s.jobs.map((j) => ({ ...j })),
     events: [...s.events],
+    claimed: [...s.claimed],
   }
 }
 function random(s: GameState) {
@@ -487,6 +584,94 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
   if (state.phase !== 'playing' && state.phase !== 'paused') return state
   const s = clone(state),
     metrics = getGameMetrics(s)
+  if (action.type === 'dispatch') {
+    if (!['fifo', 'deadline', 'shortest'].includes(action.policy))
+      return denied(state, 'Choose a valid queue policy.')
+    s.dispatchPolicy = action.policy
+    event(
+      s,
+      `Queue policy: ${action.policy === 'deadline' ? 'earliest absolute deadline' : action.policy === 'shortest' ? 'shortest prompt first' : 'first in, first out'}. Running work stays on its assigned worker.`,
+    )
+    return s
+  }
+  if (action.type === 'backfill') {
+    s.memoryBackfill = Boolean(action.enabled)
+    event(
+      s,
+      s.memoryBackfill
+        ? 'Memory backfill enabled: a smaller waiting request may pass a request that cannot fit.'
+        : 'Strict queue memory admission restored.',
+    )
+    return s
+  }
+  if (action.type === 'surge') {
+    const unit = s.units.find((u) => u.id === action.unit)
+    if (!unit || unit.type === 'cache')
+      return denied(
+        state,
+        'Choose a prefill engine, decode engine or fabric switch.',
+      )
+    if (unit.offlineUntil > s.time)
+      return denied(state, 'Repair this module before activating its reserve.')
+    if (s.time < s.surgeReadyAt)
+      return denied(state, 'The reserve is recharging. Wait for its cooldown.')
+    if (s.energy < SURGE.cost)
+      return denied(state, `Reserve needs ${SURGE.cost} capacitor energy.`)
+    if (metrics.power + SURGE.power > metrics.maxPower)
+      return denied(
+        state,
+        'Reserve needs 2 free power units. Expand power headroom first.',
+      )
+    s.energy -= SURGE.cost
+    s.surgeUnit = unit.id
+    s.surgeUntil = s.time + SURGE.duration
+    s.surgeReadyAt = s.time + SURGE.cooldown
+    s.surgeUses++
+    event(
+      s,
+      `Capacity surge in ${PADS[unit.pad].name}: ${SURGE.multiplier}× ${unit.type === 'fabric' ? 'switch bandwidth' : 'compute'} for ${SURGE.duration}s, +2 power.`,
+      'good',
+    )
+    return s
+  }
+  if (action.type === 'claim') {
+    const contract = serviceContracts(s).find((c) => c.id === action.contract)
+    if (!contract || !contract.ready || s.claimed.includes(contract.id))
+      return denied(state, 'That contract is incomplete or already claimed.')
+    s.claimed.push(contract.id)
+    s.credits += contract.reward
+    s.score += 150
+    event(
+      s,
+      `${contract.title} complete. +${contract.reward} credits and +150 score.`,
+      'good',
+    )
+    return s
+  }
+  if (action.type === 'drill') {
+    if (s.mission !== 'sandbox' || !['burst', 'context'].includes(action.kind))
+      return denied(state, 'Stress drills are available in Open horizon.')
+    if (s.time < s.drillReadyAt)
+      return denied(state, 'Wait for the stress drill cooldown.')
+    const count = Math.min(
+      8,
+      64 - s.jobs.filter((j) => j.phase !== 'done').length,
+    )
+    if (count <= 0) return denied(state, 'The admission queue is full.')
+    for (let i = 0; i < count; i++) {
+      const input =
+        action.kind === 'context' ? (i % 2 ? 8192 : 4096) : i % 2 ? 512 : 256
+      const tenant = Math.floor(random(s) * 3)
+      s.jobs.push(makeJob(s, input, tenant, null))
+    }
+    s.drillReadyAt = s.time + 15
+    event(
+      s,
+      `${count} real ${action.kind === 'context' ? 'long-context' : 'burst'} drill requests joined the queue. Admission and deadlines still apply.`,
+      'warning',
+    )
+    return s
+  }
   if (action.type === 'build') {
     if (!Number.isInteger(action.pad) || !PADS[action.pad])
       return denied(state, 'Choose a valid build pad.')
@@ -576,6 +761,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return s
     }
     if (action.type === 'sell') {
+      if (s.surgeUnit === u.id && s.time < s.surgeUntil)
+        return denied(
+          state,
+          'Wait for the active surge to end before recycling this module.',
+        )
       if (activeOn(s, u.id))
         return denied(
           state,
@@ -606,9 +796,36 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
   return state
 }
 
+function makeJob(
+  s: GameState,
+  input: number,
+  tenant: number,
+  prefix: string | null,
+): Job {
+  const m = missionById(s.mission)
+  return {
+    id: s.nextJob++,
+    tenant,
+    input,
+    output: m.output,
+    prefix,
+    born: s.time,
+    deadline: m.deadline,
+    phase: 'queued',
+    prefillId: null,
+    decodeId: null,
+    remaining: input,
+    stageTotal: input,
+    kvMiB: kvBytes(input + m.output) / 2 ** 20,
+    generated: 0,
+    completedAt: null,
+    cacheHit: false,
+  }
+}
 function step(s: GameState, dt: number) {
   const m = missionById(s.mission)
   s.time += dt
+  s.energy = Math.min(100, s.energy + dt * SURGE.recharge)
   if (m.requirement === 'all' && !s.faultTriggered && s.time >= 24) {
     const victim = s.units.find((u) => u.type === 'prefill')
     if (victim) {
@@ -632,6 +849,7 @@ function step(s: GameState, dt: number) {
     s.nextArrival += interval
     if (s.jobs.filter((j) => j.phase !== 'done').length >= 64) {
       s.lost++
+      s.streak = 0
       s.integrity -= 2
       event(
         s,
@@ -646,24 +864,14 @@ function step(s: GameState, dt: number) {
           m.requirement === 'all' ||
           m.id === 'sandbox') &&
         random(s) < 0.72
-      s.jobs.push({
-        id: s.nextJob++,
-        tenant,
-        input,
-        output: m.output,
-        prefix: cacheable ? `tenant-${tenant}:system-prefix-v1` : null,
-        born: s.time,
-        deadline: m.deadline,
-        phase: 'queued',
-        prefillId: null,
-        decodeId: null,
-        remaining: input,
-        stageTotal: input,
-        kvMiB: kvBytes(input + m.output) / 2 ** 20,
-        generated: 0,
-        completedAt: null,
-        cacheHit: false,
-      })
+      s.jobs.push(
+        makeJob(
+          s,
+          input,
+          tenant,
+          cacheable ? `tenant-${tenant}:system-prefix-v1` : null,
+        ),
+      )
     }
   }
   for (const j of s.jobs) {
@@ -672,6 +880,7 @@ function step(s: GameState, dt: number) {
       j.phase = 'done'
       j.completedAt = s.time
       s.lost++
+      s.streak = 0
       s.integrity -= 8
       event(
         s,
@@ -680,9 +889,15 @@ function step(s: GameState, dt: number) {
       )
     }
   }
-  for (const j of s.jobs.filter((j) => j.phase === 'queued')) {
+  for (const j of dispatchQueue(
+    s,
+    s.jobs.filter((j) => j.phase === 'queued'),
+  )) {
     const metrics = getGameMetrics(s)
-    if (metrics.used + j.kvMiB > metrics.memory) break
+    if (metrics.used + j.kvMiB > metrics.memory) {
+      if (s.memoryBackfill) continue
+      break
+    }
     const candidates = s.units.filter(
       (u) =>
         u.type === 'prefill' &&
@@ -709,7 +924,8 @@ function step(s: GameState, dt: number) {
   for (const j of s.jobs.filter((j) => j.phase === 'prefill')) {
     const worker = s.units.find((u) => u.id === j.prefillId)
     if (!worker || worker.offlineUntil > s.time) continue
-    j.remaining -= prefillRate(worker) * dt
+    if (surgeFactor(s, worker) > 1) j.surged = true
+    j.remaining -= prefillRate(worker) * surgeFactor(s, worker) * dt
     if (j.remaining <= 0) {
       j.phase = 'ready'
       j.remaining = 0
@@ -717,7 +933,10 @@ function step(s: GameState, dt: number) {
         worker.prefixes = [j.prefix, ...worker.prefixes].slice(0, 3)
     }
   }
-  for (const j of s.jobs.filter((j) => j.phase === 'ready')) {
+  for (const j of dispatchQueue(
+    s,
+    s.jobs.filter((j) => j.phase === 'ready'),
+  )) {
     const candidates = s.units.filter(
       (u) =>
         u.type === 'decode' &&
@@ -744,6 +963,8 @@ function step(s: GameState, dt: number) {
   for (const j of transferring) {
     const worker = s.units.find((u) => u.id === j.decodeId)
     if (!worker || worker.offlineUntil > s.time) continue
+    if (s.units.some((u) => u.type === 'fabric' && surgeFactor(s, u) > 1))
+      j.surged = true
     j.remaining -= perTransfer * dt
     if (j.remaining <= 0) {
       j.phase = 'decode'
@@ -758,9 +979,12 @@ function step(s: GameState, dt: number) {
       (j) => j.phase === 'decode' && j.decodeId === u.id,
     )
     const rate =
-      (decodeRate(u) * (s.batching ? 1 + 0.55 * (jobs.length - 1) : 1)) /
+      (decodeRate(u) *
+        surgeFactor(s, u) *
+        (s.batching ? 1 + 0.55 * (jobs.length - 1) : 1)) /
       Math.max(1, jobs.length)
     for (const j of jobs) {
+      if (surgeFactor(s, u) > 1) j.surged = true
       const amount = Math.min(j.remaining, rate * dt)
       j.remaining -= amount
       j.generated += amount
@@ -772,6 +996,9 @@ function step(s: GameState, dt: number) {
         j.phase = 'done'
         j.completedAt = s.time
         s.served++
+        s.streak++
+        s.bestStreak = Math.max(s.bestStreak, s.streak)
+        if (j.surged) s.surgedCompletions++
         s.credits += 12
         s.latencyTotal += s.time - j.born
         s.score +=

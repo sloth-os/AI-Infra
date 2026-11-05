@@ -84,6 +84,7 @@ import {
 } from '../lifecycle/model'
 import type { LifecycleView } from '../lifecycle/model'
 import { phaseInfo } from '../lifecycle/catalog'
+import { VisualSettings, useEffectsQuality } from '../components/VisualSettings'
 
 export type LearningPage = Exclude<Page, 'game'>
 type Panel =
@@ -200,6 +201,7 @@ function LearningDialog({
 }
 
 export default function LearningFusion(p: Props) {
+  const effects = useEffectsQuality()
   const root = useRef<HTMLElement>(null),
     card = useRef<HTMLElement>(null),
     cardHeight = useRef(360),
@@ -750,6 +752,7 @@ export default function LearningFusion(p: Props) {
       <div className="learning-world">
         <InfrastructureScene
           ref={p.sceneRef}
+          effects={effects}
           active={p.active}
           immersive
           layer={p.layer}
@@ -912,6 +915,7 @@ export default function LearningFusion(p: Props) {
                   </button>
                 </nav>
                 <div className="learn-header-tools">
+                  <VisualSettings />
                   <button
                     onClick={() => {
                       go('guide')
@@ -1344,6 +1348,11 @@ export default function LearningFusion(p: Props) {
                       onParameters={changeParameters}
                       onPreset={p.onPreset}
                       onWorkbench={() => setReader('lab')}
+                      onChallengeWorld={(c) => {
+                        closeContext()
+                        p.onLocate(c.world.layer, c.world.traffic, c.world.node)
+                        p.onHeatmap(true)
+                      }}
                     />
                   ) : panel === 'guide' ? (
                     <LearningLibrary

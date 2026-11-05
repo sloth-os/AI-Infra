@@ -1,0 +1,116 @@
+.visual-settings {
+  position: relative;
+  color: #b0c9c8;
+  flex-shrink: 0;
+}
+.visual-settings > summary {
+  list-style: none;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  border: 1px solid #7898a444;
+  border-radius: 6px;
+  background: #172e3d88;
+}
+.visual-settings > summary::-webkit-details-marker {
+  display: none;
+}
+.visual-settings > summary:focus-visible {
+  outline: 2px solid #c6dea0;
+  outline-offset: 3px;
+}
+.visual-settings[open] > summary {
+  color: #d1e5af;
+  background: #334a3e;
+}
+.visual-settings > div {
+  position: absolute;
+  top: 43px;
+  right: 0;
+  width: 232px;
+  border: 1px solid #819ba655;
+  border-radius: 9px;
+  background: #112734f5;
+  backdrop-filter: blur(20px);
+  padding: 14px;
+  z-index: 90;
+  box-shadow: 0 15px 50px #020a1255;
+}
+.visual-settings > div > span {
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: #93b3bb;
+}
+.visual-settings > div > button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 5px;
+  width: 100%;
+  padding: 10px;
+  margin-top: 8px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  text-align: left;
+  background: #203b4866;
+  color: #b0c6d2;
+  font-size: 12px;
+}
+.visual-settings > div > button[aria-pressed='true'] {
+  color: #c6dea0;
+  border-color: #a0be8677;
+}
+.visual-settings small {
+  display: block;
+  flex-basis: 100%;
+  color: #88a5b6;
+  font-size: 9px;
+  line-height: 1.8;
+}
+.visual-settings > div > p {
+  font-size: 9px;
+  color: #8fabb9;
+  line-height: 1.8;
+  margin: 12px 0 0;
+}
+@media (max-width: 700px) {
+  .visual-settings > summary {
+    width: 29px;
+    height: 30px;
+  }
+}
+@media (max-width: 370px) {
+  .visual-settings > summary {
+    width: 25px;
+    height: 29px;
+  }
+}
+
+.fleet-game .visual-settings > div > button,
+.learning-fusion .visual-settings > div > button {
+  width: 100%;
+  height: auto;
+  min-height: 45px;
+  display: flex;
+  padding: 10px;
+}
+@media (max-width: 700px) {
+  .learning-fusion
+    .learn-header-tools
+    > button[aria-label='Search learning library'] {
+    display: none;
+  }
+}
+
+@media (max-width: 700px) {
+  .visual-settings > div {
+    position: fixed;
+    top: 63px;
+    right: 12px;
+    width: 232px;
+    max-width: calc(100vw - 24px);
+  }
+}

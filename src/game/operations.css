@@ -1,0 +1,208 @@
+.game-operations {
+  border: 1px solid #7b9eaa44;
+  border-radius: 8px;
+  background: #142c386e;
+  padding: 16px;
+  margin: 16px 0 22px;
+  color: #b3cbd1;
+}
+.game-operations .ops-kicker {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 8px;
+  color: #a8cbad;
+  letter-spacing: 0.7px;
+}
+.game-operations .ops-kicker small {
+  margin-left: auto;
+  color: #c5dfa5;
+  font-size: 9px;
+  letter-spacing: 0;
+}
+.game-operations h3 {
+  font-size: 17px;
+  font-weight: 450;
+  color: #d4e5dc;
+  line-height: 1.7;
+  margin: 12px 0 18px;
+}
+.game-operations p {
+  font-size: 10px;
+  line-height: 1.9;
+  color: #93afbd;
+  margin: 10px 0;
+}
+.game-operations .ops-select {
+  display: block;
+  font-size: 10px;
+  color: #a8c1c9;
+  line-height: 1.8;
+  margin-bottom: 10px;
+}
+.game-operations .ops-select select {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  padding: 10px 8px;
+  border: 1px solid #7f9dab55;
+  border-radius: 5px;
+  background: #122a38;
+  color: #c5dad6;
+  color-scheme: dark;
+  font: inherit;
+  font-size: 11px;
+  margin-top: 7px;
+}
+.game-operations .ops-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 10px;
+  line-height: 1.8;
+  margin: 16px 0;
+  color: #aec7ce;
+}
+.game-operations input[type='checkbox'] {
+  width: 15px;
+  height: 15px;
+  margin: 2px 0 0;
+  accent-color: #c6dea0;
+  flex-shrink: 0;
+}
+.game-operations .ops-capacitor {
+  border: 1px solid #82a5ad44;
+  background: #19364077;
+  border-radius: 6px;
+  padding: 12px;
+  margin-top: 18px;
+}
+.game-operations .ops-capacitor.surging {
+  border-color: #d4b779aa;
+}
+.game-operations .ops-capacitor > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.game-operations .ops-capacitor > div > span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: #d7c9a5;
+}
+.game-operations .ops-capacitor strong {
+  font-size: 23px;
+  font-weight: 400;
+  color: #e6d39b;
+}
+.game-operations .ops-capacitor strong small {
+  font-size: 10px;
+  color: #89a6b5;
+}
+.game-operations .ops-energy {
+  height: 5px;
+  border-radius: 4px;
+  background: #08202d;
+  margin: 12px 0 17px;
+  overflow: hidden;
+}
+.game-operations .ops-energy > i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #91b6b8, #e7d69d);
+}
+.game-operations button {
+  border: 1px solid #7e9fa44d;
+  background: #294333;
+  color: #c6dea0;
+  padding: 10px 12px;
+  border-radius: 5px;
+  font: inherit;
+  font-size: 10px;
+  line-height: 1.6;
+}
+.game-operations button:disabled {
+  opacity: 0.42;
+  cursor: default;
+}
+.game-operations button:focus-visible,
+.game-operations select:focus-visible,
+.game-operations input:focus-visible {
+  outline: 2px solid #c6dea0;
+  outline-offset: 3px;
+}
+.game-operations .ops-surge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  gap: 7px;
+  background: #49432a;
+  color: #e6d59b;
+  border-color: #bcae6f77;
+}
+.game-operations .ops-contract-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  text-align: left;
+  margin-top: 16px;
+  background: #1d3842;
+}
+.game-operations .ops-contract-toggle svg:last-child {
+  margin-left: auto;
+}
+.game-operations .ops-contracts {
+  display: grid;
+  gap: 9px;
+  margin-top: 12px;
+}
+.game-operations .ops-contracts > article {
+  border: 1px solid #759aa33d;
+  border-radius: 6px;
+  padding: 12px;
+  background: #1a3340;
+}
+.game-operations .ops-contracts > article > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+.game-operations .ops-contracts strong {
+  color: #c7ddd2;
+  font-size: 12px;
+  font-weight: 450;
+}
+.game-operations .ops-contracts span {
+  color: #a7c59b;
+  font-size: 8px;
+}
+.game-operations .ops-drills {
+  margin-top: 21px;
+  border-top: 1px solid #85a5a72c;
+  padding-top: 17px;
+}
+.game-operations .ops-drills > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.game-operations .ops-drills small {
+  display: block;
+  color: #d6bd90;
+  font-size: 10px;
+  margin-top: 9px;
+}
+.game-operations p.ops-scope {
+  font-size: 9px;
+  color: #7596a8;
+  margin: 17px 0 0;
+}
+.game-dialog .game-operations {
+  margin: 20px 0;
+}

@@ -45,6 +45,7 @@ import { GameScene } from './GameScene'
 import type { GameSceneHandle } from './GameScene'
 import { RequestLens } from './RequestLens'
 import FusionUI from './FusionUI'
+import { GameOperations } from './Operations'
 import { pinSpatialCard } from './fusion'
 import type { CameraView, FusionLens, SpatialPin } from './fusion'
 import {
@@ -67,6 +68,7 @@ import {
   upgradeCost,
 } from './model'
 import type { GameAction, GameState, ModuleType, Progress } from './model'
+import { VisualSettings, useEffectsQuality } from '../components/VisualSettings'
 import './game.css'
 import './fusion.css'
 
@@ -148,6 +150,7 @@ export default function FleetGame({
   active: boolean
   onLearn: () => void
 }) {
+  const effects = useEffectsQuality()
   const [state, setState] = useState<GameState>(() => createGame())
   const stateRef = useRef(state)
   stateRef.current = state
@@ -234,7 +237,11 @@ export default function FleetGame({
       action.type !== 'pause' &&
       action.type !== 'resume'
     )
-      beep(next.credits !== before.credits || action.type === 'start')
+      beep(
+        next.credits !== before.credits ||
+          action.type === 'start' ||
+          next.energy < before.energy,
+      )
     return next
   }
   const pickPad = (pad: number) => {
@@ -479,6 +486,8 @@ export default function FleetGame({
         scene.current?.rotate(1)
       } else if (e.key.toLowerCase() === 'u' && selectedUnit)
         dispatch({ type: 'upgrade', unit: selectedUnit.id })
+      else if (e.key.toLowerCase() === 'b' && selectedUnit)
+        dispatch({ type: 'surge', unit: selectedUnit.id })
       else if (fusion && e.key.toLowerCase() === 'h') {
         setTheater(!theater)
         e.preventDefault()
@@ -578,6 +587,7 @@ export default function FleetGame({
       aria-label="Fleet Command 3D game"
     >
       <GameScene
+        effects={effects}
         ref={scene}
         active={active}
         state={state}
@@ -625,6 +635,7 @@ export default function FleetGame({
                 : `${mission.name.toUpperCase()} · WAVE ${metrics.wave}`}
             </div>
             <div className="game-header-actions">
+              <VisualSettings />
               <button
                 className="game-fusion-toggle"
                 onClick={toggleFusion}
@@ -1565,6 +1576,9 @@ export default function FleetGame({
                   <kbd>U</kbd> Upgrade selection
                 </span>
                 <span>
+                  <kbd>B</kbd> Surge selected module
+                </span>
+                <span>
                   <kbd>ESC</kbd>{' '}
                   {fusion ? 'Back / mission control' : 'Game menu'}
                 </span>
@@ -1582,6 +1596,14 @@ export default function FleetGame({
                   </>
                 )}
               </div>
+              <p>
+                Operations research adds FIFO, earliest-deadline and
+                shortest-prompt scheduling, optional memory backfill, a capacity
+                reserve with energy/power/cooldown costs, and claimable service
+                contracts. Open horizon also supports burst and long-context
+                stress drills. Select a compute engine or switch to activate its
+                reserve in the world.
+              </p>
               <p className="game-help-disclaimer">
                 This is a teaching game, not a fleet sizing tool. Token sizes
                 use the 70B GQA reference; speed, power, deadlines, and currency
@@ -1641,6 +1663,7 @@ export default function FleetGame({
                   Open the learning explorer
                 </button>
               </div>
+              <GameOperations state={state} onAction={dispatch} />
             </GameDialog>
           )}
           {(state.phase === 'victory' || state.phase === 'defeat') &&

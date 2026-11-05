@@ -33,12 +33,15 @@ import {
   Timer,
   Trash2,
   Wrench,
+  Zap,
   X,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import {
   MODULES,
   PADS,
+  SURGE,
+  surgeFactor,
   decodeRate,
   formatTime,
   getGameMetrics,
@@ -50,6 +53,7 @@ import {
 import type { GameAction, GameState, Job, ModuleType } from './model'
 import { FUSION_LENSES, moduleTelemetry, serviceHint } from './fusion'
 import type { CameraView, FusionLens } from './fusion'
+import { GameOperations } from './Operations'
 import { RequestLens, REQUEST_STAGES } from './RequestLens'
 
 const icons: Record<ModuleType, LucideIcon> = {
@@ -192,7 +196,11 @@ export default function FusionUI(p: Props) {
             </small>
           </span>
           <span>
-            {p.state.lost ? p.state.lost + ' lost' : 'All systems in reach'}
+            {p.state.streak >= 3
+              ? `${p.state.streak} delivery streak`
+              : p.state.lost
+                ? p.state.lost + ' lost'
+                : 'All systems in reach'}
           </span>
         </div>
         <div className="fusion-progress-line">
@@ -527,6 +535,32 @@ export default function FusionUI(p: Props) {
                     <Trash2 size={16} />
                   </button>
                 </div>
+                {unit.type !== 'cache' && (
+                  <div className="fusion-unit-reserve">
+                    <button
+                      aria-label="Surge selected module"
+                      disabled={
+                        unit.offlineUntil > p.state.time ||
+                        p.state.time < p.state.surgeReadyAt ||
+                        p.state.energy < SURGE.cost ||
+                        m.power + SURGE.power > m.maxPower
+                      }
+                      onClick={() =>
+                        p.onAction({ type: 'surge', unit: unit.id })
+                      }
+                    >
+                      <Zap size={14} />
+                      {surgeFactor(p.state, unit) > 1
+                        ? `Reserve active · ${(p.state.surgeUntil - p.state.time).toFixed(1)}s`
+                        : 'Surge capacity · 60 energy'}
+                    </button>
+                    <small>
+                      {surgeFactor(p.state, unit) > 1
+                        ? `${SURGE.multiplier}× effective ${unit.type === 'fabric' ? 'switch bandwidth' : 'compute'}; 2 power reserved.`
+                        : 'Game ability: 1.75× for 6s, +2 power. Queue controls and recharge details are in Operations research.'}
+                    </small>
+                  </div>
+                )}
               </>
             ) : (
               <>
@@ -750,6 +784,9 @@ export default function FusionUI(p: Props) {
                 ? 'Choose a sector.'
                 : 'Read the pressure.'}
           </h2>
+          {panel === 'research' && (
+            <GameOperations state={p.state} onAction={p.onAction} />
+          )}
           {panel === 'research' ? (
             <div className="fusion-research-list">
               {[

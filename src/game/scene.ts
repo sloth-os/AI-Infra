@@ -1,11 +1,15 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+import { FlowEffects, signalMaterial } from '../scene/effects'
+import type { EffectsQuality } from '../scene/effects'
 import { MODULES, PADS, getGameMetrics, activeOn } from './model'
 import type { GameState, ModuleType, Unit, Job } from './model'
 import { moduleTelemetry } from './fusion'
+import { handoffPoint, handoffProgress, outputChunks } from './flow'
 import type { CameraView, FusionLens } from './fusion'
 
 export interface GameSceneOptions {
+  effects?: EffectsQuality
   state: GameState
   active: boolean
   tool: ModuleType | null
@@ -67,6 +71,16 @@ export class GameRenderer {
   private focusHalo: THREE.Mesh
   private focusRoute: THREE.Line
   private routeKey = ''
+  private signals = new FlowEffects(256)
+  private outputBits: THREE.InstancedMesh
+  private outputHistory = new Map<number, number>()
+  private outputFlights: { at: number; from: THREE.Vector3 }[] = []
+  private transferRibbon: THREE.LineSegments
+  private ribbonPositions = new Float32Array(80 * 12 * 2 * 3)
+  private ribbonColors = new Float32Array(80 * 12 * 2 * 3)
+  private signalTime = 0
+  private signalJobs = new Map<number, string>()
+  private signalUnits = new Map<number, string>()
   private trails: THREE.Points
   private trailPositions = new Float32Array(80 * 7 * 3)
   private trailColors = new Float32Array(80 * 7 * 3)
@@ -337,20 +351,40 @@ export class GameRenderer {
       new THREE.BufferAttribute(this.trailPositions, 3),
     )
     g.setAttribute('color', new THREE.BufferAttribute(this.trailColors, 3))
-    this.trails = new THREE.Points(
-      g,
-      new THREE.PointsMaterial({
-        size: 2,
+    this.trails = new THREE.Points(g, signalMaterial(5))
+    this.trails.frustumCulled = false
+    this.scene.add(this.trails, this.signals.group)
+    this.outputBits = new THREE.InstancedMesh(
+      this.cube,
+      new THREE.MeshBasicMaterial({ color: '#f3cf86', toneMapped: false }),
+      128,
+    )
+    this.outputBits.frustumCulled = false
+    this.outputBits.count = 0
+    const ribbon = new THREE.BufferGeometry()
+    ribbon.setAttribute(
+      'position',
+      new THREE.BufferAttribute(this.ribbonPositions, 3).setUsage(
+        THREE.DynamicDrawUsage,
+      ),
+    )
+    ribbon.setAttribute(
+      'color',
+      new THREE.BufferAttribute(this.ribbonColors, 3).setUsage(
+        THREE.DynamicDrawUsage,
+      ),
+    )
+    this.transferRibbon = new THREE.LineSegments(
+      ribbon,
+      new THREE.LineBasicMaterial({
         vertexColors: true,
         transparent: true,
-        opacity: 0.65,
-        blending: THREE.AdditiveBlending,
+        opacity: 0.75,
         depthWrite: false,
-        sizeAttenuation: false,
       }),
     )
-    this.trails.frustumCulled = false
-    this.scene.add(this.trails)
+    this.transferRibbon.frustumCulled = false
+    this.scene.add(this.outputBits, this.transferRibbon)
     canvas.addEventListener('pointerdown', this.pointerDown)
     canvas.addEventListener('pointerup', this.pointerUp)
     canvas.addEventListener('pointermove', this.pointerMove)
@@ -490,6 +524,32 @@ export class GameRenderer {
       signal.position.y = 1.8
       rotor.add(signal)
     }
+    // Board edge contacts, heatsink fins, and port indicators remain schematic.
+    for (let edge = 0; edge < 2; edge++)
+      for (let pin = 0; pin < 12; pin++)
+        box(
+          (pin - 5.5) * 0.14,
+          0.56,
+          edge ? 0.94 : -0.94,
+          0.055,
+          0.035,
+          0.1,
+          '#bda468',
+        )
+    if (u.type === 'prefill' || u.type === 'decode')
+      for (let fin = 0; fin < 11; fin++)
+        box(
+          (fin - 5) * 0.14,
+          u.type === 'prefill' ? 1.58 : 1.24,
+          0,
+          0.035,
+          0.13,
+          1.3,
+          '#8a9eac',
+        )
+    if (u.type === 'fabric')
+      for (let port = 0; port < 6; port++)
+        box((port - 2.5) * 0.25, 1.06, 0.79, 0.055, 0.035, 0.035, '#cde7a2')
     for (const [color, list] of boxes) {
       const mesh = new THREE.InstancedMesh(
         this.cube,
@@ -934,6 +994,81 @@ export class GameRenderer {
     } else target.set(router.x, 1.4, router.z)
     return target
   }
+  private renderFlowDetails(
+    s: GameState,
+    jobs: Job[],
+    quality: EffectsQuality,
+  ) {
+    let vertex = 0
+    for (const job of jobs) {
+      const decode = s.units.find((u) => u.id === job.decodeId),
+        prefill = s.units.find((u) => u.id === job.prefillId)
+      if (job.phase === 'transfer' && decode && prefill) {
+        const a = PADS[prefill.pad],
+          b = PADS[decode.pad],
+          progress = handoffProgress(job.remaining, job.stageTotal)
+        for (let segment = 0; segment < 12; segment++) {
+          const lit = (segment + 1) / 12 <= progress
+          for (const t of [segment / 12, (segment + 0.82) / 12]) {
+            const p = handoffPoint(a, b, t),
+              index = vertex++ * 3
+            this.ribbonPositions[index] = p.x
+            this.ribbonPositions[index + 1] = p.y
+            this.ribbonPositions[index + 2] = p.z
+            this.color.set(lit ? '#c8a9ef' : '#3a546a')
+            this.color.toArray(this.ribbonColors, index)
+          }
+        }
+      }
+      const chunks = outputChunks(job.generated, job.output),
+        previous = this.outputHistory.get(job.id) ?? chunks
+      if (
+        decode &&
+        chunks > previous &&
+        quality !== 'calm' &&
+        !this.reduceMotion
+      ) {
+        for (let n = previous; n < chunks; n++)
+          this.outputFlights.push({
+            at: s.time,
+            from: new THREE.Vector3(
+              PADS[decode.pad].x,
+              1.8,
+              PADS[decode.pad].z,
+            ),
+          })
+      }
+      this.outputHistory.set(job.id, chunks)
+    }
+    this.transferRibbon.geometry.setDrawRange(0, vertex)
+    this.transferRibbon.geometry.attributes.position.needsUpdate = true
+    this.transferRibbon.geometry.attributes.color.needsUpdate = true
+    this.outputFlights = this.outputFlights
+      .filter((f) => s.time >= f.at && s.time - f.at < 1.1)
+      .slice(-128)
+    this.outputBits.visible = quality !== 'calm' && !this.reduceMotion
+    this.outputBits.count = this.outputFlights.length
+    this.outputFlights.forEach((f, i) => {
+      const t = Math.min(1, (s.time - f.at) / 1.1)
+      this.temp.position.copy(f.from).lerp(exit, t)
+      this.temp.position.y += Math.sin(t * Math.PI) * 1.3
+      this.temp.rotation.set(
+        0,
+        Math.atan2(exit.x - f.from.x, exit.z - f.from.z),
+        0,
+      )
+      this.temp.scale.set(0.075, 0.075, 0.25)
+      this.temp.updateMatrix()
+      this.outputBits.setMatrixAt(i, this.temp.matrix)
+      this.color.set('#f3cf86')
+      this.signals.head(this.temp.position, this.color, 0.85)
+    })
+    this.outputBits.instanceMatrix.needsUpdate = true
+    this.renderer.domElement.dataset.streamChunks = String(
+      this.outputFlights.length,
+    )
+    this.renderer.domElement.dataset.transferSegments = String(vertex / 2)
+  }
   private animate = (time: number) => {
     if (this.disposed) return
     this.raf = requestAnimationFrame(this.animate)
@@ -954,9 +1089,32 @@ export class GameRenderer {
       this.qualityFrames = 0
       this.qualityTime = 0
     }
-    if (!this.reduceMotion) this.visualTime += dt
+    if (
+      !this.reduceMotion &&
+      (o.state.phase === 'playing' || o.state.phase === 'briefing')
+    )
+      this.visualTime += dt
     const s = o.state,
       metrics = getGameMetrics(s)
+    if (s.time < this.signalTime) {
+      this.outputFlights = []
+      this.outputHistory.clear()
+      this.signalUnits.clear()
+      this.signalJobs.clear()
+      this.packetVisuals.clear()
+      this.signals.clear()
+    }
+    this.signalTime = s.time
+    this.signals.begin(
+      s.time,
+      o.effects || 'balanced',
+      this.reduceMotion,
+      this.pixelRatio,
+    )
+    this.renderer.domElement.dataset.vfxQuality = o.effects || 'balanced'
+    this.trails.visible = o.effects !== 'calm' && !this.reduceMotion
+    ;(this.trails.material as THREE.ShaderMaterial).uniforms.pointSize.value =
+      (o.effects === 'cinematic' ? 9 : 5) * this.pixelRatio
     // Parentheses keep the briefing preview part of the reconciliation key.
     const key =
       s.units.map((u) => `${u.id}:${u.pad}:${u.type}:${u.level}`).join('|') +
@@ -1050,7 +1208,8 @@ export class GameRenderer {
     for (const [id, v] of this.units) {
       const unit = s.units.find((u) => u.id === id),
         busy = unit ? activeOn(s, id) : 1,
-        offline = unit && unit.offlineUntil > s.time
+        offline = unit && unit.offlineUntil > s.time,
+        surging = unit && s.surgeUnit === id && s.time < s.surgeUntil
       v.gauge.visible = o.fusion
       v.gaugeTrack.visible = o.fusion
       if (unit) {
@@ -1061,23 +1220,44 @@ export class GameRenderer {
         )
         ;(v.gauge.material as THREE.LineBasicMaterial).color.set(reading.color)
       } else v.gauge.geometry.setDrawRange(0, 0)
+      if (unit && s.phase !== 'briefing') {
+        const signature = `${unit.level}:${offline}:${surging}`
+        if (this.signalUnits.get(id) !== signature) {
+          this.signalUnits.set(id, signature)
+          this.signals.pulse(
+            new THREE.Vector3(PADS[unit.pad].x, 0.27, PADS[unit.pad].z),
+            offline
+              ? '#ed8e83'
+              : surging
+                ? '#f4d591'
+                : MODULES[unit.type].color,
+            1.3,
+          )
+        }
+      }
+      if (s.phase === 'paused') v.born = this.visualTime - 1
+      const age = Math.min(1, Math.max(0, (this.visualTime - v.born) * 2.8)),
+        t = age - 1
       const scale = this.reduceMotion
         ? 1
-        : Math.min(1, 0.3 + (this.visualTime - v.born) * 2.8)
+        : 0.3 + 0.7 * (1 + 2.70158 * t * t * t + 1.70158 * t * t)
       v.group.scale.setScalar(scale)
       if (
         !this.reduceMotion &&
+        !offline &&
         (s.phase === 'playing' || s.phase === 'briefing')
       )
-        v.rotor.rotation.y += dt * (busy ? 1.5 : 0.3)
+        v.rotor.rotation.y += dt * (busy ? (surging ? 2.625 : 1.5) : 0.3)
       ;(v.light.material as THREE.MeshBasicMaterial).color.set(
         offline
           ? '#f28080'
-          : busy
-            ? '#f0fbd0'
-            : unit
-              ? MODULES[unit.type].color
-              : '#9dd4bd',
+          : surging
+            ? '#ffe4a5'
+            : busy
+              ? '#f0fbd0'
+              : unit
+                ? MODULES[unit.type].color
+                : '#9dd4bd',
       )
       if (v.fill) {
         const amount = THREE.MathUtils.clamp(
@@ -1107,7 +1287,13 @@ export class GameRenderer {
     const jobs = s.jobs.slice(0, 80)
     const activeIds = new Set(jobs.map((j) => j.id))
     for (const id of this.packetVisuals.keys())
-      if (!activeIds.has(id)) this.packetVisuals.delete(id)
+      if (!activeIds.has(id)) {
+        this.packetVisuals.delete(id)
+        this.signalJobs.delete(id)
+        this.outputHistory.delete(id)
+      }
+    for (const id of this.signalUnits.keys())
+      if (!s.units.some((u) => u.id === id)) this.signalUnits.delete(id)
     for (const j of jobs) {
       this.positionFor(j, s, this.framePosition)
       let visual = this.packetVisuals.get(j.id)
@@ -1186,6 +1372,31 @@ export class GameRenderer {
       if (j.phase === 'done' && j.generated < j.output - 0.01)
         this.color.set('#ed8e83')
       this.packets.setColorAt(i, this.color)
+      this.signals.head(
+        this.framePosition,
+        this.color,
+        j.id === o.focusedJob ? 1.5 : 0.8,
+      )
+      if (this.signalJobs.get(j.id) !== j.phase) {
+        this.signalJobs.set(j.id, j.phase)
+        if (
+          j.phase === 'done' ||
+          j.id === o.focusedJob ||
+          o.effects === 'cinematic'
+        ) {
+          const point = this.framePosition.clone()
+          point.y = 0.3
+          this.signals.pulse(
+            point,
+            j.phase === 'done'
+              ? j.generated >= j.output - 0.01
+                ? '#c9ee87'
+                : '#ed8e83'
+              : this.color,
+            j.phase === 'done' ? 1.4 : 0.7,
+          )
+        }
+      }
       for (let trail = 0; trail < 7; trail++) {
         const point = visual.history[trail]
         const offset = (i * 7 + trail) * 3
@@ -1203,6 +1414,8 @@ export class GameRenderer {
       this.packets.instanceColor.needsUpdate = true
     this.trails.geometry.attributes.position.needsUpdate = true
     this.trails.geometry.attributes.color.needsUpdate = true
+    this.renderFlowDetails(s, jobs, o.effects || 'balanced')
+    this.signals.end()
     if (o.fusion && s.phase !== 'briefing') {
       for (const pad of PADS) {
         this.projected.set(pad.x, 0.2, pad.z).project(this.camera)
@@ -1285,6 +1498,8 @@ export class GameRenderer {
           o instanceof THREE.Points ||
           o === this.padMesh ||
           o === this.packets ||
+          o === this.outputBits ||
+          o === this.signals.rings ||
           o === this.ghost
         )
           (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) =>

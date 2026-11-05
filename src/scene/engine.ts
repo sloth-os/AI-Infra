@@ -14,6 +14,8 @@ import { buildArchitecture, trafficColors } from './architecture'
 import type { Architecture, Box, SceneLabel } from './architecture'
 import { buildTensorArchitecture } from './tensors'
 import { ExampleWorld } from './examples'
+import { FlowEffects, signalMaterial } from './effects'
+import type { EffectsQuality } from './effects'
 import type { ExampleView } from '../examples/model'
 import type { LifecycleView } from '../lifecycle/model'
 import { lifecycleProfile } from '../lifecycle/catalog'
@@ -23,6 +25,7 @@ export interface SceneOptions {
   traffic: Traffic
   paused: boolean
   selected: string
+  effects?: EffectsQuality
   speed?: number
   exploded?: boolean
   heatmap?: boolean
@@ -107,6 +110,8 @@ export class InfrastructureEngine {
   private resizeObserver: ResizeObserver
   private visibilityObserver: IntersectionObserver
   private packets: THREE.InstancedMesh
+  private signals = new FlowEffects(96)
+  private signalChapter = ''
   private trails: THREE.Points
   private trailArray = new Float32Array(96 * 8 * 3)
   private trailColors = new Float32Array(96 * 8 * 3)
@@ -244,18 +249,10 @@ export class InfrastructureEngine {
       'color',
       new THREE.BufferAttribute(this.trailColors, 3),
     )
-    const trailMaterial = new THREE.PointsMaterial({
-      size: 2.5,
-      vertexColors: true,
-      transparent: true,
-      opacity: 0.66,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      sizeAttenuation: false,
-    })
+    const trailMaterial = signalMaterial(6)
     this.trails = new THREE.Points(trailGeometry, trailMaterial)
     this.trails.frustumCulled = false
-    this.scene.add(this.trails)
+    this.scene.add(this.trails, this.signals.group)
     this.arrows = new THREE.InstancedMesh(
       new THREE.ConeGeometry(0.09, 0.25, 6),
       new THREE.MeshBasicMaterial({
@@ -840,10 +837,17 @@ export class InfrastructureEngine {
   private animatePackets() {
     const o = this.options(),
       mode = this.flowMode()
+    this.signals.begin(
+      this.elapsed,
+      o.effects || 'balanced',
+      this.reduceMotion,
+      this.pixelRatio,
+    )
     if (!this.activeRoutes.length) {
       this.packets.visible = false
       this.trails.visible = false
       this.halo.visible = false
+      this.signals.end()
       return
     }
     this.packets.visible = true
@@ -914,7 +918,13 @@ export class InfrastructureEngine {
               : baseColor,
       )
       this.packets.setColorAt(i, this.tempColor)
+      this.signals.head(this.tempPosition, this.tempColor, i === 0 ? 1.5 : 0.7)
       if (i === 0) {
+        const signalKey = `${o.layer}:${o.traffic}:${this.frame.chapterIndex}`
+        if (this.signalChapter !== signalKey) {
+          this.signalChapter = signalKey
+          this.signals.pulse(this.tempPosition, this.tempColor, 1.5)
+        }
         this.halo.position.copy(this.tempPosition)
         this.payloadLabel.position
           .copy(this.tempPosition)
@@ -941,6 +951,10 @@ export class InfrastructureEngine {
       this.packets.instanceColor.needsUpdate = true
     this.trails.geometry.attributes.position.needsUpdate = true
     this.trails.geometry.attributes.color.needsUpdate = true
+    this.signals.end()
+    this.trails.visible = o.effects !== 'calm'
+    ;(this.trails.material as THREE.ShaderMaterial).uniforms.pointSize.value =
+      (o.effects === 'cinematic' ? 9 : 5) * this.pixelRatio
   }
 
   private projectLabels() {
@@ -1093,7 +1107,13 @@ export class InfrastructureEngine {
           )
         }
       }
-      this.exampleWorld.update(lesson, this.exampleElapsed / 3)
+      this.signals.group.visible = false
+      this.exampleWorld.update(
+        lesson,
+        this.exampleElapsed / 3,
+        o.effects || 'balanced',
+        this.reduceMotion,
+      )
     } else {
       if (this.exampleActive) {
         this.exampleActive = false
@@ -1162,6 +1182,7 @@ export class InfrastructureEngine {
       this.renderer.domElement.dataset.cameraView = 'follow'
     }
     this.camera.updateMatrixWorld()
+    this.renderer.domElement.dataset.vfxQuality = o.effects || 'balanced'
     this.renderer.domElement.dataset.cameraPose = this.camera.position
       .toArray()
       .map((n) => n.toFixed(2))

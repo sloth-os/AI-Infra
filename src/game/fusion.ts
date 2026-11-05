@@ -12,7 +12,7 @@ export const FUSION_LENSES: Record<
     name: 'Request flow',
     color: '#c9ee87',
     description:
-      'Rings show occupied compute slots. Follow a payload from admission to its answer.',
+      'Rings show occupied slots. Gold stream beads each represent 8 generated output tokens.',
   },
   memory: {
     name: 'KV memory',
@@ -24,7 +24,7 @@ export const FUSION_LENSES: Record<
     name: 'Network fabric',
     color: '#efb07a',
     description:
-      'Rings show each engine’s share of active KV transfers. Switches show shared-link activity.',
+      'Rings show transfer shares. Purple arc segments fill as KV bytes arrive; switches share the link.',
   },
 }
 

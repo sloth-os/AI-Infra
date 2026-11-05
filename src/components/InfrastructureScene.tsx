@@ -15,6 +15,7 @@ import type { PayloadInspection, SceneOptions } from '../scene/engine'
 import type { SceneLabel } from '../scene/architecture'
 import { findExample } from '../examples/catalog'
 import { lifecycleStages, phaseInfo } from '../lifecycle/catalog'
+import { useEffectsQuality } from './VisualSettings'
 
 export interface SceneHandle {
   reset: () => void
@@ -40,10 +41,11 @@ export const InfrastructureScene = forwardRef<
   SceneHandle,
   InfrastructureSceneProps
 >(function InfrastructureScene(props, ref) {
+  const quality = useEffectsQuality()
   const host = useRef<HTMLDivElement>(null)
   const runtime = useRef<InfrastructureEngine | null>(null)
   const latest = useRef(props)
-  latest.current = props
+  latest.current = { ...props, effects: props.effects || quality }
   const [fallback, setFallback] = useState(false)
   const [labels, setLabels] = useState<SceneLabel[]>([])
   const [frame, setFrame] = useState(() =>

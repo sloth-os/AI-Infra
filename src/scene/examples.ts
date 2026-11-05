@@ -1,4 +1,6 @@
 import * as THREE from 'three'
+import { FlowEffects } from './effects.ts'
+import type { EffectsQuality } from './effects'
 import { findExample } from '../examples/catalog.ts'
 import type { ExampleId, ModelExample } from '../examples/catalog'
 import type { ExampleView } from '../examples/model'
@@ -46,10 +48,15 @@ export class ExampleWorld {
   private cube = new THREE.BoxGeometry(1, 1, 1)
   private matrix = new THREE.Matrix4()
   private point = new THREE.Vector3()
+  private tangent = new THREE.Vector3()
+  private forward = new THREE.Vector3(0, 0, 1)
   private scale = new THREE.Vector3()
   private rotation = new THREE.Quaternion()
   private waveLines: { line: THREE.Line; direction: number; offset: number }[] =
     []
+  private signals = new FlowEffects(48)
+  private signalClock = 0
+  private lastPhase = 0
   private lastStage = -1
   private lastResolution = 0
   private pipeline: ReturnType<typeof pipelineSchedule> | null = null
@@ -364,7 +371,7 @@ export class ExampleWorld {
       48,
     )
     this.packets.frustumCulled = false
-    this.group.add(this.packets)
+    this.group.add(this.packets, this.signals.group)
   }
   private buildLifecycle(
     i: number,
@@ -641,12 +648,22 @@ export class ExampleWorld {
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true
     }
   }
-  update(view: ExampleView | LifecycleView, phase: number) {
+  update(
+    view: ExampleView | LifecycleView,
+    phase: number,
+    quality: EffectsQuality = 'balanced',
+    reduced = false,
+  ) {
     const stage = view.stage
+    if (phase >= this.lastPhase)
+      this.signalClock += (phase - this.lastPhase) * 3
+    this.lastPhase = phase
+    this.signals.begin(this.signalClock, quality, reduced)
     const activeRoute =
       'phase' in view && view.phase === 'pretrain' && stage === 3 ? 2 : stage
     if (stage !== this.lastStage) {
       this.ring.position.set(positions[stage][0], 0.29, positions[stage][1])
+      this.signals.pulse(this.ring.position, this.model.color, 2.2)
       this.routeMaterials.forEach(
         (m, i) => (m.opacity = i === activeRoute ? 0.95 : 0.18),
       )
@@ -676,14 +693,32 @@ export class ExampleWorld {
               : t,
             this.point,
           )
+        if (this.model.kind === 'duplex') this.tangent.set(0, 0, lane ? 1 : -1)
+        else {
+          this.routes[activeRoute].getTangent(
+            'phase' in view && view.phase === 'pretrain' && stage === 3
+              ? 1 - t
+              : t,
+            this.tangent,
+          )
+          if ('phase' in view && view.phase === 'pretrain' && stage === 3)
+            this.tangent.multiplyScalar(-1)
+        }
+        this.rotation.setFromUnitVectors(this.forward, this.tangent.normalize())
         this.matrix.compose(
           this.point,
           this.rotation,
           this.scale.set(0.14, 0.14, 0.28),
         )
         this.packets.setMatrixAt(lane * 12 + k, this.matrix)
+        this.signals.head(
+          this.point,
+          new THREE.Color(this.model.color),
+          lane ? 0.75 : 1,
+        )
       }
     this.packets.instanceMatrix.needsUpdate = true
+    this.signals.end()
     for (const { line, direction, offset } of this.waveLines) {
       const attr = line.geometry.getAttribute(
         'position',
@@ -721,7 +756,11 @@ export class ExampleWorld {
     const geometries = new Set<THREE.BufferGeometry>(),
       materials = new Set<THREE.Material>()
     this.group.traverse((o) => {
-      if (o instanceof THREE.Mesh || o instanceof THREE.Line) {
+      if (
+        o instanceof THREE.Mesh ||
+        o instanceof THREE.Line ||
+        o instanceof THREE.Points
+      ) {
         geometries.add(o.geometry)
         ;(Array.isArray(o.material) ? o.material : [o.material]).forEach((m) =>
           materials.add(m),
