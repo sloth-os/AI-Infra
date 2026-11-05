@@ -180,7 +180,12 @@ export function lifecycleUrl(base: string, view: LifecycleView) {
   for (const key of [...url.searchParams.keys()])
     if (['example', 'examples', 'stage'].includes(key) || key.startsWith('ex_'))
       url.searchParams.delete(key)
-  url.searchParams.set('view', 'guide')
+  if (
+    !['explore', 'guide', 'lab', 'journey'].includes(
+      url.searchParams.get('view') || '',
+    )
+  )
+    url.searchParams.set('view', 'guide')
   url.searchParams.set('learn', 'fusion')
   url.searchParams.set('lifecycle', view.phase)
   url.searchParams.set('lc_method', view.method)

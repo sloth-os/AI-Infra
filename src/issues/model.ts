@@ -136,7 +136,12 @@ export function issueUrl(base: string, view: IssueView) {
     )
       url.searchParams.delete(key)
   const topic = hotIssues[issueIndex(view.stage)]
-  url.searchParams.set('view', 'guide')
+  if (
+    !['explore', 'guide', 'lab', 'journey'].includes(
+      url.searchParams.get('view') || '',
+    )
+  )
+    url.searchParams.set('view', 'guide')
   url.searchParams.set('learn', 'fusion')
   url.searchParams.set('issue', topic.id)
   url.searchParams.set('hot_panel', view.panel)

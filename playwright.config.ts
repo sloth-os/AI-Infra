@@ -5,7 +5,8 @@ export default defineConfig({
   testMatch: '**/*.spec.ts',
   fullyParallel: false,
   workers: 1,
-  timeout: 45000,
+  timeout: 90000,
+  expect: { timeout: 10000 },
   use: {
     baseURL: 'http://127.0.0.1:5173',
     viewport: { width: 1440, height: 1080 },

@@ -87,7 +87,12 @@ export function parseExampleLocation(href: string): ExampleView | null {
 export function exampleUrl(base: string, view: ExampleView) {
   const url = new URL(base)
   url.searchParams.delete('examples')
-  url.searchParams.set('view', 'guide')
+  if (
+    !['explore', 'guide', 'lab', 'journey'].includes(
+      url.searchParams.get('view') || '',
+    )
+  )
+    url.searchParams.set('view', 'guide')
   url.searchParams.set('learn', 'fusion')
   url.searchParams.set('example', view.id)
   url.searchParams.set('stage', String(exampleStage(view.stage)))

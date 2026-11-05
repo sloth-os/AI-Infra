@@ -6,14 +6,8 @@ import {
   BookOpen,
   Boxes,
   Check,
-  ChevronLeft,
-  ChevronRight,
   Copy,
-  Crosshair,
-  Eye,
   FileJson,
-  Pause,
-  Play,
 } from 'lucide-react'
 import {
   exampleSources,
@@ -26,7 +20,6 @@ import {
   defaultExampleInputs,
   exampleBudgets,
   examplePayload,
-  exampleStage,
   exampleUrl,
 } from './model'
 import type { ExampleInputs, ExampleView } from './model'
@@ -46,77 +39,6 @@ export function SourceLinks({ ids }: { ids: string[] }) {
           <ArrowUpRight size={10} />
         </a>
       ))}
-    </div>
-  )
-}
-
-export function ModelCatalog({
-  query,
-  onChoose,
-  onCompare,
-}: {
-  query: string
-  onChoose: (id: ExampleId) => void
-  onCompare: () => void
-}) {
-  const matches = modelExamples.filter((e) =>
-    `${e.name} ${e.checkpoint} ${e.tagline} ${e.kind} ${e.measure}`
-      .toLowerCase()
-      .includes(query.toLowerCase()),
-  )
-  return (
-    <div className="model-catalog">
-      <p className="model-section-note">
-        Six real workloads, traced from public model cards, code, and serving
-        recipes. Each opens its own pipeline in the same 3D world.
-      </p>
-      <button className="model-compare-link" onClick={onCompare}>
-        <Boxes size={15} /> Compare all six workloads <ArrowUpRight size={14} />
-      </button>
-      {matches.map((e) => (
-        <button
-          className="model-catalog-card"
-          key={e.id}
-          onClick={() => onChoose(e.id)}
-          style={{ '--model-accent': e.color } as React.CSSProperties}
-        >
-          <span>
-            {e.maker}{' '}
-            <small>
-              {e.kind === 'moe'
-                ? 'HYBRID MoE'
-                : e.kind === 'image'
-                  ? 'IMAGE GENERATION'
-                  : e.kind === 'video'
-                    ? 'AUDIO + VIDEO'
-                    : e.kind === 'music'
-                      ? 'MUSIC GENERATION'
-                      : e.kind === 'duplex'
-                        ? 'FULL-DUPLEX SPEECH'
-                        : 'STREAMING TTS'}
-            </small>
-          </span>
-          <strong>
-            {e.name}
-            <ArrowUpRight size={17} />
-          </strong>
-          <p>{e.tagline}</p>
-          <code>{e.checkpoint}</code>
-          <em>
-            Enter the 3D pipeline <ArrowRight size={13} />
-          </em>
-        </button>
-      ))}
-      {!matches.length && (
-        <p>
-          No model matches. Try “Kimi”, “music”, “speech”, or a checkpoint name.
-        </p>
-      )}
-      <p className="model-section-note">
-        Reviewed November 4, 2026. Published facts, derived sizing exercises,
-        and proposed serving choices are labeled separately. No model runs or
-        external API calls are made by these examples.
-      </p>
     </div>
   )
 }
@@ -283,9 +205,6 @@ export function ModelStudy({
     setRequest(false)
     setCopy('')
   }, [e.id, e.request])
-  useEffect(() => {
-    if (!view.playing) setTab('flow')
-  }, [view.stage])
   const share = async () => {
     const url = exampleUrl(location.href, view)
     history.replaceState({}, '', url)
@@ -303,7 +222,7 @@ export function ModelStudy({
     >
       <div className="model-study-actions">
         <button onClick={onCatalog}>
-          <ArrowLeft size={13} /> All models
+          <ArrowLeft size={13} /> Connected workloads
         </button>
         <button onClick={onCompare}>
           Compare <Boxes size={13} />
@@ -509,138 +428,6 @@ export function ModelStudy({
       )}
       <p className="model-boundary">{e.boundary}</p>
     </div>
-  )
-}
-
-export function ExampleHUD({
-  view,
-  panelOpen,
-  onOpen,
-  onStage,
-  onPlay,
-  onFocus,
-  onExit,
-  reduced,
-}: {
-  view: ExampleView
-  panelOpen: boolean
-  onOpen: () => void
-  onStage: (stage: number) => void
-  onPlay: () => void
-  onFocus: () => void
-  onExit: () => void
-  reduced: boolean
-}) {
-  const e = findExample(view.id)!,
-    s = e.stages[view.stage],
-    budgets = exampleBudgets(view.id, view.inputs)
-  return (
-    <>
-      <div
-        className="model-scope"
-        style={{ '--model-accent': e.color } as React.CSSProperties}
-      >
-        <span>
-          <i /> REAL MODEL FIELD TRIP · {e.maker}
-        </span>
-        <h1>{e.name}</h1>
-        <p>{e.tagline}</p>
-        <code>{e.checkpoint}</code>
-      </div>
-      <div
-        className="model-world-readouts"
-        aria-label="Model data budget metrics"
-      >
-        {budgets.map((b) => (
-          <div key={b.label}>
-            <span>{b.label}</span>
-            <strong>
-              {b.value}
-              <small>{b.unit}</small>
-            </strong>
-          </div>
-        ))}
-      </div>
-      <aside className="model-now" aria-label="Current model pipeline stage">
-        <span>0{view.stage + 1} / 06 · DATA TRANSFORMATION</span>
-        <h2>{s.title}</h2>
-        <code>{s.output}</code>
-        <p>{s.bottleneck}</p>
-        <button onClick={onOpen}>
-          {panelOpen ? 'Show the world' : 'Read this stage'}{' '}
-          <ArrowUpRight size={13} />
-        </button>
-      </aside>
-      <div className="model-command-deck">
-        <div
-          className="model-stage-dock"
-          aria-label="Real model pipeline stages"
-        >
-          {e.stages.map((stage, i) => (
-            <button
-              key={stage.short}
-              aria-label={`Model stage ${i + 1}: ${stage.title}`}
-              aria-current={view.stage === i ? 'step' : undefined}
-              onClick={() => onStage(i)}
-            >
-              <b>{String(i + 1).padStart(2, '0')}</b>
-              <span>{stage.short}</span>
-            </button>
-          ))}
-        </div>
-        <div className="model-playback">
-          <button
-            aria-label={
-              view.playing
-                ? 'Pause model walkthrough'
-                : 'Play model walkthrough'
-            }
-            onClick={onPlay}
-            disabled={reduced}
-          >
-            {view.playing ? <Pause size={16} /> : <Play size={16} />}
-          </button>
-          <button
-            aria-label="Previous model stage"
-            onClick={() => onStage(exampleStage(view.stage, -1))}
-            disabled={!view.stage}
-          >
-            <ChevronLeft size={17} />
-          </button>
-          <span>
-            {reduced
-              ? 'REDUCED MOTION · SELECT A STAGE'
-              : 'TEACHING ANIMATION · NO MODEL EXECUTION'}
-          </span>
-          <button
-            aria-label="Next model stage"
-            onClick={() => onStage(exampleStage(view.stage, 1))}
-            disabled={view.stage === 5}
-          >
-            <ChevronRight size={17} />
-          </button>
-          <i />
-          <button onClick={onFocus} aria-label="Focus model stage">
-            <Crosshair size={15} />
-            <span>Focus</span>
-          </button>
-          <button
-            onClick={onOpen}
-            aria-label={panelOpen ? 'Hide model details' : 'Show model details'}
-          >
-            <Eye size={15} />
-            <span>{panelOpen ? 'World' : 'Details'}</span>
-          </button>
-          <button
-            onClick={onExit}
-            aria-label="Return to infrastructure explorer"
-          >
-            <Boxes size={15} />
-            <span>Infrastructure</span>
-          </button>
-        </div>
-      </div>
-    </>
   )
 }
 

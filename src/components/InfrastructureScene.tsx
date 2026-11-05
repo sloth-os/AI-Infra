@@ -13,9 +13,6 @@ import type { CameraView, MotionFrame } from '../motion'
 import { InfrastructureEngine } from '../scene/engine'
 import type { PayloadInspection, SceneOptions } from '../scene/engine'
 import type { SceneLabel } from '../scene/architecture'
-import { findExample } from '../examples/catalog'
-import { lifecycleStages, phaseInfo } from '../lifecycle/catalog'
-import { hotIssues } from '../issues/catalog'
 import { useEffectsQuality } from './VisualSettings'
 
 export interface SceneHandle {
@@ -36,6 +33,7 @@ export interface InfrastructureSceneProps extends SceneOptions {
   onProject?: (key: string, x: number, y: number, visible: boolean) => void
   onInspection?: (value: PayloadInspection | null) => void
   onUnavailable?: () => void
+  onContextInspect?: () => void
 }
 
 export const InfrastructureScene = forwardRef<
@@ -163,9 +161,7 @@ export const InfrastructureScene = forwardRef<
   useEffect(() => {
     if (
       !fallback ||
-      props.example ||
-      props.lifecycle ||
-      props.issue ||
+      props.context ||
       props.active === false ||
       props.paused ||
       window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -186,63 +182,42 @@ export const InfrastructureScene = forwardRef<
       latest.current.onFrame?.(next)
     }, 180)
     return () => clearInterval(timer)
-  }, [
-    fallback,
-    props.active,
-    props.paused,
-    props.example,
-    props.lifecycle,
-    props.issue,
-  ])
+  }, [fallback, props.active, props.paused, props.context])
 
   useEffect(() => {
     if (
       !fallback ||
       props.active === false ||
-      !(props.issue || props.lifecycle || props.example)?.playing ||
+      !props.context?.playing ||
       window.matchMedia('(prefers-reduced-motion: reduce)').matches
     )
       return
-    const timer = setInterval(
-      () => {
-        if (!document.hidden) {
-          const p = latest.current,
-            lesson = p.issue || p.lifecycle || p.example
-          ;(p.issue
-            ? p.onIssueStage
-            : p.lifecycle
-              ? p.onLifecycleStage
-              : p.onExampleStage)?.(
-            ((lesson?.stage || 0) + 1) % (p.issue ? 10 : 6),
-            true,
-          )
-        }
-      },
-      props.issue ? 5000 : 3000,
-    )
+    const timer = setInterval(() => {
+      if (!document.hidden) {
+        const p = latest.current,
+          c = p.context
+        if (c) p.onContextStep?.((c.stage + 1) % c.steps.length, true)
+      }
+    }, props.context.duration * 1000)
     return () => clearInterval(timer)
-  }, [fallback, props.active, props.example, props.lifecycle, props.issue])
+  }, [fallback, props.active, props.context])
 
   return (
     <div
       ref={host}
       className={`infrastructure-scene enhanced-scene ${props.compact ? 'compact-scene' : ''} ${fallback ? 'scene-fallback' : ''}`}
       data-testid="infrastructure-scene"
-      data-motion-mode={
-        props.issue
-          ? 'hot-issues'
-          : props.lifecycle
-            ? 'lifecycle'
-            : props.example
-              ? 'model-example'
-              : props.traffic
+      data-motion-mode={props.traffic}
+      data-context-kind={props.context?.kind || ''}
+      data-context-id={props.context?.id || ''}
+      data-context-stage={props.context?.stage ?? ''}
+      data-context-pattern={props.context?.pattern || ''}
+      data-world-kind={
+        !props.context && props.traffic === 'tensors'
+          ? 'transformer'
+          : 'infrastructure'
       }
-      data-hot-issue={props.issue ? hotIssues[props.issue.stage].id : ''}
-      data-issue-stage={props.issue?.stage ?? ''}
-      data-lifecycle-phase={props.lifecycle?.phase || ''}
-      data-lifecycle-method={props.lifecycle?.method || ''}
-      data-lifecycle-stage={props.lifecycle?.stage ?? ''}
-      data-example-model={props.example?.id || ''}
+      data-motion-layer={props.layer}
       data-motion-time={frame.time.toFixed(1)}
     >
       {!fallback &&
@@ -290,14 +265,9 @@ export const InfrastructureScene = forwardRef<
                 if (el) labelElements.current.set(key, el)
                 else labelElements.current.delete(key)
               }}
-              className={`scene-label ${label.exampleStage !== undefined ? ((props.issue || props.lifecycle || props.example)?.stage === label.exampleStage ? 'is-selected' : '') : props.selected === label.id ? 'is-selected' : ''} ${moving ? 'moving-payload-label' : ''} ${label.stage === frame.chapterIndex && props.traffic === 'tensors' ? 'active-tensor-stage' : ''}`}
+              className={`scene-label ${props.selected === label.id ? 'is-selected' : ''} ${label.context ? 'context-focus-label' : ''} ${moving ? 'moving-payload-label' : ''} ${label.stage === frame.chapterIndex && props.traffic === 'tensors' ? 'active-tensor-stage' : ''}`}
               onClick={() => {
-                if (label.exampleStage !== undefined)
-                  (props.issue
-                    ? props.onIssueStage
-                    : props.lifecycle
-                      ? props.onLifecycleStage
-                      : props.onExampleStage)?.(label.exampleStage)
+                if (label.context) props.onContextInspect?.()
                 else if (moving) runtime.current?.inspectPacket()
                 else if (props.immersive && label.rank !== undefined)
                   props.onRank?.(label.rank)
@@ -308,10 +278,8 @@ export const InfrastructureScene = forwardRef<
                 }
               }}
               aria-label={
-                label.exampleStage !== undefined
-                  ? props.issue
-                    ? `Inspect hot issue ${label.exampleStage + 1}: ${hotIssues[label.exampleStage].title}`
-                    : `Inspect ${props.lifecycle ? 'lifecycle' : 'model'} stage ${label.exampleStage + 1}: ${title}`
+                label.context
+                  ? `Inspect context: ${label.title}`
                   : moving
                     ? 'Inspect moving payload'
                     : `Inspect ${title}`
@@ -322,8 +290,8 @@ export const InfrastructureScene = forwardRef<
                 style={{
                   background: moving
                     ? frame.chapter.color
-                    : props.issue && label.exampleStage !== undefined
-                      ? hotIssues[label.exampleStage].color
+                    : label.context
+                      ? props.context?.color
                       : details[label.id]?.color || '#b8d299',
                 }}
               />
@@ -423,79 +391,7 @@ export const InfrastructureScene = forwardRef<
           <code>{inspection.formula}</code>
         </aside>
       )}
-      {fallback && props.example && (
-        <div className="fallback-topology example-fallback">
-          <span className="eyebrow">MODEL PIPELINE · 2D FALLBACK</span>
-          <h3>{findExample(props.example.id)!.name}</h3>
-          <p>
-            The same source-backed stages and budgets remain available without
-            WebGL.
-          </p>
-          <div>
-            {findExample(props.example.id)!.stages.map((s, i) => (
-              <button
-                key={s.short}
-                className={props.example?.stage === i ? 'active' : ''}
-                onClick={() => props.onExampleStage?.(i)}
-              >
-                {i + 1}. {s.short}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-      {fallback && props.lifecycle && (
-        <div className="fallback-topology example-fallback life-fallback">
-          <span>AI LIFECYCLE · 2D FALLBACK</span>
-          <h3>
-            {phaseInfo(props.lifecycle.phase).title}
-            {props.lifecycle.phase === 'posttrain'
-              ? ` · ${props.lifecycle.method.toUpperCase()}`
-              : ''}
-          </h3>
-          <p>
-            WebGL is unavailable. Stage selection, source explanations,
-            experiments and playback remain available.
-          </p>
-          <div>
-            {lifecycleStages(props.lifecycle.phase, props.lifecycle.method).map(
-              (s, i) => (
-                <button
-                  key={i}
-                  className={props.lifecycle?.stage === i ? 'active' : ''}
-                  onClick={() => props.onLifecycleStage?.(i)}
-                >
-                  <b>0{i + 1}</b>
-                  <span>{s.short}</span>
-                </button>
-              ),
-            )}
-          </div>
-        </div>
-      )}
-      {fallback && props.issue && (
-        <div className="fallback-topology example-fallback issue-fallback">
-          <span>HOT ISSUES · 2D FALLBACK</span>
-          <h3>Ten constraints, ten mechanisms.</h3>
-          <p>
-            WebGL is unavailable. Every topic, experiment and source remains
-            accessible.
-          </p>
-          <div>
-            {hotIssues.map((topic, i) => (
-              <button
-                key={topic.id}
-                className={props.issue?.stage === i ? 'active' : ''}
-                onClick={() => props.onIssueStage?.(i)}
-              >
-                <b>{String(i + 1).padStart(2, '0')}</b>
-                <span>{topic.short}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-      {fallback && !props.example && !props.lifecycle && !props.issue && (
+      {fallback && (
         <div className="fallback-topology">
           <span className="eyebrow">INTERACTIVE TOPOLOGY · 2D FALLBACK</span>
           <h3>
@@ -504,8 +400,9 @@ export const InfrastructureScene = forwardRef<
               : 'A connected serving system'}
           </h3>
           <p>
-            3D rendering is unavailable on this device. Use the timeline and the
-            component buttons to explore the same concepts.
+            3D rendering is unavailable on this device. The same infrastructure
+            levels, component controls, connected stories and source-backed
+            experiments remain available.
           </p>
           <div>
             {layerNodes[props.layer].map((id) => (
@@ -519,10 +416,15 @@ export const InfrastructureScene = forwardRef<
               </button>
             ))}
           </div>
+          {props.context && (
+            <p className="fallback-context-description">
+              {props.context.heading}: {props.context.explanation}
+            </p>
+          )}
           <div className="fallback-motion-phase">
-            <strong>{frame.chapter.title}</strong>
+            <strong>{props.context?.title || frame.chapter.title}</strong>
             <ArrowRight size={16} />
-            <span>{frame.chapter.payload}</span>
+            <span>{props.context?.payload || frame.chapter.payload}</span>
           </div>
         </div>
       )}

@@ -1,10 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import * as THREE from 'three'
 import {
   hotIssues,
   issueById,
-  issueProfile,
   issueSources,
   issuesReviewed,
 } from '../src/issues/catalog.ts'
@@ -19,7 +17,6 @@ import {
   sanitizeIssueInputs,
   selectIssue,
 } from '../src/issues/model.ts'
-import { ExampleWorld } from '../src/scene/examples.ts'
 const view = (
   id: IssueId,
   applied = false,
@@ -255,93 +252,4 @@ test('shared issue URLs round-trip each sanitized experiment and remove other le
   assert.deepEqual(next.inputs, defaultIssueInputs('isolation'))
   assert.equal(selectIssue(next, 99).stage, 9)
   assert.equal(selectIssue(next, -100).stage, 0)
-})
-
-test('the ten 3D stations use distinct roles and their interventions change rendered state with conserved placement capacity', () => {
-  const world = new ExampleWorld(issueProfile())
-  const scene = new THREE.Scene()
-  scene.add(world.group)
-  let disposed = 0
-  world.pickable[0].geometry.addEventListener('dispose', () => disposed++)
-  try {
-    assert.equal(world.labels.length, 10)
-    assert.deepEqual(
-      world.labels.map((l) => l.id),
-      hotIssues.map((_, n) => `issue-stage-${n}`),
-    )
-    const mesh = (role: string) =>
-      world.pickable.find((m) => m.userData.role === role)!
-    world.update(view('kv-memory'), 0.4)
-    assert.equal(mesh('issue-cache-page').count, 64)
-    world.update(view('kv-memory', true), 0.4)
-    assert.equal(mesh('issue-cache-page').count, 32)
-    world.update(view('moe', true), 0.4)
-    assert.equal(mesh('issue-hot-replica').visible, true)
-    world.update(view('moe'), 0.4)
-    assert.equal(mesh('issue-hot-replica').visible, false)
-    world.update(view('precision', true), 0.4)
-    assert.equal(mesh('issue-weight-bit').count, 4)
-    assert.equal(mesh('issue-scale-metadata').visible, true)
-    world.update(view('placement'), 0.4)
-    const free = mesh('issue-free-gpu'),
-      color = new THREE.Color(),
-      colors = () =>
-        Array.from({ length: free.count }, (_, i) => {
-          free.getColorAt(i, color)
-          return color.getHexString()
-        })
-    const before = colors()
-    world.update(view('placement', true), 0.4)
-    const after = colors()
-    assert.equal(free.count, 32)
-    assert.notDeepEqual(before, after)
-    assert.equal(before.filter((c) => c === after[0]).length, 16)
-    assert.equal(after.filter((c) => c === after[0]).length, 16)
-    world.update(view('isolation', true), 0.4)
-    assert.equal(mesh('issue-private-cache').visible, true)
-    assert.equal(mesh('issue-private-cache').count, 8)
-    assert.equal(mesh('issue-shared-cache').visible, false)
-  } finally {
-    world.dispose()
-  }
-  assert.equal(world.group.parent, null)
-  assert.equal(disposed, 1)
-})
-
-test('probability tints, isolated scope colors and bounded KV glyphs retain their declared meanings at the limits', () => {
-  const world = new ExampleWorld(issueProfile())
-  try {
-    const mesh = (role: string) =>
-      world.pickable.find((m) => m.userData.role === role)!
-    const colors = (m: THREE.InstancedMesh) =>
-      Array.from({ length: m.count }, (_, i) => {
-        const c = new THREE.Color()
-        m.getColorAt(i, c)
-        return c.getHexString()
-      })
-    world.update(view('reasoning', true, { acceptance: 0 }), 0.4)
-    const zero = colors(mesh('issue-accepted-token'))
-    assert.equal(zero.length, 5)
-    assert.notEqual(zero[0], zero[1])
-    assert.equal(new Set(zero.slice(1)).size, 1)
-    world.update(view('reasoning', true, { acceptance: 100 }), 0.4)
-    assert.equal(new Set(colors(mesh('issue-accepted-token'))).size, 1)
-    world.update(view('reasoning', true, { acceptance: 50 }), 0.4)
-    assert.equal(new Set(colors(mesh('issue-accepted-token'))).size, 5)
-    world.update(view('isolation', true, { tenants: 16 }), 0.4)
-    assert.equal(new Set(colors(mesh('issue-tenant-scope'))).size, 16)
-    const largest = view('kv-memory', false, {
-      context: 32768,
-      concurrency: 256,
-      budget: 40,
-    })
-    const result = issueResults(largest)
-    world.update(largest, 0.4)
-    assert.equal(mesh('issue-cache-page').count, 64)
-    assert.equal(result.amount, 2560 * 2 ** 30)
-    assert.equal(result.pressure, 64)
-    assert.equal(result.metrics[2].label, 'Requested positions')
-  } finally {
-    world.dispose()
-  }
 })

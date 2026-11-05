@@ -1,3 +1,5 @@
+> **Integrated physical context:** open these topics through **Connections** on Fleet, Pod, Server or GPU. Existing links now target that shared hardware world; separate stage/issue platform scenes have been removed. [CONNECTED-INFRASTRUCTURE.md](CONNECTED-INFRASTRUCTURE.md) describes the current UI and animations. The original source records and numerical assumptions below remain applicable.
+
 # Pre-training, post-training and inference
 
 Research reviewed **November 5, 2026**. Open **Learning mode → AI lifecycle**, or use:
@@ -6,7 +8,7 @@ Research reviewed **November 5, 2026**. Open **Learning mode → AI lifecycle**,
 - [Post-training](https://sloth-os.github.io/AI-Infra/?view=guide&learn=fusion&lifecycle=posttrain)
 - [Inference](https://sloth-os.github.io/AI-Infra/?view=guide&learn=fusion&lifecycle=inference)
 
-These are three workflows in the existing persistent 3D renderer. Each has six pickable platforms, projected labels, animated parcels, a stage dock, stage explanations, a sizing lab, network/solution comparisons, primary sources and a full comparison reader. Post-training switches between **SFT**, **DPO** and **GRPO**, with method-specific stages, losses and infrastructure roles. No model is trained or executed and no external API is called.
+These are three workflows in the existing persistent 3D renderer. Each has six logical operations mapped to the existing physical levels, contextual hardware labels, animated data flows, stage explanations, a sizing lab, network/solution comparisons, primary sources and a full comparison reader. Post-training switches between **SFT**, **DPO** and **GRPO**, with method-specific stages, losses and infrastructure roles. No model is trained or executed and no external API is called.
 
 ## What the workflows explain
 
@@ -106,18 +108,17 @@ Bytes use binary KiB/MiB/GiB/TiB in the interface; network Gb/s and parameter co
 
 ## Motion, controls and accessibility
 
-**1–6** and left/right arrows select a stage; **Space** toggles lesson playback, **F** focuses its platform, **H** enters/exits cinema. Camera/label controls and all conventional buttons remain available. Playback advances one stage per three teaching seconds; the original request clock is retained while any lifecycle lesson is active.
+**1–4** chooses Fleet, Pod, Server or GPU. Arrows select a connected operation; **Space** controls playback; **F** focuses connected hardware; **H** enters/exits cinema. Selecting an operation visits its mapped native level. Manual zooming retains the phase, method and inputs while choosing a compatible operation at the new level. Reader tabs remain available, and World/Details frees the physical scene. Playback uses four teaching seconds per operation while the reference request clock stays frozen.
 
-The world changes with controls: DP/TP/PP glyph counts, PP schedule colors synchronized to the selected inspection slot, retained activations, sharded optimizer-state height, LoRA/full policy appearance, GRPO sample counts/rewards, independent inference groups, KV occupancy, colocated state versus handoff, and retiring request pages. These are bounded aggregate glyphs, not a literal 100,000-device scene or measured tensor animation. The six platforms describe a workflow: checkpoints/releases are periodic operations rather than a claim that every optimizer step saves a checkpoint. Serving completion returns toward warm request admission, not a mandatory weight reload.
+Training rank colors on the existing server use the same GPipe schedule as the sizing reader. Model-specific state, rollout counts and inference KV retain their declared analytical scopes; visible glyphs aggregate data. Inter-pool inference KV transfer is conditional on the disaggregation option. Checkpoint/release operations are periodic roles, not mandatory work after every optimizer step. Larger calculated jobs can span many physical servers.
 
-**World/Details** clears or restores the floating reader; share links preserve bounded experiment inputs, method and selected stage but reopen paused. The comparison reader uses a native modal dialog. Mobile layouts retain all stage, method, experiment, camera and navigation controls. Reduced motion disables autonomous playback; manual stages and experiments remain available. Without WebGL, a labeled 2D workflow keeps the same stages, calculations, sources and reduced-motion rules.
+Reduced motion disables automatic playback; a physical four-level fallback retains selection, calculations and evidence when WebGL is unavailable. Shared links include the current workspace and level, reopen paused, and retain compatible bounded inputs.
 
 ## Implementation and checks
 
-- `src/lifecycle/catalog.ts`: mechanisms, method-specific stages, comparisons and claim-level sources.
-- `src/lifecycle/model.ts`: bounded URLs/inputs, sharding/LoRA/KV/traffic calculations, GPipe schedule, group advantages and DPO scalar loss.
-- `src/lifecycle/Lifecycle.tsx`: spatial HUD, flow reader, sizing/toy labs, operations/evidence and comparison.
-- `src/scene/examples.ts`: shared instanced pipeline geometry, lifecycle-specific symbols and control-driven motion; existing real-model APIs are retained.
-- `InfrastructureScene`/`engine.ts`: the same canvas, projected/pickable labels, pause/camera behavior and fallback. Leaving the lesson restores the base world.
+- `src/lifecycle/catalog.ts` and `model.ts` retain the researched operations, sources, calculations, objectives and microbatch schedule.
+- `Lifecycle.tsx` retains the phase/method reader, sizing controls, objectives, network comparisons and evidence.
+- `src/learning/infrastructure/context.ts` maps operations and semantics to the selected hardware level.
+- `src/scene/context.ts` annotates that hardware through the same persistent renderer; the separate platform world has been removed.
 
-Unit tests validate accounting, schedule causality and bubbles, stable DPO loss, equal-reward advantages, LoRA versus frozen-base state, inference reservations/handoff, bounded URL round trips, source identifiers and geometry updates. Browser coverage exercises all three phases and post-training methods, state changes, toys, sharing/reload, retained canvas/clock, cinema/playback, sources/comparison, mobile bounds and reduced-motion/no-WebGL fallback. Existing game, real-model and learning suites guard the other experiences.
+Tests verify the original equations and objective/schedule invariants, all phase/method mappings across four levels, live reader and hardware updates, conditional transfer, shared links, stage/scale playback, retained base time, camera/keyboard controls and reduced-motion fallback. [CONNECTED-INFRASTRUCTURE.md](CONNECTED-INFRASTRUCTURE.md) records current interaction and visual boundaries.

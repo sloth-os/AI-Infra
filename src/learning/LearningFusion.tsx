@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode, RefObject } from 'react'
 import {
   Activity,
@@ -6,7 +6,6 @@ import {
   ArrowUpRight,
   BookOpen,
   Box,
-  Boxes,
   Check,
   ChevronLeft,
   ChevronRight,
@@ -17,7 +16,6 @@ import {
   Eye,
   EyeOff,
   FlaskConical,
-  Flame,
   Globe2,
   Grid2X2,
   HardDrive,
@@ -63,41 +61,54 @@ import LearningLab from './LearningLab'
 import LearningLibrary from './LearningLibrary'
 import type { LibraryTab } from './LearningLibrary'
 import './learning.css'
-import { ExampleHUD, ModelComparison } from '../examples/ModelExamples'
+import { ModelComparison } from '../examples/ModelExamples'
 import {
   defaultExampleInputs,
   exampleStage,
   exampleUrl,
-  parseExampleLocation,
   sanitizeExampleInputs,
 } from '../examples/model'
 import type { ExampleView } from '../examples/model'
-import { findExample } from '../examples/catalog'
 import type { ExampleId } from '../examples/catalog'
-import { LifecycleHUD, LifecycleComparison } from '../lifecycle/Lifecycle'
+import { LifecycleComparison } from '../lifecycle/Lifecycle'
 import {
   clearLifecycleParams,
   defaultLifecycleView,
   lifecycleStage,
   lifecycleUrl,
-  parseLifecycleLocation,
   sanitizeLifecycleInputs,
 } from '../lifecycle/model'
 import type { LifecycleView } from '../lifecycle/model'
-import { phaseInfo } from '../lifecycle/catalog'
+import type { LifecyclePhase } from '../lifecycle/catalog'
 import { hotIssues } from '../issues/catalog'
-import { HotIssuesHUD, HotIssuesMethodology } from '../issues/HotIssues'
+import { HotIssuesMethodology } from '../issues/HotIssues'
 import {
   clearIssueParams,
   defaultIssueView,
   issueIndex,
   issueUrl,
-  parseIssueLocation,
   sanitizeIssueInputs,
   selectIssue,
 } from '../issues/model'
 import type { IssueView } from '../issues/model'
 import { VisualSettings, useEffectsQuality } from '../components/VisualSettings'
+import {
+  ConnectionsCatalog,
+  ContextControls,
+  ContextMetrics,
+  ContextNarration,
+  ContextPerspective,
+} from './infrastructure/Connections'
+import {
+  contextAtLevel,
+  initialContextLevel,
+  levelNames,
+  nativeLevel,
+  parseContextLocation,
+  stageAtLevel,
+  withContextLocation,
+} from './infrastructure/context'
+import type { ContextSelection } from './infrastructure/context'
 
 export type LearningPage = Exclude<Page, 'game'>
 type Panel =
@@ -109,6 +120,7 @@ type Panel =
   | 'payload'
   | 'collective'
   | 'journey'
+  | 'connections'
   | null
 interface Props {
   active: boolean
@@ -146,6 +158,7 @@ interface Props {
   onPreset: (id: string) => void
   onJourneyStep: (step: number) => void
   onJourneyScene: (step: number, animate: boolean) => void
+  onContextWorld: (layer: Layer, traffic: Traffic, node: string) => void
   onLocate: (layer: Layer, traffic: Traffic, node: string) => void
   advancedLab: ReactNode
   advancedGuide: ReactNode
@@ -215,6 +228,7 @@ function LearningDialog({
 
 export default function LearningFusion(p: Props) {
   const effects = useEffectsQuality()
+  const initialContext = useMemo(() => parseContextLocation(location.href), [])
   const root = useRef<HTMLElement>(null),
     card = useRef<HTMLElement>(null),
     cardHeight = useRef(360),
@@ -223,10 +237,10 @@ export default function LearningFusion(p: Props) {
     getMotionFrame(0, p.traffic, p.params, p.strategy),
   )
   const [panel, setPanel] = useState<Panel>(() =>
-    p.page === 'explore' ? null : p.page,
+    initialContext ? 'guide' : p.page === 'explore' ? null : p.page,
   )
   const [inspector, setInspector] = useState(
-    p.page === 'explore' && window.innerWidth >= 700,
+    !initialContext && p.page === 'explore' && window.innerWidth >= 700,
   )
   const [inspectorTab, setInspectorTab] = useState<
     'overview' | 'problem' | 'experiment'
@@ -241,40 +255,58 @@ export default function LearningFusion(p: Props) {
       'lab' | 'guide' | 'examples' | 'lifecycle' | 'issues' | null
     >(null),
     [help, setHelp] = useState(false)
-  const [query, setQuery] = useState(''),
-    [libraryTab, setLibraryTab] = useState<LibraryTab>(() =>
-      parseIssueLocation(location.href)
-        ? 'hot'
-        : parseLifecycleLocation(location.href)
-          ? 'lifecycle'
-          : parseExampleLocation(location.href) ||
-              new URLSearchParams(location.search).get('examples') === 'all'
-            ? 'models'
-            : 'concepts',
-    )
+  const [query, setQuery] = useState('')
+  const [libraryTab, setLibraryTab] = useState<LibraryTab>(() =>
+    initialContext?.kind === 'issue'
+      ? 'hot'
+      : initialContext?.kind === 'lifecycle'
+        ? 'lifecycle'
+        : initialContext?.kind === 'model'
+          ? 'models'
+          : 'concepts',
+  )
   const [example, setExample] = useState<ExampleView | null>(() =>
-    parseExampleLocation(location.href),
+    initialContext?.kind === 'model' ? initialContext.view : null,
   )
-  const [lifecycle, setLifecycle] = useState<LifecycleView>(
-    () => parseLifecycleLocation(location.href) || defaultLifecycleView(),
+  const [lifecycle, setLifecycle] = useState<LifecycleView>(() =>
+    initialContext?.kind === 'lifecycle'
+      ? initialContext.view
+      : defaultLifecycleView(),
   )
-  const [issue, setIssue] = useState<IssueView>(
-    () => parseIssueLocation(location.href) || defaultIssueView(),
+  const [issue, setIssue] = useState<IssueView>(() =>
+    initialContext?.kind === 'issue' ? initialContext.view : defaultIssueView(),
   )
-  const issueActive = p.active && p.page === 'guide' && libraryTab === 'hot'
-  const lifecycleActive =
-    p.active && p.page === 'guide' && libraryTab === 'lifecycle'
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  const exampleActive =
-    p.active && p.page === 'guide' && libraryTab === 'models' && !!example
-  const teachingActive = exampleActive || lifecycleActive || issueActive
-  const activeLesson = issueActive
-    ? issue
-    : lifecycleActive
-      ? lifecycle
-      : exampleActive
-        ? example
-        : null
+  const issueActive = p.active && libraryTab === 'hot'
+  const lifecycleActive = p.active && libraryTab === 'lifecycle'
+  const exampleActive = p.active && libraryTab === 'models' && !!example
+  const selection = useMemo<ContextSelection | null>(
+    () =>
+      issueActive
+        ? { kind: 'issue', view: issue }
+        : lifecycleActive
+          ? { kind: 'lifecycle', view: lifecycle }
+          : exampleActive && example
+            ? { kind: 'model', view: example }
+            : null,
+    [issueActive, lifecycleActive, exampleActive, issue, lifecycle, example],
+  )
+  const contextFrame = useMemo(
+    () => (selection ? contextAtLevel(selection, p.layer) : null),
+    [selection, p.layer],
+  )
+  const teachingActive = !!contextFrame
+  const activeLesson = selection?.view || null
+  const clearExampleUrl = () => {
+    const url = new URL(location.href)
+    for (const key of [...url.searchParams.keys()])
+      if (
+        ['example', 'examples', 'stage'].includes(key) ||
+        key.startsWith('ex_')
+      )
+        url.searchParams.delete(key)
+    history.replaceState({}, '', url)
+  }
   const clearLifecycleUrl = () => {
     const url = new URL(location.href)
     clearLifecycleParams(url)
@@ -285,87 +317,113 @@ export default function LearningFusion(p: Props) {
     clearIssueParams(url)
     history.replaceState({}, '', url)
   }
-  const changeIssue = (v: IssueView) => {
-    clearLifecycleUrl()
-    clearExampleUrl()
+  const applyContext = (
+    next: ContextSelection,
+    layer: Layer = p.layer,
+    openReader = true,
+  ) => {
     closeContext()
     setFollow(false)
     setJourneyAuto(false)
     p.onManual()
-    const stage = issueIndex(v.stage)
-    if (
-      stage !== issue.stage ||
-      (v.panel !== issue.panel && ['brief', 'lab'].includes(v.panel))
-    )
-      p.sceneRef.current?.focus(`issue-stage-${stage}`)
-    setIssue({
-      ...v,
-      stage,
-      playing: reduced ? false : v.playing,
-      inputs: sanitizeIssueInputs(hotIssues[stage].id, v.inputs),
-    })
+    if (next.kind === 'issue') {
+      clearExampleUrl()
+      clearLifecycleUrl()
+      setLibraryTab('hot')
+      setIssue({ ...next.view, playing: reduced ? false : next.view.playing })
+    } else if (next.kind === 'lifecycle') {
+      clearExampleUrl()
+      clearIssueUrl()
+      setLibraryTab('lifecycle')
+      setLifecycle({
+        ...next.view,
+        playing: reduced ? false : next.view.playing,
+      })
+    } else {
+      clearIssueUrl()
+      clearLifecycleUrl()
+      setLibraryTab('models')
+      setExample({ ...next.view, playing: reduced ? false : next.view.playing })
+    }
+    const frame = contextAtLevel(next, layer)
+    p.onContextWorld(layer, frame.traffic, frame.node)
+    if (openReader) setPanel('guide')
   }
-  const selectIssueStage = (stage: number, automatic = false) => {
-    const index = issueIndex(stage)
-    if (!automatic) p.sceneRef.current?.focus(`issue-stage-${index}`)
-    setIssue((v) => selectIssue(v, index, automatic))
+  const clearContext = () => {
+    clearExampleUrl()
+    clearLifecycleUrl()
+    clearIssueUrl()
+    setLibraryTab('concepts')
+    setIssue((v) => ({ ...v, playing: false }))
+    setLifecycle((v) => ({ ...v, playing: false }))
+    setExample((v) => (v ? { ...v, playing: false } : v))
+    closeContext()
+    setPanel(null)
+    setFollow(false)
+    p.onManual()
+  }
+  const changeIssue = (v: IssueView) => {
+    const stage = issueIndex(v.stage)
+    applyContext({
+      kind: 'issue',
+      view: {
+        ...v,
+        stage,
+        playing: false,
+        inputs: sanitizeIssueInputs(hotIssues[stage].id, v.inputs),
+      },
+    })
   }
   const changeLifecycle = (v: LifecycleView) => {
-    clearIssueUrl()
-    closeContext()
-    setFollow(false)
-    setJourneyAuto(false)
-    p.onManual()
-    setLifecycle({
-      ...v,
-      stage: lifecycleStage(v.stage),
-      playing: reduced ? false : v.playing,
-      inputs: sanitizeLifecycleInputs(v.inputs),
-    })
-  }
-  const selectLifecycleStage = (stage: number, automatic = false) =>
-    setLifecycle((v) => ({
-      ...v,
-      stage: lifecycleStage(stage),
-      playing: automatic ? v.playing : false,
-    }))
-  const toggleLesson = () => {
-    if (reduced) return
-    if (issueActive) setIssue((v) => ({ ...v, playing: !v.playing }))
-    else if (lifecycleActive)
-      setLifecycle((v) => ({ ...v, playing: !v.playing }))
-    else if (exampleActive)
-      setExample((v) => (v ? { ...v, playing: !v.playing } : null))
-  }
-  const clearExampleUrl = () => {
-    const url = new URL(location.href)
-    for (const key of [...url.searchParams.keys()])
-      if (
-        key === 'example' ||
-        key === 'examples' ||
-        key === 'stage' ||
-        key.startsWith('ex_')
-      )
-        url.searchParams.delete(key)
-    history.replaceState({}, '', url)
-  }
-  const changeExample = (view: ExampleView | null) => {
-    clearIssueUrl()
-    clearLifecycleUrl()
-    closeContext()
-    setFollow(false)
-    setJourneyAuto(false)
-    p.onManual()
-    setExample(
-      view
-        ? {
-            ...view,
-            stage: exampleStage(view.stage),
-            inputs: sanitizeExampleInputs(view.id, view.inputs),
-          }
-        : null,
+    let next: ContextSelection = {
+      kind: 'lifecycle',
+      view: {
+        ...v,
+        stage: lifecycleStage(v.stage),
+        playing: false,
+        inputs: sanitizeLifecycleInputs(v.inputs),
+      },
+    }
+    const changed = v.phase !== lifecycle.phase || v.method !== lifecycle.method
+    if (changed)
+      next = {
+        ...next,
+        view: { ...next.view, stage: stageAtLevel(next, p.layer) },
+      }
+    applyContext(
+      next,
+      !changed && v.stage !== lifecycle.stage
+        ? nativeLevel(next, next.view.stage)
+        : p.layer,
     )
-    if (!view) clearExampleUrl()
+  }
+  const changeExample = (v: ExampleView | null) => {
+    if (!v) {
+      clearContext()
+      setPanel('connections')
+      return
+    }
+    let next: ContextSelection = {
+      kind: 'model',
+      view: {
+        ...v,
+        stage: exampleStage(v.stage),
+        playing: false,
+        inputs: sanitizeExampleInputs(v.id, v.inputs),
+      },
+    }
+    const changed = v.id !== example?.id
+    if (changed)
+      next = {
+        ...next,
+        view: { ...next.view, stage: stageAtLevel(next, p.layer) },
+      }
+    applyContext(
+      next,
+      !changed && v.stage !== example?.stage
+        ? nativeLevel(next, next.view.stage)
+        : p.layer,
+    )
   }
   const selectExample = (id: ExampleId) =>
     changeExample({
@@ -374,86 +432,118 @@ export default function LearningFusion(p: Props) {
       playing: false,
       inputs: defaultExampleInputs(id),
     })
-  const selectExampleStage = (stage: number, playing?: boolean) =>
-    setExample((previous) =>
-      previous
-        ? {
-            ...previous,
-            stage: exampleStage(stage),
-            playing: playing ?? previous.playing,
-          }
-        : null,
-    )
+  const activateIssue = (index: number) =>
+    changeIssue(selectIssue({ ...issue, playing: false }, index))
+  const activateLifecycle = (phase: LifecyclePhase) => {
+    const v = defaultLifecycleView(phase)
+    const next: ContextSelection = { kind: 'lifecycle', view: v }
+    v.stage = stageAtLevel(next, p.layer)
+    applyContext(next)
+  }
+  const changeContextLevel = (layer: Layer, automatic = false) => {
+    if (!selection) {
+      closeContext()
+      setFollow(false)
+      p.onLayer(layer)
+      setPanel('connections')
+      return
+    }
+    const next = {
+      ...selection,
+      view: { ...selection.view, playing: automatic && selection.view.playing },
+    } as ContextSelection
+    if (next.kind !== 'issue') next.view.stage = stageAtLevel(next, layer)
+    applyContext(next, layer, false)
+  }
+  const chooseContextStep = (raw: number, automatic = false) => {
+    if (!selection || !contextFrame) return
+    const index = Math.max(0, Math.min(contextFrame.steps.length - 1, raw))
+    if (selection.kind === 'issue') {
+      changeContextLevel(layers[index].id, automatic)
+      return
+    }
+    const next = {
+      ...selection,
+      view: {
+        ...selection.view,
+        stage: index,
+        playing: automatic && selection.view.playing,
+      },
+    } as ContextSelection
+    applyContext(next, nativeLevel(next, index), false)
+  }
+  const toggleLesson = () => {
+    if (reduced) return
+    if (issueActive) setIssue((v) => ({ ...v, playing: !v.playing }))
+    else if (lifecycleActive)
+      setLifecycle((v) => ({ ...v, playing: !v.playing }))
+    else if (exampleActive)
+      setExample((v) => (v ? { ...v, playing: !v.playing } : v))
+  }
+  const openConnections = () => {
+    closeContext()
+    setPanel('connections')
+    setFollow(false)
+    setJourneyAuto(false)
+    p.onManual()
+  }
   const chooseLibraryTab = (tab: LibraryTab) => {
+    if (!['models', 'lifecycle', 'hot'].includes(tab)) {
+      clearContext()
+      setPanel('guide')
+    }
     setLibraryTab(tab)
-    if (tab !== 'models') clearExampleUrl()
-    if (tab !== 'lifecycle') clearLifecycleUrl()
-    if (tab !== 'hot') clearIssueUrl()
   }
   useEffect(() => {
-    if (!p.active || p.page !== 'guide') return
-    const clean = new URL(location.href)
-    if (libraryTab !== 'hot') clearIssueParams(clean)
-    if (libraryTab === 'hot')
-      history.replaceState({}, '', issueUrl(location.href, issue))
-    else if (libraryTab === 'lifecycle')
-      history.replaceState({}, '', lifecycleUrl(clean.toString(), lifecycle))
-    else if (libraryTab === 'models') {
-      const url = clean
-      clearLifecycleParams(url)
-      if (example)
-        history.replaceState({}, '', exampleUrl(url.toString(), example))
-      else {
-        url.searchParams.set('examples', 'all')
-        history.replaceState({}, '', url)
-      }
-    }
-  }, [p.active, p.page, libraryTab, example, lifecycle, issue])
+    if (!p.active || !selection) return
+    const url =
+      selection.kind === 'issue'
+        ? issueUrl(location.href, selection.view)
+        : selection.kind === 'lifecycle'
+          ? lifecycleUrl(location.href, selection.view)
+          : exampleUrl(location.href, selection.view)
+    history.replaceState({}, '', withContextLocation(url, p.page, p.layer))
+  }, [p.active, p.page, p.layer, selection])
   useEffect(() => {
-    setCamera('isometric')
-    if (!exampleActive)
-      setExample((v) => (v?.playing ? { ...v, playing: false } : v))
-    if (!issueActive)
+    if (!p.active) {
       setIssue((v) => (v.playing ? { ...v, playing: false } : v))
-    if (!lifecycleActive)
       setLifecycle((v) => (v.playing ? { ...v, playing: false } : v))
-  }, [exampleActive, lifecycleActive, issueActive])
-  useEffect(() => {
-    const onPop = () => {
-      const hot = parseIssueLocation(location.href),
-        life = parseLifecycleLocation(location.href),
-        next = parseExampleLocation(location.href)
-      setExample(next)
-      if (hot) {
-        setIssue(hot)
-        setLibraryTab('hot')
-      } else if (life) {
-        setLifecycle(life)
-        setLibraryTab('lifecycle')
-      } else if (
-        next ||
-        new URLSearchParams(location.search).get('examples') === 'all'
-      )
-        setLibraryTab('models')
-      else setLibraryTab('concepts')
+      setExample((v) => (v?.playing ? { ...v, playing: false } : v))
     }
-    window.addEventListener('popstate', onPop)
-    return () => window.removeEventListener('popstate', onPop)
+  }, [p.active])
+  useEffect(() => {
+    const pop = () => {
+      const next = parseContextLocation(location.href)
+      if (!next) {
+        setLibraryTab('concepts')
+        setPanel(null)
+        return
+      }
+      const layer = initialContextLevel(location.href),
+        frame = contextAtLevel(next, layer)
+      if (next.kind === 'issue') {
+        setIssue(next.view)
+        setLibraryTab('hot')
+      } else if (next.kind === 'lifecycle') {
+        setLifecycle(next.view)
+        setLibraryTab('lifecycle')
+      } else {
+        setExample(next.view)
+        setLibraryTab('models')
+      }
+      p.onContextWorld(layer, frame.traffic, frame.node)
+      setPanel('guide')
+      setInspector(false)
+    }
+    window.addEventListener('popstate', pop)
+    return () => window.removeEventListener('popstate', pop)
   }, [])
   useEffect(() => {
-    if (!p.active || theater) return
-    const reveal = () =>
+    if (panel === 'guide')
       root.current
-        ?.querySelector('.learn-header nav button[aria-current="page"]')
-        ?.scrollIntoView({
-          block: 'nearest',
-          inline: 'nearest',
-          behavior: 'instant',
-        })
-    reveal()
-    window.addEventListener('resize', reveal)
-    return () => window.removeEventListener('resize', reveal)
-  }, [p.active, p.page, libraryTab, theater])
+        ?.querySelector('.learn-panel')
+        ?.scrollTo({ top: 0, behavior: 'instant' })
+  }, [contextFrame?.key, panel])
   const [rank, setRank] = useState(0),
     [prompt, setPrompt] = useState(
       'Explain black holes to a curious ten-year-old.',
@@ -538,14 +628,22 @@ export default function LearningFusion(p: Props) {
       return
     }
     setReader(null)
-    if (p.page === 'journey') {
+    if (p.page === 'journey' && !selection) {
       setPanel('journey')
       setInspector(false)
       setFollow(false)
       p.onJourneyScene(p.journeyStep, journeyAuto)
     } else {
       setJourneyAuto(false)
-      setPanel(p.page === 'lab' ? 'lab' : p.page === 'guide' ? 'guide' : null)
+      setPanel(
+        selection
+          ? 'guide'
+          : p.page === 'lab'
+            ? 'lab'
+            : p.page === 'guide'
+              ? 'guide'
+              : null,
+      )
       if (p.page === 'lab') {
         setInspector(false)
         p.onHeatmap(true)
@@ -564,16 +662,10 @@ export default function LearningFusion(p: Props) {
     return () => clearTimeout(timer)
   }, [journeyAuto, p.active, p.page, p.journeyStep, rag])
   const go = (page: Page) => {
-    if (page !== 'guide') {
-      clearExampleUrl()
-      clearLifecycleUrl()
-      clearIssueUrl()
-    }
+    if (['game', 'journey', 'lab'].includes(page)) clearContext()
     setIssue((v) => (v.playing ? { ...v, playing: false } : v))
     setLifecycle((v) => (v.playing ? { ...v, playing: false } : v))
-    setExample((previous) =>
-      previous ? { ...previous, playing: false } : null,
-    )
+    setExample((v) => (v?.playing ? { ...v, playing: false } : v))
     closeContext()
     setFollow(false)
     setTheater(false)
@@ -654,29 +746,16 @@ export default function LearningFusion(p: Props) {
         help
       )
         return
-      if (teachingActive && activeLesson) {
-        const select = (stage: number) =>
-          issueActive
-            ? selectIssueStage(stage)
-            : lifecycleActive
-              ? selectLifecycleStage(stage)
-              : selectExampleStage(stage, false)
+      if (contextFrame) {
         if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
           e.preventDefault()
-          select(
-            (issueActive ? issueIndex : lifecycleStage)(
-              activeLesson.stage + (e.key === 'ArrowRight' ? 1 : -1),
-            ),
+          chooseContextStep(
+            contextFrame.stage + (e.key === 'ArrowRight' ? 1 : -1),
           )
           return
         }
-        if (
-          (issueActive
-            ? ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']
-            : ['1', '2', '3', '4', '5', '6']
-          ).includes(e.key)
-        ) {
-          select(e.key === '0' ? 9 : Number(e.key) - 1)
+        if (['1', '2', '3', '4'].includes(e.key)) {
+          changeContextLevel(layers[Number(e.key) - 1].id)
           return
         }
         if (
@@ -688,9 +767,7 @@ export default function LearningFusion(p: Props) {
           return
         }
         if (e.key.toLowerCase() === 'f') {
-          p.sceneRef.current?.focus(
-            `${issueActive ? 'issue' : lifecycleActive ? 'lifecycle' : 'example'}-stage-${activeLesson.stage}`,
-          )
+          p.sceneRef.current?.focus('context-focus')
           setPanel(null)
           return
         }
@@ -719,7 +796,7 @@ export default function LearningFusion(p: Props) {
       } else if (['1', '2', '3', '4'].includes(e.key)) {
         closeContext()
         setPanel(null)
-        p.onLayer(layers[Number(e.key) - 1].id)
+        changeContextLevel(layers[Number(e.key) - 1].id)
       } else if (e.key.toLowerCase() === 'l') setLabels(!labels)
       else if (e.key.toLowerCase() === 'r') view('isometric')
       else if (['q', 'e'].includes(e.key.toLowerCase())) {
@@ -741,19 +818,23 @@ export default function LearningFusion(p: Props) {
     setPanel(panel === next ? null : next)
   }
   const panelTitle =
-    panel === 'lab'
-      ? 'Experiment with the service'
-      : panel === 'guide'
-        ? 'The learning library'
-        : panel === 'journey'
-          ? 'The life of a request'
-          : panel === 'collective'
-            ? 'Eight ranks. One shared answer.'
-            : panel === 'chapters'
-              ? 'Choose a transformation'
-              : panel === 'experiment'
-                ? 'Change the workload'
-                : 'Locate a component'
+    panel === 'connections'
+      ? `Connections at ${levelNames[p.layer]}`
+      : panel === 'lab'
+        ? 'Experiment with the service'
+        : panel === 'guide'
+          ? contextFrame
+            ? `${levelNames[p.layer]} / ${contextFrame.title}`
+            : 'The learning library'
+          : panel === 'journey'
+            ? 'The life of a request'
+            : panel === 'collective'
+              ? 'Eight ranks. One shared answer.'
+              : panel === 'chapters'
+                ? 'Choose a transformation'
+                : panel === 'experiment'
+                  ? 'Change the workload'
+                  : 'Locate a component'
   const changeParameters = (next: Parameters) => p.onParameters(next)
   const experimentControls = (
     <div className="learn-experiment-controls">
@@ -825,16 +906,10 @@ export default function LearningFusion(p: Props) {
   return (
     <section
       ref={root}
-      className={`learning-fusion ${theater ? 'learn-cinema' : ''} ${teachingActive ? 'is-model-example' : ''} ${lifecycleActive ? 'is-lifecycle' : ''} ${issueActive ? 'is-hot-issue' : ''}`}
+      className={`learning-fusion ${theater ? 'learn-cinema' : ''} ${teachingActive ? 'has-context' : ''}`}
       style={
         {
-          '--model-accent': issueActive
-            ? hotIssues[issue.stage].color
-            : lifecycleActive
-              ? phaseInfo(lifecycle.phase).color
-              : example
-                ? findExample(example.id)!.color
-                : '#c6dea0',
+          '--model-accent': contextFrame?.color || '#c6dea0',
         } as React.CSSProperties
       }
       hidden={!p.active}
@@ -858,20 +933,11 @@ export default function LearningFusion(p: Props) {
           orbit={p.orbit}
           showLabels={labels && !theater}
           followPayload={follow}
-          issue={issueActive ? issue : null}
-          onIssueStage={(stage, automatic) => {
-            selectIssueStage(stage, automatic)
-            if (!automatic) setPanel('guide')
-          }}
-          lifecycle={lifecycleActive ? lifecycle : null}
-          onLifecycleStage={(stage, automatic) => {
-            selectLifecycleStage(stage, automatic)
-            if (!automatic) setPanel('guide')
-          }}
-          example={exampleActive ? example : null}
-          onExampleStage={(stage, automatic) => {
-            selectExampleStage(stage, automatic ? undefined : false)
-            if (!automatic) setPanel('guide')
+          context={contextFrame}
+          onContextStep={chooseContextStep}
+          onContextInspect={() => {
+            closeContext()
+            setPanel('guide')
           }}
           onSelect={inspect}
           onCameraRelease={() => {
@@ -918,16 +984,8 @@ export default function LearningFusion(p: Props) {
                 aria-label={
                   teachingActive && activeLesson
                     ? activeLesson.playing
-                      ? issueActive
-                        ? 'Pause hot issues tour'
-                        : lifecycleActive
-                          ? 'Pause lifecycle walkthrough'
-                          : 'Pause model walkthrough'
-                      : issueActive
-                        ? 'Play hot issues tour'
-                        : lifecycleActive
-                          ? 'Play lifecycle walkthrough'
-                          : 'Play model walkthrough'
+                      ? 'Pause connected walkthrough'
+                      : 'Play connected walkthrough'
                     : p.paused
                       ? 'Play timeline'
                       : 'Pause timeline'
@@ -966,69 +1024,13 @@ export default function LearningFusion(p: Props) {
                         if (id === 'guide') chooseLibraryTab('concepts')
                         go(id)
                       }}
-                      aria-current={
-                        p.page === id &&
-                        !(
-                          id === 'guide' &&
-                          ['models', 'lifecycle', 'hot'].includes(libraryTab)
-                        )
-                          ? 'page'
-                          : undefined
-                      }
+                      aria-current={p.page === id ? 'page' : undefined}
                       aria-label={title}
                     >
                       <Icon size={15} />
                       <span>{title}</span>
                     </button>
                   ))}
-                  <button
-                    aria-label="Real models"
-                    aria-current={
-                      p.page === 'guide' && libraryTab === 'models'
-                        ? 'page'
-                        : undefined
-                    }
-                    onClick={() => {
-                      go('guide')
-                      chooseLibraryTab('models')
-                      setQuery('')
-                    }}
-                  >
-                    <Boxes size={15} />
-                    <span>Real models</span>
-                  </button>
-                  <button
-                    aria-label="AI lifecycle"
-                    aria-current={
-                      p.page === 'guide' && libraryTab === 'lifecycle'
-                        ? 'page'
-                        : undefined
-                    }
-                    onClick={() => {
-                      go('guide')
-                      chooseLibraryTab('lifecycle')
-                      setQuery('')
-                    }}
-                  >
-                    <Layers3 size={15} />
-                    <span>AI lifecycle</span>
-                  </button>
-                  <button
-                    aria-label="Hot issues"
-                    aria-current={
-                      p.page === 'guide' && libraryTab === 'hot'
-                        ? 'page'
-                        : undefined
-                    }
-                    onClick={() => {
-                      go('guide')
-                      chooseLibraryTab('hot')
-                      setQuery('')
-                    }}
-                  >
-                    <Flame size={15} />
-                    <span>Hot issues</span>
-                  </button>
                 </nav>
                 <div className="learn-header-tools">
                   <VisualSettings />
@@ -1056,57 +1058,6 @@ export default function LearningFusion(p: Props) {
                   </button>
                 </div>
               </header>
-              {issueActive && (
-                <HotIssuesHUD
-                  view={issue}
-                  onChange={changeIssue}
-                  onStage={(stage) => selectIssueStage(stage)}
-                  reduced={reduced}
-                  panelOpen={panel === 'guide'}
-                  onOpen={() => setPanel(panel === 'guide' ? null : 'guide')}
-                  onFocus={() => {
-                    p.sceneRef.current?.focus(`issue-stage-${issue.stage}`)
-                    setPanel(null)
-                  }}
-                  onExit={() => go('explore')}
-                />
-              )}
-              {lifecycleActive && (
-                <LifecycleHUD
-                  view={lifecycle}
-                  onChange={changeLifecycle}
-                  onStage={selectLifecycleStage}
-                  reduced={reduced}
-                  panelOpen={panel === 'guide'}
-                  onOpen={() => setPanel(panel === 'guide' ? null : 'guide')}
-                  onFocus={() =>
-                    p.sceneRef.current?.focus(
-                      `lifecycle-stage-${lifecycle.stage}`,
-                    )
-                  }
-                  onExit={() => go('explore')}
-                />
-              )}
-              {exampleActive && example && (
-                <ExampleHUD
-                  view={example}
-                  panelOpen={panel === 'guide'}
-                  reduced={reduced}
-                  onStage={(stage) => {
-                    selectExampleStage(stage, false)
-                    if (panel === 'guide') setPanel('guide')
-                  }}
-                  onPlay={() =>
-                    setExample({ ...example, playing: !example.playing })
-                  }
-                  onOpen={() => setPanel(panel === 'guide' ? null : 'guide')}
-                  onFocus={() => {
-                    p.sceneRef.current?.focus(`example-stage-${example.stage}`)
-                    setPanel(null)
-                  }}
-                  onExit={() => go('explore')}
-                />
-              )}
               <div className="learn-scope">
                 <span>
                   <i />{' '}
@@ -1119,13 +1070,20 @@ export default function LearningFusion(p: Props) {
                         : 'KNOWLEDGE IN CONTEXT'}
                 </span>
                 <h1>
-                  {p.page === 'explore'
-                    ? scope.title
-                    : p.page === 'journey'
-                      ? 'Follow the state.'
-                      : p.page === 'lab'
-                        ? 'Make the trade-offs visible.'
-                        : 'Build your mental model.'}
+                  {teachingActive
+                    ? {
+                        fleet: 'One fleet. Many workloads.',
+                        pod: 'Inside a connected pod.',
+                        rack: 'Inside an eight-GPU server.',
+                        gpu: 'Inside one accelerator.',
+                      }[p.layer]
+                    : p.page === 'explore'
+                      ? scope.title
+                      : p.page === 'journey'
+                        ? 'Follow the state.'
+                        : p.page === 'lab'
+                          ? 'Make the trade-offs visible.'
+                          : 'Build your mental model.'}
                 </h1>
                 <p>
                   {p.page === 'explore'
@@ -1136,40 +1094,51 @@ export default function LearningFusion(p: Props) {
                         ? 'Synthetic estimates. One world. Many strategies.'
                         : 'Every concept has a place in the world.'}
                 </p>
+                <button
+                  className="connection-shortcut"
+                  onClick={openConnections}
+                >
+                  <BookOpen size={12} />
+                  Explore stories at {levelNames[p.layer]}
+                  <ArrowRight size={12} />
+                </button>
               </div>
-              <div
-                className="learn-metrics"
-                aria-label="Learning model metrics"
-              >
-                <div>
-                  <Cpu size={14} />
-                  <span>
-                    Modeled GPUs<strong>{formatNumber(p.params.gpus)}</strong>
-                  </span>
+              {contextFrame && <ContextMetrics frame={contextFrame} />}
+              {!contextFrame && (
+                <div
+                  className="learn-metrics"
+                  aria-label="Learning model metrics"
+                >
+                  <div>
+                    <Cpu size={14} />
+                    <span>
+                      Modeled GPUs<strong>{formatNumber(p.params.gpus)}</strong>
+                    </span>
+                  </div>
+                  <div>
+                    <HardDrive size={14} />
+                    <span>
+                      Prompt KV / TP group
+                      <strong>
+                        {(kvBytes(p.params.inputTokens) / 2 ** 20).toFixed(0)}
+                        <small> MiB</small>
+                      </strong>
+                    </span>
+                  </div>
+                  <div>
+                    <Activity size={14} />
+                    <span>
+                      Offered model load
+                      <strong
+                        className={model.utilization >= 1 ? 'overloaded' : ''}
+                      >
+                        {Math.round(model.utilization * 100)}
+                        <small>%</small>
+                      </strong>
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <HardDrive size={14} />
-                  <span>
-                    Prompt KV / TP group
-                    <strong>
-                      {(kvBytes(p.params.inputTokens) / 2 ** 20).toFixed(0)}
-                      <small> MiB</small>
-                    </strong>
-                  </span>
-                </div>
-                <div>
-                  <Activity size={14} />
-                  <span>
-                    Offered model load
-                    <strong
-                      className={model.utilization >= 1 ? 'overloaded' : ''}
-                    >
-                      {Math.round(model.utilization * 100)}
-                      <small>%</small>
-                    </strong>
-                  </span>
-                </div>
-              </div>
+              )}
               <nav
                 className="learn-scale-rail"
                 aria-label="Infrastructure scale"
@@ -1181,11 +1150,7 @@ export default function LearningFusion(p: Props) {
                       key={l.id}
                       aria-pressed={p.layer === l.id}
                       aria-label={`${i + 1} ${l.name} ${l.scale}`}
-                      onClick={() => {
-                        closeContext()
-                        setFollow(false)
-                        p.onLayer(l.id)
-                      }}
+                      onClick={() => changeContextLevel(l.id)}
                     >
                       <Icon size={20} />
                       <span>
@@ -1197,34 +1162,44 @@ export default function LearningFusion(p: Props) {
                   )
                 })}
               </nav>
-              <aside
-                className="learn-narration"
-                aria-label="Current 3D transformation"
-              >
-                <div>
-                  <i style={{ background: frame.chapter.color }} />
-                  <span>
-                    0{frame.chapterIndex + 1} /{' '}
-                    {String(chapters.length).padStart(2, '0')} ·{' '}
-                    {lensNames[p.traffic].toUpperCase()}
+              {contextFrame ? (
+                <ContextNarration
+                  frame={contextFrame}
+                  onRead={() => {
+                    closeContext()
+                    setPanel('guide')
+                  }}
+                />
+              ) : (
+                <aside
+                  className="learn-narration"
+                  aria-label="Current 3D transformation"
+                >
+                  <div>
+                    <i style={{ background: frame.chapter.color }} />
+                    <span>
+                      0{frame.chapterIndex + 1} /{' '}
+                      {String(chapters.length).padStart(2, '0')} ·{' '}
+                      {lensNames[p.traffic].toUpperCase()}
+                    </span>
+                    <button
+                      onClick={() => p.onPaused(!p.paused)}
+                      aria-label={
+                        p.paused ? 'Resume explanation' : 'Pause to read'
+                      }
+                    >
+                      {p.paused ? <Play size={13} /> : <Pause size={13} />}
+                    </button>
+                  </div>
+                  <h2>{frame.chapter.title}</h2>
+                  <code>{frame.chapter.payload}</code>
+                  <p>{frame.chapter.explanation}</p>
+                  <span className="learn-constraint">
+                    <Zap size={12} />
+                    {frame.chapter.constraint}
                   </span>
-                  <button
-                    onClick={() => p.onPaused(!p.paused)}
-                    aria-label={
-                      p.paused ? 'Resume explanation' : 'Pause to read'
-                    }
-                  >
-                    {p.paused ? <Play size={13} /> : <Pause size={13} />}
-                  </button>
-                </div>
-                <h2>{frame.chapter.title}</h2>
-                <code>{frame.chapter.payload}</code>
-                <p>{frame.chapter.explanation}</p>
-                <span className="learn-constraint">
-                  <Zap size={12} />
-                  {frame.chapter.constraint}
-                </span>
-              </aside>
+                </aside>
+              )}
               <nav
                 className="learn-camera"
                 aria-label="Learning camera controls"
@@ -1418,6 +1393,14 @@ export default function LearningFusion(p: Props) {
                         ) : (
                           experimentControls
                         )}
+                        <button
+                          className="connection-inspector-link"
+                          onClick={openConnections}
+                        >
+                          <Layers3 size={16} />
+                          <span>Issues, lifecycle and real models here</span>
+                          <ArrowRight size={14} />
+                        </button>
                         <div className="learn-object-actions">
                           <button
                             className="learn-primary"
@@ -1471,7 +1454,15 @@ export default function LearningFusion(p: Props) {
                       <X size={19} />
                     </button>
                   </div>
-                  {panel === 'lab' ? (
+                  {panel === 'connections' ? (
+                    <ConnectionsCatalog
+                      layer={p.layer}
+                      selection={selection}
+                      onIssue={activateIssue}
+                      onLifecycle={activateLifecycle}
+                      onModel={selectExample}
+                    />
+                  ) : panel === 'lab' ? (
                     <LearningLab
                       params={p.params}
                       strategy={p.strategy}
@@ -1486,30 +1477,37 @@ export default function LearningFusion(p: Props) {
                       }}
                     />
                   ) : panel === 'guide' ? (
-                    <LearningLibrary
-                      query={query}
-                      onQuery={setQuery}
-                      tab={libraryTab}
-                      onTab={chooseLibraryTab}
-                      example={example}
-                      onExample={changeExample}
-                      onChooseExample={selectExample}
-                      onCompare={() => setReader('examples')}
-                      issue={issue}
-                      onIssue={changeIssue}
-                      onIssueMethodology={() => setReader('issues')}
-                      lifecycle={lifecycle}
-                      onLifecycle={changeLifecycle}
-                      onLifecycleCompare={() => setReader('lifecycle')}
-                      onReading={() => setReader('guide')}
-                      onLocate={(layer, traffic, node) => {
-                        p.onLocate(layer, traffic, node)
-                        setPanel(null)
-                        setInspector(true)
-                        pin.current = null
-                        p.onNavigate('explore')
-                      }}
-                    />
+                    <>
+                      {contextFrame && (
+                        <ContextPerspective
+                          frame={contextFrame}
+                          onLevel={changeContextLevel}
+                        />
+                      )}
+                      <LearningLibrary
+                        query={query}
+                        onQuery={setQuery}
+                        tab={libraryTab}
+                        onTab={chooseLibraryTab}
+                        example={example}
+                        onExample={changeExample}
+                        onCompare={() => setReader('examples')}
+                        issue={issue}
+                        onIssue={changeIssue}
+                        onIssueMethodology={() => setReader('issues')}
+                        lifecycle={lifecycle}
+                        onLifecycle={changeLifecycle}
+                        onLifecycleCompare={() => setReader('lifecycle')}
+                        onReading={() => setReader('guide')}
+                        onLocate={(layer, traffic, node) => {
+                          p.onLocate(layer, traffic, node)
+                          setPanel(null)
+                          setInspector(true)
+                          pin.current = null
+                          p.onNavigate('explore')
+                        }}
+                      />
+                    </>
                   ) : panel === 'experiment' ? (
                     <>
                       <h2>A small change. A different constraint.</h2>
@@ -1842,144 +1840,175 @@ export default function LearningFusion(p: Props) {
                 </button>
               )}
               <div className="learn-command-deck">
-                <div
-                  className="learn-lens-dock"
-                  aria-label="Learning data lenses"
-                >
-                  {(Object.keys(lensNames) as Traffic[]).map((mode) => {
-                    const Icon = lensIcons[mode]
-                    return (
+                {contextFrame ? (
+                  <ContextControls
+                    frame={contextFrame}
+                    reduced={reduced}
+                    panelOpen={panel === 'guide'}
+                    onStep={chooseContextStep}
+                    onPlay={toggleLesson}
+                    onBrowse={openConnections}
+                    onRead={() => {
+                      closeContext()
+                      setPanel(panel === 'guide' ? null : 'guide')
+                    }}
+                    onClear={clearContext}
+                    onFocus={() => p.sceneRef.current?.focus('context-focus')}
+                  />
+                ) : (
+                  <>
+                    <div
+                      className="learn-lens-dock"
+                      aria-label="Learning data lenses"
+                    >
+                      {(Object.keys(lensNames) as Traffic[]).map((mode) => {
+                        const Icon = lensIcons[mode]
+                        return (
+                          <button
+                            key={mode}
+                            aria-pressed={p.traffic === mode}
+                            onClick={() => {
+                              closeContext()
+                              setFollow(false)
+                              setPanel(null)
+                              p.onTraffic(mode)
+                            }}
+                          >
+                            <Icon size={17} />
+                            <span>{lensNames[mode]}</span>
+                          </button>
+                        )
+                      })}
                       <button
-                        key={mode}
-                        aria-pressed={p.traffic === mode}
+                        onClick={openConnections}
+                        aria-label="Browse stories at this level"
+                      >
+                        <BookOpen size={17} />
+                        <span>Connections</span>
+                      </button>
+                      <i />
+                      <button
+                        onClick={() => open('components')}
+                        aria-label="Learning component picker"
+                      >
+                        <Grid2X2 size={17} />
+                      </button>
+                      <button
+                        onClick={() => open('experiment')}
+                        aria-label="World experiment controls"
+                      >
+                        <Settings2 size={17} />
+                      </button>
+                      <button onClick={inspectData} aria-label="Inspect data">
+                        <Scan size={17} />
+                      </button>
+                      {p.traffic === 'collectives' && (
+                        <button
+                          onClick={() => open('collective')}
+                          aria-label="Open synchronized ring playground"
+                        >
+                          <Network size={17} />
+                        </button>
+                      )}
+                    </div>
+                    <div className="learn-timeline-row">
+                      <button
+                        className="learn-play"
+                        onClick={() => p.onPaused(!p.paused)}
+                        aria-label={
+                          p.paused ? 'Play timeline' : 'Pause timeline'
+                        }
+                      >
+                        {p.paused ? <Play size={16} /> : <Pause size={16} />}
+                      </button>
+                      <button
+                        onClick={() => {
+                          closeContext()
+                          p.onChapter(Math.max(0, frame.chapterIndex - 1))
+                        }}
+                        aria-label="Previous animation chapter"
+                      >
+                        <ChevronLeft size={16} />
+                      </button>
+                      <label className="learn-timeline">
+                        <input
+                          type="range"
+                          min={0}
+                          max={ANIMATION_DURATION}
+                          step={0.1}
+                          aria-label="Animation timeline"
+                          aria-valuetext={`${frame.time.toFixed(1)} teaching seconds: ${frame.chapter.title}`}
+                          value={frame.time}
+                          onChange={(e) => {
+                            p.onPaused(true)
+                            p.sceneRef.current?.seek(Number(e.target.value))
+                          }}
+                          style={
+                            {
+                              '--learn-progress': `${frame.progress * 100}%`,
+                            } as React.CSSProperties
+                          }
+                        />
+                        <span>
+                          {frame.time.toFixed(1)}s / {ANIMATION_DURATION}s <i />
+                          {frame.chapter.short}
+                        </span>
+                      </label>
+                      <button
+                        onClick={() => {
+                          closeContext()
+                          p.onChapter(
+                            Math.min(
+                              chapters.length - 1,
+                              frame.chapterIndex + 1,
+                            ),
+                          )
+                        }}
+                        aria-label="Next animation chapter"
+                      >
+                        <ChevronRight size={16} />
+                      </button>
+                      <button
+                        className="learn-speed"
+                        onClick={() =>
+                          p.onSpeed(p.speed === 1 ? 2 : p.speed === 2 ? 0.5 : 1)
+                        }
+                        aria-label="Change learning playback speed"
+                      >
+                        {p.speed}×
+                      </button>
+                      <button
+                        onClick={() => open('chapters')}
+                        aria-label="Open animation chapters"
+                      >
+                        <Layers3 size={17} />
+                      </button>
+                      <button
                         onClick={() => {
                           closeContext()
                           setFollow(false)
                           setPanel(null)
-                          p.onTraffic(mode)
+                          setJourneyAuto(false)
+                          if (p.page !== 'explore') p.onNavigate('explore')
+                          p.onGuided()
                         }}
+                        aria-pressed={p.guided}
+                        aria-label="Guided camera tour"
                       >
-                        <Icon size={17} />
-                        <span>{lensNames[mode]}</span>
+                        <Compass size={17} />
+                        <span>Tour</span>
                       </button>
-                    )
-                  })}
-                  <i />
-                  <button
-                    onClick={() => open('components')}
-                    aria-label="Learning component picker"
-                  >
-                    <Grid2X2 size={17} />
-                  </button>
-                  <button
-                    onClick={() => open('experiment')}
-                    aria-label="World experiment controls"
-                  >
-                    <Settings2 size={17} />
-                  </button>
-                  <button onClick={inspectData} aria-label="Inspect data">
-                    <Scan size={17} />
-                  </button>
-                  {p.traffic === 'collectives' && (
-                    <button
-                      onClick={() => open('collective')}
-                      aria-label="Open synchronized ring playground"
-                    >
-                      <Network size={17} />
-                    </button>
-                  )}
-                </div>
-                <div className="learn-timeline-row">
-                  <button
-                    className="learn-play"
-                    onClick={() => p.onPaused(!p.paused)}
-                    aria-label={p.paused ? 'Play timeline' : 'Pause timeline'}
-                  >
-                    {p.paused ? <Play size={16} /> : <Pause size={16} />}
-                  </button>
-                  <button
-                    onClick={() => {
-                      closeContext()
-                      p.onChapter(Math.max(0, frame.chapterIndex - 1))
-                    }}
-                    aria-label="Previous animation chapter"
-                  >
-                    <ChevronLeft size={16} />
-                  </button>
-                  <label className="learn-timeline">
-                    <input
-                      type="range"
-                      min={0}
-                      max={ANIMATION_DURATION}
-                      step={0.1}
-                      aria-label="Animation timeline"
-                      aria-valuetext={`${frame.time.toFixed(1)} teaching seconds: ${frame.chapter.title}`}
-                      value={frame.time}
-                      onChange={(e) => {
-                        p.onPaused(true)
-                        p.sceneRef.current?.seek(Number(e.target.value))
-                      }}
-                      style={
-                        {
-                          '--learn-progress': `${frame.progress * 100}%`,
-                        } as React.CSSProperties
-                      }
-                    />
-                    <span>
-                      {frame.time.toFixed(1)}s / {ANIMATION_DURATION}s <i />
-                      {frame.chapter.short}
-                    </span>
-                  </label>
-                  <button
-                    onClick={() => {
-                      closeContext()
-                      p.onChapter(
-                        Math.min(chapters.length - 1, frame.chapterIndex + 1),
-                      )
-                    }}
-                    aria-label="Next animation chapter"
-                  >
-                    <ChevronRight size={16} />
-                  </button>
-                  <button
-                    className="learn-speed"
-                    onClick={() =>
-                      p.onSpeed(p.speed === 1 ? 2 : p.speed === 2 ? 0.5 : 1)
-                    }
-                    aria-label="Change learning playback speed"
-                  >
-                    {p.speed}×
-                  </button>
-                  <button
-                    onClick={() => open('chapters')}
-                    aria-label="Open animation chapters"
-                  >
-                    <Layers3 size={17} />
-                  </button>
-                  <button
-                    onClick={() => {
-                      closeContext()
-                      setFollow(false)
-                      setPanel(null)
-                      setJourneyAuto(false)
-                      if (p.page !== 'explore') p.onNavigate('explore')
-                      p.onGuided()
-                    }}
-                    aria-pressed={p.guided}
-                    aria-label="Guided camera tour"
-                  >
-                    <Compass size={17} />
-                    <span>Tour</span>
-                  </button>
-                  <button
-                    onClick={toggleFollow}
-                    aria-pressed={follow}
-                    aria-label="Ride with learning payload"
-                  >
-                    <Orbit size={17} />
-                    <span>Ride</span>
-                  </button>
-                </div>
+                      <button
+                        onClick={toggleFollow}
+                        aria-pressed={follow}
+                        aria-label="Ride with learning payload"
+                      >
+                        <Orbit size={17} />
+                        <span>Ride</span>
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
               <span className="learn-footnote">
                 {exampleActive

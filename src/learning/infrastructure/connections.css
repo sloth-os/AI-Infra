@@ -1,0 +1,568 @@
+.connections-catalog > h2 {
+  font-size: 23px;
+  line-height: 1.5;
+  font-weight: 450;
+  color: #d8e6dc;
+  margin: 10px 0;
+}
+.connections-catalog p {
+  font-size: 11px;
+  line-height: 1.9;
+  color: #9bb6c4;
+}
+.connections-catalog section {
+  margin-top: 25px;
+}
+.connections-catalog h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #c6d8b0;
+  font-size: 13px;
+  font-weight: 450;
+}
+.connection-cards {
+  display: grid;
+  gap: 8px;
+}
+.connection-cards > button {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 11px;
+  border: 1px solid #789aa73d;
+  border-radius: 7px;
+  background: #1b3540;
+  color: var(--connection-color);
+  text-align: left;
+}
+.connection-cards > button:hover,
+.connection-cards > button[aria-pressed='true'] {
+  border-color: var(--connection-color);
+  background: #29434b;
+}
+.connection-cards > button > span {
+  flex: 1;
+  min-width: 0;
+}
+.connection-cards strong {
+  display: block;
+  color: #ceddd4;
+  font-size: 13px;
+  font-weight: 450;
+  line-height: 1.7;
+}
+.connection-cards small {
+  display: block;
+  color: #98b4c0;
+  font-size: 10px;
+  line-height: 1.8;
+  margin-top: 5px;
+}
+.connection-cards b {
+  font: 13px monospace;
+  margin-top: 3px;
+}
+.connection-cards svg {
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+.context-perspective {
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--model-accent), transparent 65%);
+  border-radius: 7px;
+  background: #1b3540;
+  margin: 0 0 20px;
+}
+.context-perspective > span {
+  font-size: 7px;
+  letter-spacing: 0.6px;
+  color: var(--model-accent);
+  line-height: 1.8;
+}
+.context-perspective h2 {
+  font-size: 19px;
+  color: #d3e1d5;
+  line-height: 1.5;
+  font-weight: 450;
+  margin: 9px 0;
+}
+.context-perspective p {
+  font-size: 11px;
+  line-height: 1.85;
+  color: #a5c0ca;
+}
+.context-perspective nav {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  margin: 14px 0;
+}
+.context-perspective nav button {
+  flex: 1;
+  border: 1px solid #7195a43d;
+  border-radius: 4px;
+  background: #16303b;
+  color: #a0bac8;
+  padding: 8px 4px;
+  font-size: 9px;
+}
+.context-perspective nav button[aria-pressed='true'] {
+  border-color: var(--model-accent);
+  color: var(--model-accent);
+}
+.context-perspective > small {
+  font-size: 8px;
+  line-height: 1.8;
+  color: #86a5af;
+  display: block;
+}
+.learning-fusion .context-metrics {
+  max-width: calc(100% - 510px);
+  position: absolute;
+}
+.learning-fusion .context-metrics > div {
+  min-width: 0;
+  max-width: 210px;
+}
+.learning-fusion .context-metrics strong {
+  font-size: 18px;
+  overflow-wrap: anywhere;
+}
+.context-metrics > small {
+  position: absolute;
+  top: calc(100% + 9px);
+  right: 2px;
+  max-width: 100%;
+  font-size: 7px;
+  color: #819fae;
+  text-align: right;
+  line-height: 1.5;
+}
+.context-narration button {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--model-accent);
+  font-size: 10px;
+  padding: 8px 0 0;
+}
+.context-controls {
+}
+.context-current {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  border-bottom: 1px solid #7296a42e;
+  padding: 0 2px 10px;
+  margin-bottom: 8px;
+  min-width: 0;
+}
+.context-current > span {
+  font-size: 7px;
+  letter-spacing: 0.7px;
+  color: var(--model-accent);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.context-current i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  display: block;
+}
+.context-current strong {
+  flex: 1;
+  font-size: 12px;
+  line-height: 1.6;
+  font-weight: 450;
+  color: #cbdcd6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.context-current > button {
+  border: 0;
+  color: #8fadb9;
+  background: transparent;
+  padding: 5px;
+}
+.context-steps {
+  display: grid;
+  grid-template-columns: repeat(var(--context-steps), minmax(0, 1fr));
+  gap: 5px;
+}
+.context-steps button {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid #7899a32e;
+  border-radius: 5px;
+  color: #93aebc;
+  background: #142b35;
+  text-align: left;
+}
+.context-steps button[aria-current='step'] {
+  border-color: color-mix(in srgb, var(--model-accent), transparent 45%);
+  background: color-mix(in srgb, var(--model-accent), #152c36 88%);
+  color: var(--model-accent);
+}
+.context-steps b {
+  font: 8px monospace;
+  margin-top: 2px;
+}
+.context-steps button > span {
+  font-size: 10px;
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.context-steps small {
+  display: block;
+  font-size: 7px;
+  color: #7f9faa;
+  margin-top: 4px;
+}
+.context-playback {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #7296a42e;
+}
+.context-playback > button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #a5c1c4;
+  background: transparent;
+  border: 0;
+  padding: 7px;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.context-playback > button:first-child {
+  background: var(--model-accent);
+  color: #17303a;
+  border-radius: 4px;
+}
+.context-playback > button:disabled {
+  opacity: 0.35;
+}
+.context-playback > span {
+  font-size: 6px;
+  letter-spacing: 0.7px;
+  flex: 1;
+  color: #6f93a0;
+  line-height: 1.5;
+}
+.context-playback > i {
+  height: 18px;
+  width: 1px;
+  background: #7895a33d;
+  margin: 0 6px;
+}
+.learning-fusion.has-context .learn-command-deck {
+  width: min(1040px, calc(100% - 68px));
+  padding: 11px 12px;
+}
+.learning-fusion.has-context .learn-panel {
+  top: 216px;
+  max-height: calc(100% - 420px);
+}
+.learning-fusion .connection-shortcut {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #c9dbb5;
+  background: transparent;
+  border: 0;
+  font-size: 10px;
+  padding: 10px 0 0;
+}
+.learning-fusion .learn-scope:has(.connection-shortcut) > p {
+  display: none;
+}
+.connection-inspector-link {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 9px;
+  color: #c9dbb5;
+  border: 1px solid #82a58c55;
+  background: #29433766;
+  border-radius: 5px;
+  padding: 12px;
+  margin: 14px 0;
+  font-size: 11px;
+  text-align: left;
+}
+.connection-inspector-link span {
+  flex: 1;
+}
+.learning-fusion .context-focus-label {
+  border-color: var(--model-accent);
+  max-width: 230px;
+}
+.learning-fusion .context-focus-label .scene-label-dot {
+  background: var(--model-accent) !important;
+}
+.learning-fusion .context-library .learn-library-tabs {
+  display: none;
+}
+.learning-fusion .context-library > .learn-surface-kicker,
+.learning-fusion .context-library > h2,
+.learning-fusion .context-library > p {
+  display: none;
+}
+.learning-fusion .context-library .model-study-actions {
+  margin-top: 0;
+}
+.learning-fusion.has-context .learn-footnote {
+  max-width: 65%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+@media (max-height: 950px) and (min-width: 701px) {
+  .learning-fusion.has-context .context-narration {
+    display: none;
+  }
+}
+@media (max-width: 1100px) {
+  .learning-fusion .context-metrics {
+    max-width: calc(100% - 420px);
+  }
+  .learning-fusion .context-metrics > div {
+    padding: 7px 10px;
+  }
+  .context-metrics strong {
+    font-size: 15px !important;
+  }
+}
+@media (min-width: 701px) and (max-width: 950px) {
+  .learning-fusion:not(.has-context) .learn-panel {
+    top: 240px;
+    max-height: calc(100% - 410px);
+  }
+}
+@media (max-width: 700px) {
+  .learning-fusion .context-metrics {
+    max-width: none;
+    top: 71px;
+    left: 14px;
+    right: 14px;
+  }
+  .learning-fusion .context-metrics > div {
+    max-width: none;
+    padding: 6px 5px;
+  }
+  .learning-fusion .context-metrics strong {
+    font-size: 12px !important;
+    line-height: 1.5;
+    max-height: 40px;
+    overflow: hidden;
+  }
+  .context-metrics > small {
+    font-size: 6px;
+    top: calc(100% + 5px);
+  }
+  .learning-fusion.has-context .learn-scope {
+    top: 164px;
+  }
+  .learning-fusion.has-context .learn-scope h1 {
+    font-size: 20px;
+    line-height: 1.35;
+    max-width: 270px;
+    margin: 7px 0 0;
+  }
+  .learning-fusion.has-context .learn-scope > span {
+    display: none;
+  }
+  .learning-fusion.has-context .learn-scale-rail {
+    top: 243px;
+  }
+  .learning-fusion.has-context .learn-camera {
+    top: 306px;
+  }
+  .learning-fusion.has-context .learn-command-deck {
+    width: calc(100% - 28px);
+    bottom: 27px;
+    padding: 8px;
+  }
+  .context-current {
+    gap: 5px;
+    padding-bottom: 7px;
+    margin-bottom: 6px;
+  }
+  .context-current > span {
+    font-size: 5px;
+    letter-spacing: 0.2px;
+    max-width: 105px;
+    white-space: normal;
+    line-height: 1.6;
+  }
+  .context-current strong {
+    font-size: 9px;
+  }
+  .context-steps {
+    gap: 3px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .context-steps:has(button:nth-child(4):last-child) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .context-steps button {
+    padding: 5px 4px;
+    gap: 4px;
+  }
+  .context-steps b {
+    font-size: 6px;
+  }
+  .context-steps button > span {
+    font-size: 8px;
+  }
+  .context-steps small {
+    font-size: 6px;
+    margin-top: 2px;
+  }
+  .context-playback {
+    gap: 2px;
+    margin-top: 6px;
+    padding-top: 6px;
+  }
+  .context-playback > span {
+    font-size: 4px;
+    letter-spacing: 0.1px;
+  }
+  .context-playback > button {
+    padding: 6px 4px;
+  }
+  .context-playback > button > span {
+    display: none;
+  }
+  .context-playback > i {
+    margin: 0 2px;
+  }
+  .learning-fusion.has-context .learn-panel {
+    top: auto;
+    bottom: 226px;
+    left: 14px;
+    right: 64px;
+    width: auto;
+    max-height: calc(100% - 545px);
+    min-height: 130px;
+    padding: 13px;
+  }
+  .learning-fusion.has-context .context-narration {
+    display: none;
+  }
+  .learning-fusion .connection-shortcut {
+    display: none;
+  }
+  .context-perspective {
+    padding: 10px;
+  }
+  .context-perspective h2 {
+    font-size: 16px;
+  }
+  .context-perspective p {
+    font-size: 10px;
+  }
+  .connection-cards > button {
+    padding: 11px 8px;
+  }
+  .connection-cards strong {
+    font-size: 11px;
+  }
+  .connection-cards small {
+    font-size: 9px;
+  }
+  .connections-catalog > h2 {
+    font-size: 19px;
+  }
+  .learning-fusion.has-context .learn-reopen {
+    display: none;
+  }
+}
+
+.learning-fusion.has-context .learn-panel {
+  width: min(440px, calc(100% - 380px));
+  overflow-anchor: none;
+}
+.learning-fusion.has-context .context-narration {
+  bottom: 218px;
+  max-height: 220px;
+}
+@media (max-width: 700px) {
+  .learning-fusion.has-context .learn-panel {
+    width: auto;
+  }
+}
+
+@media (max-width: 700px) and (max-height: 680px) {
+  .learning-fusion.has-context {
+    min-height: 100svh;
+  }
+  .learning-fusion.has-context .learn-scope {
+    display: none;
+  }
+  .learning-fusion.has-context .learn-scale-rail {
+    top: 134px;
+  }
+  .learning-fusion.has-context .learn-scale-rail > button {
+    min-height: 40px;
+  }
+  .learning-fusion.has-context .learn-camera {
+    top: 181px;
+    left: 14px;
+    right: 14px;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+  .learning-fusion.has-context .learn-camera > i {
+    width: 1px;
+    height: auto;
+  }
+  .learning-fusion.has-context .context-steps {
+    grid-template-columns: repeat(var(--context-steps), minmax(0, 1fr));
+    padding-right: 32px;
+  }
+  .learning-fusion.has-context .learn-command-deck {
+    bottom: 14px;
+    padding: 6px;
+  }
+  .learning-fusion.has-context .context-controls {
+    position: relative;
+  }
+  .learning-fusion.has-context .context-current {
+    position: absolute;
+    top: 0;
+    right: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  .learning-fusion.has-context .context-current > span,
+  .learning-fusion.has-context .context-current > strong {
+    display: none;
+  }
+  .learning-fusion.has-context .context-current > button {
+    width: 28px;
+    height: 30px;
+  }
+  .learning-fusion.has-context .learn-panel {
+    bottom: 124px;
+    max-height: calc(100% - 349px);
+    min-height: 0;
+  }
+}

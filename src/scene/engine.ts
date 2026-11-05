@@ -13,14 +13,11 @@ import type { CameraView, MotionFrame } from '../motion'
 import { buildArchitecture, trafficColors } from './architecture'
 import type { Architecture, Box, SceneLabel } from './architecture'
 import { buildTensorArchitecture } from './tensors'
-import { ExampleWorld } from './examples'
 import { FlowEffects, signalMaterial } from './effects'
 import type { EffectsQuality } from './effects'
-import type { ExampleView } from '../examples/model'
-import type { LifecycleView } from '../lifecycle/model'
-import { lifecycleProfile } from '../lifecycle/catalog'
-import { hotIssues, issueProfile } from '../issues/catalog'
-import type { IssueView } from '../issues/model'
+import { ContextOverlay } from './context'
+import { contextRole, hardwareAnchor } from '../learning/infrastructure/context'
+import type { ContextFrame } from '../learning/infrastructure/context'
 
 export interface SceneOptions {
   layer: Layer
@@ -40,12 +37,8 @@ export interface SceneOptions {
   followPayload?: boolean
   onCameraRelease?: () => void
   onRank?: (rank: number) => void
-  lifecycle?: LifecycleView | null
-  onLifecycleStage?: (stage: number, automatic?: boolean) => void
-  issue?: IssueView | null
-  onIssueStage?: (stage: number, automatic?: boolean) => void
-  example?: ExampleView | null
-  onExampleStage?: (stage: number, automatic?: boolean) => void
+  context?: ContextFrame | null
+  onContextStep?: (step: number, automatic?: boolean) => void
   onSelect: (id: string) => void
 }
 export interface PayloadInspection {
@@ -144,12 +137,22 @@ export class InfrastructureEngine {
   private qualityFrames = 0
   private qualityTime = 0
   private texture: THREE.CanvasTexture
-  private exampleWorld: ExampleWorld | null = null
-  private exampleActive = false
-  private exampleElapsed = 0.9
-  private exampleStage = -1
-  private exampleEmitted = false
-  private issuePlaying = false
+  private contextPaintDirty = true
+  private contextPaintFrame: ContextFrame | null = null
+  private contextPaintState = ''
+  private contextPaintCount = 0
+  private contextWasFading = false
+  private cameraChanged = () => {
+    this.contextPaintDirty = true
+  }
+  private contextOverlay = new ContextOverlay()
+  private resetVisibilityClock = () => {
+    this.lastTime = performance.now()
+  }
+  private contextClock = 0
+  private contextKey = ''
+  private contextEmitted = false
+  private contextWasPlaying = false
 
   constructor(
     private container: HTMLDivElement,
@@ -159,6 +162,8 @@ export class InfrastructureEngine {
     const o = options()
     this.frame = getMotionFrame(0, o.traffic, o.params, o.strategy)
     this.lastMode = o.traffic
+    this.scene.add(this.contextOverlay.group)
+    this.contextOverlay.group.visible = false
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
       alpha: false,
@@ -208,6 +213,7 @@ export class InfrastructureEngine {
     this.controls.maxZoom = 3.5
     this.controls.autoRotateSpeed = 0.45
     this.controls.addEventListener('start', this.interactionStart)
+    this.controls.addEventListener('change', this.cameraChanged)
 
     this.worlds = (['fleet', 'pod', 'rack', 'gpu'] as Layer[]).map((key) => ({
       ...buildArchitecture(key),
@@ -314,7 +320,10 @@ export class InfrastructureEngine {
     this.raycaster.params.Line.threshold = 0.18
     this.resizeObserver = new ResizeObserver(this.resize)
     this.resizeObserver.observe(container)
+    document.addEventListener('visibilitychange', this.resetVisibilityClock)
     this.visibilityObserver = new IntersectionObserver((entries) => {
+      if (!this.visible && entries[0].isIntersecting)
+        this.resetVisibilityClock()
       this.visible = entries[0].isIntersecting
     })
     this.visibilityObserver.observe(container)
@@ -343,11 +352,8 @@ export class InfrastructureEngine {
     )
     this.raycaster.setFromCamera(this.pointer, this.camera)
     const hit = this.raycaster.intersectObjects(
-      (this.options().issue ||
-        this.options().example ||
-        this.options().lifecycle) &&
-        this.exampleWorld
-        ? this.exampleWorld.pickable
+      this.options().context
+        ? this.current.pickable
         : [...this.current.pickable, this.packets],
       false,
     )[0]
@@ -367,28 +373,12 @@ export class InfrastructureEngine {
     )
     this.raycaster.setFromCamera(this.pointer, this.camera)
     const hit = this.raycaster.intersectObjects(
-      (this.options().issue ||
-        this.options().example ||
-        this.options().lifecycle) &&
-        this.exampleWorld
-        ? this.exampleWorld.pickable
+      this.options().context
+        ? this.current.pickable
         : [...this.current.pickable, this.packets],
       false,
     )[0]
     if (!hit || hit.instanceId === undefined) return
-    if (
-      this.options().issue ||
-      this.options().example ||
-      this.options().lifecycle
-    ) {
-      const o = this.options()
-      ;(o.issue
-        ? o.onIssueStage
-        : o.lifecycle
-          ? o.onLifecycleStage
-          : o.onExampleStage)?.(hit.object.userData.exampleStage)
-      return
-    }
     if (hit.object === this.packets) {
       this.inspectPacket(hit.instanceId)
       return
@@ -396,6 +386,7 @@ export class InfrastructureEngine {
     const id = hit.object.userData.ids[hit.instanceId]
     if (
       this.options().immersive &&
+      !this.options().context &&
       this.options().traffic === 'collectives' &&
       this.current.key === 'rack'
     ) {
@@ -435,17 +426,51 @@ export class InfrastructureEngine {
     this.camera.updateProjectionMatrix()
     this.renderer.setSize(width, height)
   }
-  private publishLabels() {
-    if (this.exampleActive && this.exampleWorld) {
-      this.hooks.labels(this.exampleWorld.labels)
-      return
-    }
+  private sceneLabels(): SceneLabel[] {
+    const o = this.options(),
+      context = o.context
     const labels = this.current.labels.filter((label) =>
-      this.options().traffic === 'collectives' && this.current.key === 'rack'
+      !context && o.traffic === 'collectives' && this.current.key === 'rack'
         ? label.rank !== undefined
         : label.rank === undefined,
     )
-    this.hooks.labels([...labels, this.payloadLabel])
+    if (!context) return [...labels, this.payloadLabel]
+    const contextual = labels.map((label) => {
+      const role = contextRole(label.id, context)
+      return role ? { ...label, title: role[0], subtitle: role[1] } : label
+    })
+    const anchor = hardwareAnchor(context.layer, context.node)
+    return [
+      ...contextual,
+      {
+        id: context.node,
+        key: 'context-focus',
+        context: true,
+        title: context.heading,
+        subtitle: context.payload,
+        position: new THREE.Vector3(anchor[0], anchor[1] + 0.9, anchor[2]),
+      },
+    ]
+  }
+  private publishLabels() {
+    this.hooks.labels(this.sceneLabels())
+  }
+  private resetHardware() {
+    for (const mesh of this.current.pickable) {
+      const boxes = mesh.userData.boxes as Box[]
+      boxes.forEach((box, i) => {
+        this.tempMatrix.compose(
+          this.tempPosition.set(...box.position),
+          this.tempRotation.identity(),
+          this.tempScale.set(...box.scale),
+        )
+        mesh.setMatrixAt(i, this.tempMatrix)
+        mesh.setColorAt(i, this.tempColor.set(mesh.userData.baseColor))
+      })
+      mesh.instanceMatrix.needsUpdate = true
+      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true
+    }
+    this.lastExplosion = -1
   }
   private updateRoutes() {
     const mode = this.flowMode()
@@ -570,14 +595,9 @@ export class InfrastructureEngine {
     this.renderer.domElement.dataset.cameraMoving = 'false'
   }
   focus(id: string, point?: THREE.Vector3) {
-    const annotation = (
-      (this.options().issue ||
-        this.options().example ||
-        this.options().lifecycle) &&
-      this.exampleWorld
-        ? this.exampleWorld.labels
-        : this.current.labels
-    ).find((label) => label.id === id)
+    const annotation = this.sceneLabels().find(
+      (label) => label.id === id || label.key === id,
+    )
     const target = (
       point ||
       annotation?.position ||
@@ -640,7 +660,7 @@ export class InfrastructureEngine {
 
   private updateWorld(delta: number) {
     const o = this.options(),
-      key: WorldKey = o.traffic === 'tensors' ? 'tensor' : o.layer
+      key: WorldKey = !o.context && o.traffic === 'tensors' ? 'tensor' : o.layer
     if (key !== this.current.key) {
       this.current = this.worlds.find((w) => w.key === key)!
       this.current.group.visible = true
@@ -981,17 +1001,24 @@ export class InfrastructureEngine {
     const o = this.options(),
       width = this.container.clientWidth,
       height = this.container.clientHeight
-    const labels = this.current.labels.filter((label) =>
-      o.traffic === 'collectives' && this.current.key === 'rack'
-        ? label.rank !== undefined
-        : label.rank === undefined,
-    )
-    labels.push(this.payloadLabel)
+    const labels = this.sceneLabels()
     const occupied: { x: number; y: number; w: number; h: number }[] = []
     const sorted = [...labels].sort(
       (a, b) =>
-        (b.key === 'moving-payload' ? 10 : b.id === o.selected ? 5 : 0) -
-        (a.key === 'moving-payload' ? 10 : a.id === o.selected ? 5 : 0),
+        (b.context
+          ? 20
+          : b.key === 'moving-payload'
+            ? 10
+            : b.id === o.selected
+              ? 5
+              : 0) -
+        (a.context
+          ? 20
+          : a.key === 'moving-payload'
+            ? 10
+            : a.id === o.selected
+              ? 5
+              : 0),
     )
     for (const annotation of sorted) {
       this.projected.copy(annotation.position)
@@ -1033,7 +1060,7 @@ export class InfrastructureEngine {
     }
     if (o.immersive) {
       const selected =
-        o.traffic === 'tensors'
+        !o.context && o.traffic === 'tensors'
           ? this.current.labels.find((l) => l.stage === this.frame.chapterIndex)
           : this.current.labels.find((l) => l.id === o.selected)
       for (const [key, point] of [
@@ -1060,7 +1087,8 @@ export class InfrastructureEngine {
   private animate = (time: number) => {
     if (this.disposed) return
     this.raf = requestAnimationFrame(this.animate)
-    const delta = Math.max(0, Math.min((time - this.lastTime) / 1000, 0.1))
+    const visibleDelta = Math.max(0, (time - this.lastTime) / 1000)
+    const delta = Math.min(visibleDelta, 0.1)
     this.lastTime = time
     if (!this.visible || document.hidden) return
     const o = this.options()
@@ -1080,107 +1108,68 @@ export class InfrastructureEngine {
         this.qualityTime = 0
       }
     }
-    const lesson = o.issue || o.lifecycle || o.example
-    const profile = o.issue
-      ? issueProfile()
-      : o.lifecycle
-        ? lifecycleProfile(o.lifecycle)
-        : o.example?.id
-    const lessonDuration = o.issue ? 5 : 3
-    const issueTourStarted = !!o.issue?.playing && !this.issuePlaying
-    if (issueTourStarted) this.exampleElapsed = 0
-    this.issuePlaying = !!o.issue?.playing
-    const profileId = typeof profile === 'string' ? profile : profile?.id
-    if (lesson && profile) {
-      if (!this.exampleWorld || this.exampleWorld.model.id !== profileId) {
-        if (
-          this.exampleWorld &&
-          (this.exampleWorld.model.kind.startsWith('lifecycle-') !==
-            !!o.lifecycle ||
-            (this.exampleWorld.model.kind === 'issues') !== !!o.issue)
-        )
-          this.exampleActive = false
-        this.exampleWorld?.dispose()
-        this.exampleWorld = new ExampleWorld(profile)
-        this.scene.add(this.exampleWorld.group)
-        this.exampleStage = -1
+    const context = o.context
+    if (!context && !o.paused && !this.reduceMotion) {
+      this.elapsed += delta * (o.speed || 1)
+      if (this.elapsed > ANIMATION_DURATION + 0.65) this.elapsed = 0
+    }
+    this.frame = getMotionFrame(this.elapsed, o.traffic, o.params, o.strategy)
+    this.updateWorld(context ? Math.min(visibleDelta, 0.5) : delta)
+    if (context) {
+      const contextChanged = this.contextKey !== context.key
+      if (contextChanged) {
+        this.contextClock = 0
+        this.contextEmitted = false
+        this.contextKey = context.key
+        this.resetHardware()
+        this.publishLabels()
       }
-      if (!this.exampleActive) {
-        this.exampleActive = true
-        this.exampleStage = -1
-        this.setView('isometric')
-        if (o.issue && o.issue.panel !== 'top10') {
-          const direction = this.flight?.position
-            .clone()
-            .sub(this.flight.target)
-          this.focus(`issue-stage-${lesson.stage}`)
-          if (direction && this.flight)
-            this.flight.position.copy(this.flight.target).add(direction)
+      if (context.playing && !this.reduceMotion) {
+        if (this.contextWasPlaying && !contextChanged)
+          this.contextClock += visibleDelta
+        if (this.contextClock >= context.duration && !this.contextEmitted) {
+          this.contextEmitted = true
+          o.onContextStep?.((context.stage + 1) % context.steps.length, true)
         }
       }
-      this.exampleWorld.group.visible = true
-      this.worlds.forEach((w) => (w.group.visible = false))
+      // A resumed tour starts a fresh interval after an already emitted step.
+      if (context.playing && !this.contextWasPlaying && this.contextEmitted) {
+        this.contextClock = 0
+        this.contextEmitted = false
+      }
+      this.contextOverlay.group.visible = true
+      this.contextOverlay.group.scale.copy(this.current.group.scale)
+      this.contextOverlay.group.position.copy(this.current.group.position)
+      this.contextOverlay.update(
+        context,
+        this.contextClock / context.duration,
+        o.effects || 'balanced',
+        this.reduceMotion,
+      )
       for (const object of [
         this.packets,
         this.trails,
         this.arrows,
         this.halo,
-        this.selectionRing,
+        this.signals.group,
       ])
         object.visible = false
-      if (this.exampleStage !== lesson.stage) {
-        this.exampleStage = lesson.stage
-        this.exampleElapsed = lesson.playing ? 0 : 0.9
-        this.exampleEmitted = false
-        this.publishLabels()
-        if (o.issue?.playing) this.focus(`issue-stage-${lesson.stage}`)
-      }
-      if (issueTourStarted) this.focus(`issue-stage-${lesson.stage}`)
-      if (lesson.playing && !this.reduceMotion) {
-        this.exampleElapsed += delta
-        if (this.exampleElapsed >= lessonDuration && !this.exampleEmitted) {
-          this.exampleEmitted = true
-          ;(o.issue
-            ? o.onIssueStage
-            : o.lifecycle
-              ? o.onLifecycleStage
-              : o.onExampleStage)?.(
-            (lesson.stage + 1) % this.exampleWorld.model.stages.length,
-            true,
-          )
-        }
-      }
-      this.signals.group.visible = false
-      this.exampleWorld.update(
-        lesson,
-        this.exampleElapsed / lessonDuration,
-        o.effects || 'balanced',
-        this.reduceMotion,
-      )
     } else {
-      if (this.exampleActive) {
-        this.exampleActive = false
-        if (this.exampleWorld) this.exampleWorld.group.visible = false
-        for (const object of [
-          this.packets,
-          this.trails,
-          this.arrows,
-          this.halo,
-          this.selectionRing,
-        ])
-          object.visible = true
+      if (this.contextKey) {
+        this.contextKey = ''
         this.publishLabels()
-        this.setView('isometric')
+        this.lastSelection = ''
+        this.lastExplosion = -1
       }
-      if (!o.paused && !this.reduceMotion) {
-        this.elapsed += delta * (o.speed || 1)
-        if (this.elapsed > ANIMATION_DURATION + 0.65) this.elapsed = 0
-      }
-      this.frame = getMotionFrame(this.elapsed, o.traffic, o.params, o.strategy)
-      this.updateWorld(delta)
+      this.contextOverlay.group.visible = false
+      this.packets.visible = this.arrows.visible = this.halo.visible = true
+      this.signals.group.visible = true
     }
+    this.contextWasPlaying = !!context?.playing
     if (this.flight) {
-      const factor = this.reduceMotion ? 1 : 1 - Math.exp(-delta * 5.5)
+      const factor = this.reduceMotion
+        ? 1
+        : 1 - Math.exp(-Math.min(visibleDelta, 0.5) * 5.5)
       this.camera.position.lerp(this.flight.position, factor)
       this.controls.target.lerp(this.flight.target, factor)
       this.camera.zoom = THREE.MathUtils.lerp(
@@ -1204,11 +1193,11 @@ export class InfrastructureEngine {
         !this.flight,
     )
     this.controls.update(delta)
-    if (!lesson) {
+    if (!context) {
       this.animateHardware()
       this.animatePackets()
     }
-    if (!lesson && o.followPayload && !this.flight && this.halo.visible) {
+    if (!context && o.followPayload && !this.flight && this.halo.visible) {
       this.followTarget.copy(this.halo.position)
       this.followTarget.x += 1.8
       this.cameraOffset.copy(this.camera.position).sub(this.controls.target)
@@ -1230,55 +1219,26 @@ export class InfrastructureEngine {
       .toArray()
       .map((n) => n.toFixed(2))
       .join(',')
-    this.renderer.domElement.dataset.exampleModel = o.example?.id || ''
-    this.renderer.domElement.dataset.exampleStage = o.example
-      ? String(o.example.stage)
+    this.renderer.domElement.dataset.contextKind = context?.kind || ''
+    this.renderer.domElement.dataset.contextId = context?.id || ''
+    this.renderer.domElement.dataset.contextStage = context
+      ? String(context.stage)
       : ''
-    this.renderer.domElement.dataset.lifecyclePhase = o.lifecycle?.phase || ''
-    this.renderer.domElement.dataset.lifecycleMethod = o.lifecycle?.method || ''
-    this.renderer.domElement.dataset.lifecycleStage = o.lifecycle
-      ? String(o.lifecycle.stage)
+    this.renderer.domElement.dataset.contextPattern = context?.pattern || ''
+    this.renderer.domElement.dataset.contextGlyphs = context
+      ? String(this.contextOverlay.glyphs.count)
       : ''
-    this.renderer.domElement.dataset.hotIssue = o.issue
-      ? hotIssues[o.issue.stage].id
-      : ''
-    this.renderer.domElement.dataset.issueStage = o.issue
-      ? String(o.issue.stage)
-      : ''
-    if (lesson && this.exampleWorld) {
-      this.renderer.domElement.dataset.motionMode = o.issue
-        ? 'hot-issues'
-        : o.lifecycle
-          ? 'lifecycle'
-          : 'model-example'
-      this.renderer.domElement.dataset.motionLayer = 'pipeline'
-      const width = this.container.clientWidth,
-        height = this.container.clientHeight
-      for (const label of this.exampleWorld.labels) {
-        this.projected.copy(label.position).project(this.camera)
-        const x = (this.projected.x * 0.5 + 0.5) * width,
-          y = (-this.projected.y * 0.5 + 0.5) * height
-        this.hooks.project(
-          label.key!,
-          x,
-          y,
-          o.showLabels !== false &&
-            x > 65 &&
-            x < width - 65 &&
-            y > 80 &&
-            y < height - 150 &&
-            this.projected.z < 1,
-        )
-      }
-      this.renderer.render(this.scene, this.camera)
-      return
-    }
+    this.renderer.domElement.dataset.worldKind =
+      this.current.key === 'tensor' ? 'transformer' : 'infrastructure'
+    this.renderer.domElement.dataset.hardwareInstances = String(
+      this.current.pickable.reduce((n, mesh) => n + mesh.count, 0),
+    )
     this.renderer.domElement.dataset.motionLayer = o.layer
     this.renderer.domElement.dataset.motionMode = o.traffic
     this.renderer.domElement.dataset.strategy = o.strategy || 'continuous'
     const anchor = this.current.labels.find((l) => l.id === o.selected)
     if (anchor) {
-      if (this.reduceMotion) this.focusPosition.copy(anchor.position)
+      if (this.reduceMotion || context) this.focusPosition.copy(anchor.position)
       else this.focusPosition.lerp(anchor.position, 1 - Math.exp(-delta * 5))
       this.selectionRing.position.set(
         this.focusPosition.x,
@@ -1289,7 +1249,33 @@ export class InfrastructureEngine {
     const pulse = 1 + Math.sin(this.elapsed * 2) * 0.07
     this.selectionRing.scale.set(pulse, pulse, pulse)
     this.projectLabels()
-    this.renderer.render(this.scene, this.camera)
+    const fading = this.worlds.some((world) => world.fade > 0 && world.fade < 1)
+    const paintState = `${o.layer}:${o.selected}:${o.effects}:${o.showLabels}:${this.pixelRatio}:${this.container.clientWidth}:${this.container.clientHeight}`
+    if (
+      !context ||
+      context.playing ||
+      o.orbit ||
+      this.flight ||
+      fading ||
+      this.contextWasFading ||
+      this.contextPaintDirty ||
+      this.contextPaintFrame !== context ||
+      this.contextPaintState !== paintState
+    ) {
+      this.renderer.render(this.scene, this.camera)
+      if (context) this.contextPaintCount++
+      this.contextPaintFrame = context || null
+      this.contextPaintState = paintState
+      this.contextPaintDirty = false
+    }
+    this.contextWasFading = fading
+    this.renderer.domElement.dataset.contextPaints = context
+      ? String(this.contextPaintCount)
+      : ''
+    this.renderer.domElement.dataset.worldSettled = String(
+      !this.flight && !fading,
+    )
+
     if (time - this.lastEmit > 180) {
       this.lastEmit = time
       this.emit()
@@ -1302,8 +1288,11 @@ export class InfrastructureEngine {
     cancelAnimationFrame(this.raf)
     this.resizeObserver.disconnect()
     this.visibilityObserver.disconnect()
+    document.removeEventListener('visibilitychange', this.resetVisibilityClock)
     this.controls.removeEventListener('start', this.interactionStart)
+    this.controls.removeEventListener('change', this.cameraChanged)
     this.controls.dispose()
+    this.contextOverlay.dispose()
     const canvas = this.renderer.domElement
     canvas.removeEventListener('pointerdown', this.pointerDown)
     canvas.removeEventListener('pointerup', this.pointerUp)

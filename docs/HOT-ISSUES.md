@@ -1,6 +1,8 @@
+> **Integrated physical context:** open these topics through **Connections** on Fleet, Pod, Server or GPU. Existing links now target that shared hardware world; separate stage/issue platform scenes have been removed. [CONNECTED-INFRASTRUCTURE.md](CONNECTED-INFRASTRUCTURE.md) describes the current UI and animations. The original source records and numerical assumptions below remain applicable.
+
 # Ten hot issues in AI infrastructure
 
-Research reviewed **November 5, 2026**. Open **Hot issues** in the Learning header, or visit <https://sloth-os.github.io/AI-Infra/?view=guide&learn=fusion&hot=all>.
+Research reviewed **November 5, 2026**. Open **Connections** on the selected infrastructure level, or visit <https://sloth-os.github.io/AI-Infra/?view=guide&learn=fusion&hot=all>.
 
 ## Selection and evidence
 
@@ -21,7 +23,7 @@ Every topic has an explanation of its bottleneck, the data or energy that moves,
 | 09       | Failure recovery and checkpoint goodput | PyTorch distributed checkpoints; experimental NVIDIA Resiliency Extension    | Training ranks, save-state slabs and an illustrative fault; optimize a declared first-order checkpoint equation                    |
 | 10       | Tenant, version and cache boundaries    | vLLM cache hashing/salting and serving security guidance                     | Shared cache plate versus tenant-scoped tiles; show the storage cost of partitioning reuse                                         |
 
-The ten stations form an **atlas**, not a ten-step request pipeline. Local signal paths illustrate each station's own mechanism. Their speeds are teaching time. In particular, the recovery cue is not a simulated failure process, placement signals do not mean physical GPUs move between nodes, and token tint weights encode prefix-survival probabilities and the guaranteed correction/bonus token rather than a sampled model output. KV page display caps at 64 glyphs, while its readout retains the full requested byte count.
+Each of the ten issues has a perspective on **all four physical levels**. Local signal paths attach its mechanism to the existing hardware. Their speeds are teaching time. In particular, the recovery cue is not a simulated failure process, placement signals do not mean physical GPUs move between nodes, and token tint weights encode prefix-survival probabilities and the guaranteed correction/bonus token rather than a sampled model output. KV page display caps at 64 glyphs, while its readout retains the full requested byte count.
 
 ## Quantitative assumptions
 
@@ -58,10 +60,4 @@ Other primary sources are [IEA Energy and AI](https://www.iea.org/reports/energy
 
 ## Interaction and implementation
 
-**Top 10 / The issue / Experiment / Evidence** separate discovery, explanation, intervention and source reading. The ten-topic dock, clickable 3D station labels and topic selector all change the same state. **1–9, 0** selects a topic; arrows move between topics; **Space** controls the tour; **F** focuses the selected station. Manual topic selection and the tour frame the selected station; opening Experiment brings its geometry into view alongside the controls. **World/Details** clears/restores the reader. Cinema retains the correct lesson controls. The tour uses five seconds of teaching time per topic and wraps after ten; automatic changes preserve playback, while manual choices and experiment edits stop it.
-
-Sharing saves the selected issue, panel, intervention and bounded controls in a project-path-safe URL. Reload opens it paused. Incompatible model/lifecycle query parameters are cleared. Leaving restores the retained base infrastructure clock and the same renderer. The main header offers horizontal navigation scrolling at narrow widths; the ten-topic dock becomes two rows on phones. Reduced motion disables automatic playback; the no-WebGL path retains all ten topics, experiments, sources and an interval-driven tour where motion is permitted.
-
-`src/issues/catalog.ts` owns the researched content, source scopes, control bounds and visual legends. `model.ts` contains pure calculations and URL parsing. `HotIssues.tsx` renders the spatial HUD, study surface and methodology reader. `src/scene/examples.ts` adds ten radial stations using distinct instanced roles, local signal routes and bounded state updates. It shares the existing effects quality controls, picking, camera and GPU-resource disposal.
-
-Unit coverage checks mathematical conservation, independent constraints, counterexamples, URL round trips, bounds, source integrity and actual instanced geometry changes. Browser coverage exercises all ten stations, persistent-canvas transitions, live experiments, research readers, sharing/reload, keyboard/tour/cinema, narrow layouts, reduced motion and WebGL fallback. The existing game, model and lifecycle suites remain regression checks.
+See [CONNECTED-INFRASTRUCTURE.md](CONNECTED-INFRASTRUCTURE.md) for the current mixed per-level catalog, physical overlays, input continuity, native scale traversal, sharing and fallback. The ten topics are no longer a separate header tab, radial station world or topic-only command dock. The issue reader retains its top-ten list, explanation, experiment and evidence sections.

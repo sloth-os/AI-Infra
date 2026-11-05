@@ -15,6 +15,7 @@ export interface SceneLabel {
   key?: string
   rank?: number
   stage?: number
+  context?: boolean
   exampleStage?: number
 }
 export interface Box {

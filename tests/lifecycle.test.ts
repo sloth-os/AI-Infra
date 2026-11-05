@@ -2,7 +2,6 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   lifecyclePhases,
-  lifecycleProfile,
   lifecycleSources,
   lifecycleStages,
 } from '../src/lifecycle/catalog.ts'
@@ -19,7 +18,6 @@ import {
   sanitizeLifecycleInputs,
   stateBytes,
 } from '../src/lifecycle/model.ts'
-import { ExampleWorld } from '../src/scene/examples.ts'
 
 test('training partitions do not multiply examples; the explicit Adam layout is conserved across sharding strategies', () => {
   const m = lifecycleMetrics(defaultLifecycleInputs)
@@ -212,84 +210,4 @@ test('all lifecycle methods have complete six-stage sourced workflows with reach
           )
       }
     }
-})
-
-test('the training world responds to topology, sharding and activation checkpoint controls without replacing geometry', () => {
-  const v = defaultLifecycleView(),
-    world = new ExampleWorld(lifecycleProfile(v))
-  const mesh = (role: string) =>
-    world.pickable.find((x) => x.userData.role === role)!
-  try {
-    world.update(v, 0.4)
-    assert.equal(mesh('dp-replica').count, 8)
-    assert.equal(mesh('pp-stage').count, 2)
-    assert.equal(mesh('saved-activation').count, 4)
-    const firstSlotColor = Array.from(
-      mesh('pp-stage').instanceColor!.array,
-    ).slice(0, 3)
-    world.update({ ...v, inputs: { ...v.inputs, scheduleSlot: 9 } }, 0.4)
-    assert.notDeepEqual(
-      Array.from(mesh('pp-stage').instanceColor!.array).slice(0, 3),
-      firstSlotColor,
-    )
-    const smaller = mesh('optimizer-state').scale.y
-    world.update(
-      {
-        ...v,
-        inputs: {
-          ...v.inputs,
-          pp: 4,
-          dp: 16,
-          checkpoint: false,
-          sharding: 'ddp',
-        },
-      },
-      0.6,
-    )
-    assert.equal(mesh('dp-replica').count, 16)
-    assert.equal(mesh('pp-stage').count, 4)
-    assert.equal(mesh('saved-activation').count, 16)
-    assert.ok(mesh('optimizer-state').scale.y > smaller)
-    assert.equal(world.labels[0].id, 'lifecycle-stage-0')
-  } finally {
-    world.dispose()
-  }
-})
-
-test('the post-training and inference worlds show method-specific samples and placement, and bounded cache occupancy', () => {
-  const v = { ...defaultLifecycleView('posttrain'), method: 'grpo' as const },
-    w = new ExampleWorld(lifecycleProfile(v))
-  const get = (role: string) =>
-    w.pickable.find((x) => x.userData.role === role)!
-  try {
-    w.update({ ...v, inputs: { ...v.inputs, group: 8 } }, 0.2)
-    assert.equal(get('rollout-sample').count, 8)
-    assert.equal(get('reward-sample').count, 8)
-    assert.equal(get('adapter-layer').visible, true)
-    w.update({ ...v, inputs: { ...v.inputs, group: 2, tuning: 'full' } }, 0.2)
-    assert.equal(get('rollout-sample').count, 2)
-    assert.equal(get('adapter-layer').visible, false)
-  } finally {
-    w.dispose()
-  }
-  const i = defaultLifecycleView('inference'),
-    iw = new ExampleWorld(lifecycleProfile(i))
-  const im = (role: string) =>
-    iw.pickable.find((x) => x.userData.role === role)!
-  try {
-    iw.update(i, 0.2)
-    assert.equal(im('kv-handoff').visible, false)
-    assert.equal(im('local-state').visible, true)
-    const small = im('kv-page').count
-    iw.update(
-      { ...i, inputs: { ...i.inputs, disaggregated: true, prompt: 32768 } },
-      0.9,
-    )
-    assert.equal(im('kv-handoff').visible, true)
-    assert.equal(im('local-state').visible, false)
-    assert.ok(im('kv-page').count > small)
-    assert.ok(im('kv-page').count <= im('kv-page').instanceMatrix.count)
-  } finally {
-    iw.dispose()
-  }
 })

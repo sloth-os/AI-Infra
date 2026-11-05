@@ -2,8 +2,7 @@ import { ArrowRight, ArrowUpRight, BookOpen, Search } from 'lucide-react'
 import { details, glossary, sources } from '../content'
 import type { Layer, Traffic } from '../content'
 import { conceptWorld } from './model'
-import { ModelCatalog, ModelStudy } from '../examples/ModelExamples'
-import type { ExampleId } from '../examples/catalog'
+import { ModelStudy } from '../examples/ModelExamples'
 import type { ExampleView } from '../examples/model'
 import { LifecycleStudy } from '../lifecycle/Lifecycle'
 import type { LifecycleView } from '../lifecycle/model'
@@ -37,7 +36,6 @@ export default function LearningLibrary({
   onReading,
   example,
   onExample,
-  onChooseExample,
   onCompare,
   lifecycle,
   onLifecycle,
@@ -54,7 +52,6 @@ export default function LearningLibrary({
   onReading: () => void
   example: ExampleView | null
   onExample: (v: ExampleView | null) => void
-  onChooseExample: (id: ExampleId) => void
   onCompare: () => void
   lifecycle: LifecycleView
   onLifecycle: (view: LifecycleView) => void
@@ -75,7 +72,9 @@ export default function LearningLibrary({
     match(`${s.title} ${s.org} ${s.note}`),
   )
   return (
-    <div className="learn-library-content">
+    <div
+      className={`learn-library-content ${['hot', 'models', 'lifecycle'].includes(tab) ? 'context-library' : ''}`}
+    >
       <div className="learn-surface-kicker">
         <BookOpen size={14} />
         KNOWLEDGE IN CONTEXT
@@ -112,16 +111,7 @@ export default function LearningLibrary({
         className="learn-library-tabs"
         aria-label="Learning library sections"
       >
-        {(
-          [
-            'concepts',
-            'glossary',
-            'sources',
-            'models',
-            'lifecycle',
-            'hot',
-          ] as LibraryTab[]
-        ).map((t) => (
+        {(['concepts', 'glossary', 'sources'] as LibraryTab[]).map((t) => (
           <button key={t} aria-pressed={t === tab} onClick={() => onTab(t)}>
             {t === 'hot'
               ? 'Hot issues'
@@ -158,11 +148,7 @@ export default function LearningLibrary({
             onCompare={onCompare}
           />
         ) : (
-          <ModelCatalog
-            query={query}
-            onChoose={onChooseExample}
-            onCompare={onCompare}
-          />
+          <p>Choose a workload from the connections on this hardware.</p>
         )
       ) : tab === 'concepts' ? (
         <div className="learn-concept-cards">

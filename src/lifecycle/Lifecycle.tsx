@@ -3,14 +3,8 @@ import {
   ArrowRight,
   ArrowUpRight,
   Check,
-  ChevronLeft,
-  ChevronRight,
   Copy,
-  Crosshair,
-  Eye,
   Layers3,
-  Pause,
-  Play,
   RotateCcw,
 } from 'lucide-react'
 import {
@@ -30,7 +24,6 @@ import {
   groupAdvantages,
   lifecycleBudgets,
   lifecycleMetrics,
-  lifecycleStage,
   lifecycleUrl,
   number,
   pipelineSchedule,
@@ -308,7 +301,7 @@ function PipelineToy({
       </div>
       <p>
         Blue = forward, violet = backward, dots = idle. Selecting a slot pauses
-        playback and colors the PP stage tiles in the 3D placement platform. All
+        playback and colors the PP stage tiles in the existing server GPUs. All
         microbatches use one parameter version. Balanced stages and equal slot
         costs are assumed; real backward cost, communication, 1F1B and
         interleaving change the timeline.
@@ -907,9 +900,10 @@ export function LifecycleStudy({
           ))}
           <References ids={stage.sources} />
           <p className="model-section-note">
-            Select a platform or numbered stage to follow the transformation.
-            Glowing parcels represent workflow dependencies, not identical byte
-            sizes. 3D glyphs aggregate large tensors and GPU groups.
+            Choose a walkthrough step or zoom level to follow the transformation
+            on the existing hardware. Glowing parcels represent workflow
+            dependencies, not identical byte sizes. 3D glyphs aggregate large
+            tensors and GPU groups.
           </p>
         </>
       ) : tab === 'lab' ? (
@@ -948,156 +942,6 @@ export function LifecycleStudy({
         </>
       )}
     </div>
-  )
-}
-export function LifecycleHUD({
-  view,
-  onChange,
-  onStage,
-  panelOpen,
-  onOpen,
-  onFocus,
-  onExit,
-  reduced,
-}: {
-  view: LifecycleView
-  onChange: (view: LifecycleView) => void
-  onStage: (n: number) => void
-  panelOpen: boolean
-  onOpen: () => void
-  onFocus: () => void
-  onExit: () => void
-  reduced: boolean
-}) {
-  const info = phaseInfo(view.phase),
-    stages = lifecycleStages(view.phase, view.method),
-    s = stages[view.stage]
-  return (
-    <>
-      <div className="model-scope life-scope">
-        <span>
-          <i /> AI LIFECYCLE · DATA → WEIGHTS → SERVICE
-        </span>
-        <h1>{info.title}</h1>
-        <p>{info.subtitle}</p>
-        <LifecyclePhases
-          phase={view.phase}
-          onChange={(phase) =>
-            onChange({ ...view, phase, stage: 0, playing: false })
-          }
-        />
-        <small className="life-world-legend">
-          {view.phase === 'pretrain'
-            ? 'BLUE forward · VIOLET gradients · GOLD optimizer'
-            : view.phase === 'posttrain'
-              ? view.method === 'grpo'
-                ? 'BLUE rollout · GOLD reward · VIOLET learner'
-                : 'BLUE frozen base · VIOLET trainable policy'
-              : 'BLUE weights · GREEN KV pages · GOLD output'}
-          <br />
-          Representative glyphs · formulas in Sizing lab
-        </small>
-      </div>
-      <div
-        className="model-world-readouts life-world-readouts"
-        aria-label="Lifecycle infrastructure metrics"
-      >
-        {lifecycleBudgets(view).map((b) => (
-          <div key={b.label}>
-            <span>{b.label}</span>
-            <strong>
-              {b.value}
-              <small>{b.unit}</small>
-            </strong>
-          </div>
-        ))}
-      </div>
-      <aside className="model-now" aria-label="Current lifecycle stage">
-        <span>
-          0{view.stage + 1} / 06 ·{' '}
-          {view.phase === 'posttrain'
-            ? view.method.toUpperCase()
-            : 'DATA TRANSFORMATION'}
-        </span>
-        <h2>{s.title}</h2>
-        <code>{s.output}</code>
-        <button onClick={onOpen}>
-          {panelOpen ? 'Show the world' : 'Read this stage'}
-          <ArrowUpRight size={13} />
-        </button>
-      </aside>
-      <div className="model-command-deck">
-        <div
-          className="model-stage-dock"
-          aria-label="Lifecycle pipeline stages"
-        >
-          {stages.map((s, i) => (
-            <button
-              key={i}
-              aria-label={`Lifecycle stage ${i + 1}: ${s.title}`}
-              aria-current={view.stage === i ? 'step' : undefined}
-              onClick={() => onStage(i)}
-            >
-              <b>0{i + 1}</b>
-              <span>{s.short}</span>
-            </button>
-          ))}
-        </div>
-        <div className="model-playback">
-          <button
-            aria-label={
-              view.playing
-                ? 'Pause lifecycle walkthrough'
-                : 'Play lifecycle walkthrough'
-            }
-            disabled={reduced}
-            onClick={() => onChange({ ...view, playing: !view.playing })}
-          >
-            {view.playing ? <Pause size={16} /> : <Play size={16} />}
-          </button>
-          <button
-            aria-label="Previous lifecycle stage"
-            disabled={!view.stage}
-            onClick={() => onStage(lifecycleStage(view.stage - 1))}
-          >
-            <ChevronLeft size={17} />
-          </button>
-          <span>
-            {reduced
-              ? 'REDUCED MOTION · SELECT A STAGE'
-              : 'TEACHING ANIMATION · NO MODEL EXECUTION'}
-          </span>
-          <button
-            aria-label="Next lifecycle stage"
-            disabled={view.stage === 5}
-            onClick={() => onStage(lifecycleStage(view.stage + 1))}
-          >
-            <ChevronRight size={17} />
-          </button>
-          <i />
-          <button onClick={onFocus} aria-label="Focus lifecycle stage">
-            <Crosshair size={15} />
-            <span>Focus</span>
-          </button>
-          <button
-            onClick={onOpen}
-            aria-label={
-              panelOpen ? 'Hide lifecycle details' : 'Show lifecycle details'
-            }
-          >
-            <Eye size={15} />
-            <span>{panelOpen ? 'World' : 'Details'}</span>
-          </button>
-          <button
-            onClick={onExit}
-            aria-label="Return from lifecycle to infrastructure"
-          >
-            <Layers3 size={15} />
-            <span>Infrastructure</span>
-          </button>
-        </div>
-      </div>
-    </>
   )
 }
 export function LifecycleComparison() {

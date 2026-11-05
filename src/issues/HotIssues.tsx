@@ -3,22 +3,14 @@ import {
   ArrowRight,
   ArrowUpRight,
   Check,
-  ChevronLeft,
-  ChevronRight,
   Copy,
-  Crosshair,
-  Eye,
-  Flame,
   Info,
-  Pause,
-  Play,
   RotateCcw,
 } from 'lucide-react'
 import { hotIssues, issueSources, issuesReviewed } from './catalog'
 import {
   defaultIssueInputs,
   fmt,
-  issueIndex,
   issueResults,
   issueUrl,
   sanitizeIssueInputs,
@@ -147,7 +139,7 @@ export function HotIssuesStudy({
                   <strong>{i.title}</strong>
                   <p>{i.thesis}</p>
                   <em>
-                    Open the 3D briefing
+                    Explore this issue here
                     <ArrowUpRight size={12} />
                   </em>
                 </span>
@@ -323,10 +315,10 @@ export function HotIssuesStudy({
           <div className="model-evidence">
             <span>READ THE SCOPE</span>
             <p>
-              The 3D stations explain mechanisms. Their glyphs aggregate
-              hardware and tensors. Motion runs in teaching time; the website
-              does not execute these infrastructure systems, perform attacks, or
-              measure GPU performance.
+              Animations attach to the current infrastructure level. Their
+              glyphs aggregate hardware and tensors. Motion runs in teaching
+              time; the website does not execute these infrastructure systems,
+              perform attacks, or measure GPU performance.
             </p>
           </div>
           <button className="model-text-link" onClick={onMethodology}>
@@ -336,141 +328,6 @@ export function HotIssuesStudy({
         </>
       )}
     </div>
-  )
-}
-export function HotIssuesHUD({
-  view,
-  onChange,
-  onStage,
-  onOpen,
-  onFocus,
-  onExit,
-  panelOpen,
-  reduced,
-}: {
-  view: IssueView
-  onChange: (v: IssueView) => void
-  onStage: (n: number) => void
-  onOpen: () => void
-  onFocus: () => void
-  onExit: () => void
-  panelOpen: boolean
-  reduced: boolean
-}) {
-  const topic = hotIssues[view.stage],
-    metrics = issueResults(view).metrics
-  return (
-    <>
-      <div className="model-scope issue-scope">
-        <span>
-          <i /> AI INFRASTRUCTURE · HOT ISSUES / {issuesReviewed}
-        </span>
-        <h1>{topic.title}</h1>
-        <p>{topic.thesis}</p>
-        <code>
-          #{String(view.stage + 1).padStart(2, '0')} / 10 · {topic.category}
-        </code>
-        <small>Editorial priority · primary-source briefing</small>
-      </div>
-      <div
-        className="model-world-readouts issue-world-readouts"
-        role="group"
-        aria-label="Hot issue experiment metrics"
-      >
-        {metrics.map((m) => (
-          <div key={m.label}>
-            <span>{m.label}</span>
-            <strong>{m.value}</strong>
-          </div>
-        ))}
-      </div>
-      <div className="issue-world-note">
-        <span>
-          {view.applied ? 'CANDIDATE ASSUMPTION' : 'BASELINE ASSUMPTION'}
-        </span>
-        <p>{topic.animation}</p>
-        <button
-          onClick={() => {
-            onChange({ ...view, panel: 'lab', playing: false })
-            if (!panelOpen) onOpen()
-          }}
-        >
-          Open the experiment
-          <ArrowUpRight size={12} />
-        </button>
-      </div>
-      <div className="model-command-deck issue-command-deck">
-        <div
-          className="model-stage-dock issue-topic-dock"
-          aria-label="Top ten AI infrastructure issues"
-        >
-          {hotIssues.map((i, n) => (
-            <button
-              key={i.id}
-              aria-label={`Hot issue ${n + 1}: ${i.title}`}
-              aria-current={n === view.stage ? 'step' : undefined}
-              onClick={() => onStage(n)}
-            >
-              <b>{String(n + 1).padStart(2, '0')}</b>
-              <span>{i.short}</span>
-            </button>
-          ))}
-        </div>
-        <div className="model-playback">
-          <button
-            aria-label={
-              view.playing ? 'Pause hot issues tour' : 'Play hot issues tour'
-            }
-            disabled={reduced}
-            onClick={() =>
-              onChange({ ...view, playing: !view.playing, panel: 'brief' })
-            }
-          >
-            {view.playing ? <Pause size={16} /> : <Play size={16} />}
-          </button>
-          <button
-            aria-label="Previous hot issue"
-            disabled={!view.stage}
-            onClick={() => onStage(issueIndex(view.stage - 1))}
-          >
-            <ChevronLeft size={17} />
-          </button>
-          <span>
-            {reduced
-              ? 'REDUCED MOTION · SELECT A TOPIC'
-              : 'TEACHING TIME · 5 SECONDS / TOPIC · 1–9, 0 TO SELECT'}
-          </span>
-          <button
-            aria-label="Next hot issue"
-            disabled={view.stage === 9}
-            onClick={() => onStage(issueIndex(view.stage + 1))}
-          >
-            <ChevronRight size={17} />
-          </button>
-          <i />
-          <button aria-label="Focus hot issue" onClick={onFocus}>
-            <Crosshair size={15} />
-            <span>Focus</span>
-          </button>
-          <button
-            aria-label={
-              panelOpen ? 'Hide hot issue details' : 'Show hot issue details'
-            }
-            onClick={onOpen}
-          >
-            <Eye size={15} />
-            <span>{panelOpen ? 'World' : 'Details'}</span>
-          </button>
-          <button
-            aria-label="Return from hot issues to infrastructure"
-            onClick={onExit}
-          >
-            <Flame size={15} />
-            <span>Infrastructure</span>
-          </button>
-        </div>
-      </div>
-    </>
   )
 }
 export function HotIssuesMethodology() {
@@ -536,14 +393,12 @@ export function HotIssuesMethodology() {
       </div>
       <h2>What the animation and calculations mean</h2>
       <p>
-        The ten stations are an atlas of coupled constraints, not a claim that
-        one request passes through ten issues. Local moving signals illustrate
-        the selected mechanism. Every experiment declares its model shape,
-        numeric assumptions and excluded costs. Intervention switches represent
-        candidate assumptions; they are not an implemented infrastructure change
-        or measured benchmark. Low draft acceptance can make the reasoning toy
-        slower, stricter tenant partitioning can require more cache, and
-        compaction requires movable work.
+        Each issue connects the same fleet, pod, server and accelerator. Local
+        data/energy signals attach to the existing hardware; selecting an issue
+        never swaps in a separate issue world. Every experiment declares its
+        model shape, numeric assumptions and excluded costs. Low acceptance can
+        make speculation slower, strict cache partitioning can use more memory,
+        and ideal compaction assumes movable workloads.
       </p>
       <p>
         Publication and snapshot dates are shown separately. The IEA’s 2030
@@ -562,8 +417,9 @@ export function HotIssuesReferenceSection() {
     <section className="real-model-reference">
       <h2>Ten hot issues in AI infrastructure</h2>
       <p>
-        Explore a source-backed 3D atlas of power, memory, networks, reasoning,
-        precision, RL, placement, recovery and shared-state boundaries.
+        Explore power, memory, networks, reasoning, precision, RL, placement,
+        recovery and shared-state boundaries on the connected fleet, pod, server
+        and GPU hardware.
       </p>
       <a
         href={`${import.meta.env.BASE_URL}?view=guide&learn=fusion&hot=all`}

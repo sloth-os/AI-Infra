@@ -65,6 +65,11 @@ import LearningFusion from './learning/LearningFusion'
 import { ModelReferenceSection } from './examples/ModelExamples'
 import { LifecycleReferenceSection } from './lifecycle/Lifecycle'
 import { HotIssuesReferenceSection } from './issues/HotIssues'
+import {
+  initialContextLevel,
+  parseContextLocation,
+  contextAtLevel,
+} from './learning/infrastructure/context'
 import { journeyScene } from './learning/model'
 
 const layerIcons: Record<Layer, LucideIcon> = {
@@ -164,9 +169,21 @@ function App() {
     ) as Strategy
     return strategies.includes(value) ? value : 'continuous'
   })
-  const [layer, setLayer] = useState<Layer>('fleet')
-  const [selected, setSelected] = useState('scheduler')
-  const [traffic, setTraffic] = useState<Traffic>('requests')
+  const [layer, setLayer] = useState<Layer>(() =>
+    initialContextLevel(location.href),
+  )
+  const [selected, setSelected] = useState(() => {
+    const c = parseContextLocation(location.href)
+    return c
+      ? contextAtLevel(c, initialContextLevel(location.href)).node
+      : layerDefaults[initialContextLevel(location.href)]
+  })
+  const [traffic, setTraffic] = useState<Traffic>(() => {
+    const c = parseContextLocation(location.href)
+    return c
+      ? contextAtLevel(c, initialContextLevel(location.href)).traffic
+      : 'requests'
+  })
   const [paused, setPaused] = useState(false)
   const [animationSpeed, setAnimationSpeed] = useState(1)
   const [exploded, setExploded] = useState(false)
@@ -377,6 +394,12 @@ function App() {
           setSelected(world.node)
           setPaused(!animate)
           fusionSceneRef.current?.seek(world.time)
+        }}
+        onContextWorld={(nextLayer, nextTraffic, node) => {
+          manualLearning()
+          setLayer(nextLayer)
+          setTraffic(nextTraffic)
+          setSelected(node)
         }}
         onLocate={(nextLayer, nextTraffic, node) => {
           manualLearning()

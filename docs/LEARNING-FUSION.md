@@ -1,8 +1,10 @@
+> **Current integration:** hot issues, lifecycle and real models are now connected stories inside the four physical levels, reached through **Connections**. Their former standalone navigation and 3D platforms have been removed. See [CONNECTED-INFRASTRUCTURE.md](CONNECTED-INFRASTRUCTURE.md) for the current interaction, mappings, continuity and verification. The sections below retain the reference explorer's foundational behavior.
+
 # Learning in 3D UI Fusion
 
 Learning Fusion makes the infrastructure the shared workspace for Explore, Request journey, Trade-off lab, and Field guide. The renderer, hardware, teaching clock, workload, and serving strategy persist between those four views. Switching to Fleet Command pauses the learning world and preserves the game run; returning resumes the same learning canvas.
 
-The **Real models** header entry opens six source-backed field trips inside that same renderer. Each model has a distinct six-stage 3D pipeline, inspectable data representations, serving/source panels, quantitative data exercises, and a comparison reader. The reference infrastructure timeline pauses during a field trip; returning restores it. Case-study controls use their own published formats and do not alter the lab's parameters. See [REAL-MODELS.md](REAL-MODELS.md) for research, version boundaries, and calculations.
+The **Connections** catalog includes six source-backed real models inside that same hardware world. Each model has a six-operation walkthrough across the physical levels, inspectable data representations, serving/source panels, quantitative data exercises, and a comparison reader. The reference infrastructure timeline pauses while a connected story is active; returning restores it. Case-study controls use their own published formats and do not alter the lab's parameters. See [REAL-MODELS.md](REAL-MODELS.md) for research, version boundaries, and calculations.
 
 ## Learn through the world
 
@@ -65,9 +67,9 @@ Pure tests cover stage mapping, optional retrieval, exact collective snapshots, 
 
 ## AI lifecycle workflows
 
-**AI lifecycle** opens pre-training, post-training and inference in the same persistent learning canvas. Each phase has six 3D stages and a flow, sizing, network/choices and evidence reader. SFT, DPO and GRPO switch post-training data, loss and infrastructure roles. Topology, sharding, LoRA, rollout and KV controls change both the declared calculations and aggregate world glyphs. The comparison reader connects the artifacts across all three phases.
+**Connections** links pre-training, post-training and inference to the same fleet, pod, server and GPU. Each phase has six 3D stages and a flow, sizing, network/choices and evidence reader. SFT, DPO and GRPO switch post-training data, loss and infrastructure roles. Topology, sharding, LoRA, rollout and KV controls change both the declared calculations and aggregate world glyphs. The comparison reader connects the artifacts across all three phases.
 
-In a lifecycle lesson, **1–6 / arrows** select a stage, **Space** controls lesson playback, and **F** focuses the selected platform. Cinema also controls the lesson clock; the original request timeline stays frozen. **World/Details**, mobile access, reduced motion, shared URLs and 2D fallback follow the existing field-trip conventions. [LIFECYCLE.md](LIFECYCLE.md) documents source revisions, formulas, visual aggregation and verification.
+In a lifecycle lesson, **1–4** selects a physical level and **arrows** select a connected step, **Space** controls lesson playback, and **F** focuses the connected hardware. Cinema also controls the lesson clock; the original request timeline stays frozen. **World/Details**, mobile access, reduced motion, shared URLs and 2D fallback follow the existing connected-story conventions. [LIFECYCLE.md](LIFECYCLE.md) documents source revisions, formulas, visual aggregation and verification.
 
 ## Learning missions and shared visual quality
 
@@ -75,4 +77,4 @@ In a lifecycle lesson, **1–6 / arrows** select a stage, **Space** controls les
 
 ## Top-ten infrastructure briefing
 
-**Hot issues** opens ten radial 3D stations in the persistent world, with an editorial priority list, detailed issue explanations, intervention experiments and dated primary sources. Each station has a distinct mechanism and a visual legend. The reader and dock share the selected topic and calculations. **1–9, 0 / arrows** select topics, **Space** plays the five-second teaching tour, and **F** focuses. World/Details and cinema preserve lesson controls; the base request timeline stays frozen. Shared links, narrow layouts, reduced motion and fallback retain the complete briefing. See [HOT-ISSUES.md](HOT-ISSUES.md) for source revisions and the explicit math/visual assumptions.
+**Connections** exposes ten issues on the existing hardware, with editorial selection, detailed explanations, experiments and dated primary sources. Each issue has a perspective on every level. **1–4 / arrows** chooses scale or connected steps; **Space** plays the five-second-per-level walkthrough; **F** focuses connected hardware. Intervention choices and inputs persist through zoom changes. World/Details, cinema, sharing and physical fallback retain the same hierarchy. See [HOT-ISSUES.md](HOT-ISSUES.md) for research and quantitative assumptions, and [CONNECTED-INFRASTRUCTURE.md](CONNECTED-INFRASTRUCTURE.md) for the current UI.

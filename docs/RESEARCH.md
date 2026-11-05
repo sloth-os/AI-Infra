@@ -44,3 +44,7 @@ The three-phase lifecycle has a separate evidence and calculation record in [LIF
 ## Current infrastructure issues
 
 The **Hot issues** briefing is an editorial top-ten watchlist reviewed **2026-11-05**, based on primary engineering sources. It extends this foundational reference with current power/grid context, KV infrastructure, P/D transfer, DeepEP V2, speculative decoding, low-precision recipes, online RL, topology-aware placement, recovery and tenant/cache boundaries. Publication dates, pinned snapshot dates and claim scopes are shown separately. It does not assign measured popularity or adopt vendor benchmark numbers as generic speedups. [HOT-ISSUES.md](HOT-ISSUES.md) records selection, all source families, quantitative assumptions and the 3D visual mappings.
+
+## Physical integration
+
+Hot issues, lifecycle and real model sources are now reached in the context of the selected fleet, pod, server or GPU. The original research is retained; [CONNECTED-INFRASTRUCTURE.md](CONNECTED-INFRASTRUCTURE.md) records how the published mechanisms and analytical assumptions attach to that shared hardware without implying a vendor's private physical deployment.

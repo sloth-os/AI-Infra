@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import * as THREE from 'three'
 import { FlowEffects, effectsQuality } from '../src/scene/effects.ts'
-import { ExampleWorld } from '../src/scene/examples.ts'
+import { ContextOverlay } from '../src/scene/context.ts'
 
 test('signal heads preserve input coordinates and colors, stay bounded, and clear when disabled', () => {
   const fx = new FlowEffects(2)
@@ -46,8 +46,8 @@ test('event rings freeze with the simulation clock, use static reduced-motion po
   assert.equal(fx.rings.count, 0)
 })
 
-test('changing model worlds disposes new signal-point buffers and shaders along with the existing meshes', () => {
-  const world = new ExampleWorld('cosyvoice-2')
+test('disposing the shared context annotation layer releases signal-point buffers and shaders', () => {
+  const world = new ContextOverlay()
   let geometryDisposed = false,
     materialDisposed = false
   world.group.traverse((o) => {
