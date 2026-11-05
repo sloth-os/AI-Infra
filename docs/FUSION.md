@@ -2,6 +2,8 @@
 
 Fusion makes the serving district the primary workspace. The world presents the entities and their operating state; conventional controls appear where a player needs to act. The simulation and all mission rules are shared with the existing Tactical interface.
 
+Learning mode has its own Fusion workspace across the explorer, request journey, performance lab, and field guide. See [LEARNING-FUSION.md](LEARNING-FUSION.md) for its interaction design, synchronized data, controls, and validation.
+
 ## A spatial interaction loop
 
 An empty hex opens a construction surface tied to that sector. Choosing a module commits the same validated build action as the command dock. The surface becomes a live module inspector with its installed capacity, current lens reading, power demand, upgrade, recycling, and repair actions. Selecting a different sector changes the inspector’s identity and its tether.
@@ -59,7 +61,7 @@ If WebGL is unavailable or lost, the tactical grid and the same action controls 
 ## Implementation and verification
 
 - `FusionUI.tsx` owns progressive disclosure, command surfaces, contextual actions, and the accessible sector and telemetry drawers.
-- `fusion.ts` maps simulation state to lens readings and handles bounded, pinned surface placement.
+- `fusion.ts` maps simulation state to lens readings; `src/spatial.ts` supplies bounded, pinned surface placement shared with Learning mode.
 - `Game.tsx` connects those actions to the existing reducer and preserves the service across interfaces.
 - `GameScene.tsx` projects entity labels and forwards world anchors without rendering React on every animation frame.
 - `scene.ts` keeps camera interpolation, tracking, raycasting, ring geometry, instanced packets, and traces in the persistent Three.js runtime.

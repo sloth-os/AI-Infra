@@ -61,6 +61,8 @@ import MotionTransport from './components/MotionTransport'
 import { chapterTime, motionChapters } from './motion'
 import type { MotionFrame } from './motion'
 import FleetGame from './game/Game'
+import LearningFusion from './learning/LearningFusion'
+import { journeyScene } from './learning/model'
 
 const layerIcons: Record<Layer, LucideIcon> = {
   fleet: Globe2,
@@ -149,6 +151,16 @@ function initialPage(): Page {
 
 function App() {
   const [page, setPage] = useState<Page>(initialPage)
+  const [learningFusion, setLearningFusion] = useState(
+    () => new URLSearchParams(location.search).get('learn') !== 'classic',
+  )
+  const [resumeTime, setResumeTime] = useState(0)
+  const [labStrategy, setLabStrategy] = useState<Strategy>(() => {
+    const value = new URLSearchParams(location.search).get(
+      'strategy',
+    ) as Strategy
+    return strategies.includes(value) ? value : 'continuous'
+  })
   const [layer, setLayer] = useState<Layer>('fleet')
   const [selected, setSelected] = useState('scheduler')
   const [traffic, setTraffic] = useState<Traffic>('requests')
@@ -169,10 +181,12 @@ function App() {
       : 'baseline',
   )
   const [journeyStep, setJourneyStep] = useState(0)
-  const sceneRef = useRef<SceneHandle>(null)
+  const classicSceneRef = useRef<SceneHandle>(null)
+  const fusionSceneRef = useRef<SceneHandle>(null)
+  const sceneRef = learningFusion ? fusionSceneRef : classicSceneRef
   const sceneFrameRef = useRef<HTMLDivElement>(null)
   const [fullscreen, setFullscreen] = useState(false)
-  const model = simulate(params, 'continuous')
+  const model = simulate(params, labStrategy)
 
   const navigate = (next: Page) => {
     setPage(next)
@@ -249,6 +263,38 @@ function App() {
     )
   }
 
+  const toggleLearningLayout = () => {
+    const time = sceneRef.current?.getFrame().time ?? resumeTime
+    setResumeTime(time)
+    guidedRef.current = false
+    setGuided(false)
+    setOrbit(false)
+    if (!learningFusion) fusionSceneRef.current?.seek(time)
+    setLearningFusion(!learningFusion)
+    const url = new URL(location.href)
+    url.searchParams.set('learn', learningFusion ? 'classic' : 'fusion')
+    history.replaceState({}, '', url)
+    if (document.fullscreenElement)
+      void document.exitFullscreen?.().catch(() => {})
+  }
+  const toggleGuided = () => {
+    if (guided) {
+      guidedRef.current = false
+      setGuided(false)
+      return
+    }
+    lastGuidedChapter.current = ''
+    guidedRef.current = true
+    setGuided(true)
+    setPaused(false)
+    sceneRef.current?.seek(0)
+  }
+  const manualLearning = () => {
+    guidedRef.current = false
+    setGuided(false)
+    setOrbit(false)
+  }
+
   useEffect(() => {
     const listener = () => setFullscreen(Boolean(document.fullscreenElement))
     document.addEventListener('fullscreenchange', listener)
@@ -266,7 +312,102 @@ function App() {
   return (
     <>
       <FleetGame active={page === 'game'} onLearn={() => navigate('explore')} />
-      <div className="app-shell" hidden={page === 'game'}>
+      <LearningFusion
+        active={page !== 'game' && learningFusion}
+        page={page === 'game' ? 'explore' : page}
+        sceneRef={fusionSceneRef}
+        layer={layer}
+        traffic={traffic}
+        selected={selected}
+        params={params}
+        strategy={labStrategy}
+        paused={paused}
+        speed={animationSpeed}
+        exploded={exploded}
+        heatmap={heatmap}
+        orbit={orbit}
+        guided={guided}
+        journeyStep={journeyStep}
+        onNavigate={navigate}
+        onClassic={toggleLearningLayout}
+        onLayer={selectLayer}
+        onTraffic={selectTraffic}
+        onSelect={(id) => {
+          manualLearning()
+          setSelected(id)
+        }}
+        onPaused={setPaused}
+        onSpeed={setAnimationSpeed}
+        onExploded={setExploded}
+        onHeatmap={setHeatmap}
+        onOrbit={setOrbit}
+        onGuided={toggleGuided}
+        onManual={manualLearning}
+        onChapter={selectAnimationChapter}
+        onFrame={handleMotionFrame}
+        onFollowing={() => {
+          lastGuidedChapter.current = ''
+          guidedRef.current = true
+          setGuided(true)
+          setPaused(false)
+          const frame = fusionSceneRef.current?.getFrame()
+          if (frame) {
+            setLayer(frame.chapter.layer)
+            setSelected(frame.chapter.node)
+          }
+        }}
+        onParameters={(next) => {
+          setParams(next)
+          setScenario('custom')
+        }}
+        onStrategy={setLabStrategy}
+        onPreset={(id) => {
+          applyScenario(id)
+          setHeatmap(true)
+        }}
+        onJourneyStep={setJourneyStep}
+        onJourneyScene={(step, animate) => {
+          const world = journeyScene(step)
+          manualLearning()
+          setLayer(world.layer)
+          setTraffic(world.traffic)
+          setSelected(world.node)
+          setPaused(!animate)
+          fusionSceneRef.current?.seek(world.time)
+        }}
+        onLocate={(nextLayer, nextTraffic, node) => {
+          manualLearning()
+          setLayer(nextLayer)
+          setTraffic(nextTraffic)
+          setSelected(node)
+          setPaused(true)
+          fusionSceneRef.current?.seek(
+            chapterTime(nextTraffic, nextTraffic === 'kv' ? 1 : 0),
+          )
+        }}
+        advancedLab={
+          <LabView
+            params={params}
+            setParams={(next) => {
+              setParams(next)
+              setScenario('custom')
+            }}
+            onPreset={applyScenario}
+            scenario={scenario}
+            strategy={labStrategy}
+            onStrategy={setLabStrategy}
+          />
+        }
+        advancedGuide={
+          <GuideView
+            onExplore={(next) => {
+              selectLayer(next)
+              navigate('explore')
+            }}
+          />
+        }
+      />
+      <div className="app-shell" hidden={page === 'game' || learningFusion}>
         <aside className={`sidebar ${mobileNav ? 'sidebar-open' : ''}`}>
           <a
             className="brand"
@@ -381,6 +522,14 @@ function App() {
               </span>
             </div>
             <div className="topbar-right">
+              <button
+                className="icon-button"
+                onClick={toggleLearningLayout}
+                aria-label="Switch to immersive learning layout"
+                title="Enter 3D UI Fusion"
+              >
+                <Layers3 size={18} />
+              </button>
               <span className="learning-tag">
                 <span className="tiny-dot" /> INTERACTIVE FIELD GUIDE
               </span>
@@ -395,7 +544,7 @@ function App() {
             </div>
           </header>
           <main id="main-content" className="main-content">
-            {page === 'explore' && (
+            {page === 'explore' && !learningFusion && (
               <>
                 <section className="page-heading">
                   <div>
@@ -498,7 +647,9 @@ function App() {
                     <div className="scene-column">
                       <div className="scene-frame">
                         <InfrastructureScene
-                          ref={sceneRef}
+                          ref={classicSceneRef}
+                          initialTime={resumeTime}
+                          strategy={labStrategy}
                           layer={layer}
                           traffic={traffic}
                           paused={paused}
@@ -656,18 +807,7 @@ function App() {
                     orbit={orbit}
                     onOrbit={setOrbit}
                     guided={guided}
-                    onGuided={() => {
-                      if (guided) {
-                        guidedRef.current = false
-                        setGuided(false)
-                        return
-                      }
-                      lastGuidedChapter.current = ''
-                      guidedRef.current = true
-                      setGuided(true)
-                      setPaused(false)
-                      sceneRef.current?.seek(0)
-                    }}
+                    onGuided={toggleGuided}
                   />
                   <div className="component-picker">
                     <span>INSPECT</span>
@@ -837,10 +977,10 @@ function App() {
                 </section>
               </>
             )}
-            {page === 'journey' && (
+            {page === 'journey' && !learningFusion && (
               <JourneyView step={journeyStep} setStep={setJourneyStep} />
             )}
-            {page === 'lab' && (
+            {page === 'lab' && !learningFusion && (
               <LabView
                 params={params}
                 setParams={(next) => {
@@ -849,9 +989,11 @@ function App() {
                 }}
                 onPreset={applyScenario}
                 scenario={scenario}
+                strategy={labStrategy}
+                onStrategy={setLabStrategy}
               />
             )}
-            {page === 'guide' && (
+            {page === 'guide' && !learningFusion && (
               <GuideView
                 onExplore={(next) => {
                   selectLayer(next)
@@ -870,7 +1012,7 @@ function App() {
             </footer>
           </main>
         </div>
-        {help && (
+        {help && !learningFusion && (
           <HelpModal
             onClose={() => setHelp(false)}
             onGuide={() => {
@@ -1400,18 +1542,24 @@ function LabView({
   setParams,
   onPreset,
   scenario,
+  strategy: controlledStrategy,
+  onStrategy,
 }: {
   params: Parameters
   setParams: (p: Parameters) => void
   onPreset: (id: string) => void
   scenario: string
+  strategy?: Strategy
+  onStrategy?: (s: Strategy) => void
 }) {
-  const [strategy, setStrategy] = useState<Strategy>(() => {
+  const [ownStrategy, setOwnStrategy] = useState<Strategy>(() => {
     const value = new URLSearchParams(window.location.search).get('strategy')
     return strategies.includes(value as Strategy)
       ? (value as Strategy)
       : 'continuous'
   })
+  const strategy = controlledStrategy || ownStrategy,
+    setStrategy = onStrategy || setOwnStrategy
   const [copied, setCopied] = useState(false)
   const result = simulate(params, strategy)
   const outcomes = strategies.map((s) => ({
@@ -1428,6 +1576,9 @@ function LabView({
     url.search = new URLSearchParams([
       ...Object.entries(params).map(([key, value]) => [key, String(value)]),
       ['strategy', strategy],
+      ...(new URLSearchParams(location.search).get('learn') === 'classic'
+        ? [['learn', 'classic']]
+        : []),
     ]).toString()
     window.history.replaceState({}, '', url)
     try {

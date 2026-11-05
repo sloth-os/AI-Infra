@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import type { Layer, Traffic } from '../content'
 import { defaults } from '../model'
-import type { Parameters } from '../model'
+import type { Parameters, Strategy } from '../model'
 import {
   ANIMATION_DURATION,
   collectiveTransfer,
@@ -24,6 +24,13 @@ export interface SceneOptions {
   heatmap?: boolean
   orbit?: boolean
   params?: Parameters
+  strategy?: Strategy
+  active?: boolean
+  immersive?: boolean
+  showLabels?: boolean
+  followPayload?: boolean
+  onCameraRelease?: () => void
+  onRank?: (rank: number) => void
   onSelect: (id: string) => void
 }
 export interface PayloadInspection {
@@ -114,6 +121,11 @@ export class InfrastructureEngine {
   private trailPosition = new THREE.Vector3()
   private projected = new THREE.Vector3()
   private activeRoutes: number[] = []
+  private cameraOffset = new THREE.Vector3()
+  private followTarget = new THREE.Vector3()
+  private pixelRatio = Math.min(window.devicePixelRatio, 1.5)
+  private qualityFrames = 0
+  private qualityTime = 0
   private texture: THREE.CanvasTexture
 
   constructor(
@@ -122,15 +134,15 @@ export class InfrastructureEngine {
     private hooks: EngineHooks,
   ) {
     const o = options()
-    this.frame = getMotionFrame(0, o.traffic, o.params)
+    this.frame = getMotionFrame(0, o.traffic, o.params, o.strategy)
     this.lastMode = o.traffic
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
       alpha: false,
       powerPreference: 'high-performance',
     })
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5))
-    this.renderer.setClearColor('#121e24')
+    this.renderer.setPixelRatio(this.pixelRatio)
+    this.renderer.setClearColor(o.immersive ? '#0b121c' : '#121e24')
     this.renderer.outputColorSpace = THREE.SRGBColorSpace
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping
     this.renderer.toneMappingExposure = 1.35
@@ -142,7 +154,10 @@ export class InfrastructureEngine {
     )
     container.prepend(canvas)
 
-    this.scene.fog = new THREE.FogExp2('#121e24', 0.011)
+    this.scene.fog = new THREE.FogExp2(
+      o.immersive ? '#0b121c' : '#121e24',
+      0.011,
+    )
     this.scene.add(new THREE.AmbientLight('#dce9ed', 1.5))
     const sun = new THREE.DirectionalLight('#e4f0ed', 3.5)
     sun.position.set(-7, 20, 12)
@@ -297,6 +312,8 @@ export class InfrastructureEngine {
 
   private interactionStart = () => {
     this.flight = null
+    this.options().onCameraRelease?.()
+    this.renderer.domElement.dataset.cameraMoving = 'false'
   }
   private pointerDown = (event: PointerEvent) => {
     this.down = { x: event.clientX, y: event.clientY }
@@ -318,6 +335,7 @@ export class InfrastructureEngine {
   }
   private pointerUp = (event: PointerEvent) => {
     this.dragging = false
+    if (event.button !== 0 || !event.isPrimary) return
     if (
       Math.hypot(event.clientX - this.down.x, event.clientY - this.down.y) > 7
     )
@@ -338,8 +356,25 @@ export class InfrastructureEngine {
       return
     }
     const id = hit.object.userData.ids[hit.instanceId]
+    if (
+      this.options().immersive &&
+      this.options().traffic === 'collectives' &&
+      this.current.key === 'rack'
+    ) {
+      const ranks = this.current.labels
+        .filter((l) => l.rank !== undefined)
+        .sort(
+          (a, b) =>
+            a.position.distanceToSquared(hit.point) -
+            b.position.distanceToSquared(hit.point),
+        )
+      if (ranks[0]?.rank !== undefined) {
+        this.options().onRank?.(ranks[0].rank)
+        return
+      }
+    }
     this.options().onSelect(id)
-    this.focus(id, hit.point)
+    if (!this.options().immersive) this.focus(id, hit.point)
   }
   private contextLost = (event: Event) => {
     event.preventDefault()
@@ -354,7 +389,7 @@ export class InfrastructureEngine {
       this.narrow = width < 500
       this.camera.zoom = this.narrow ? 0.74 : 1
     }
-    const span = aspect < 0.8 ? 12.3 : 10.3
+    const span = this.options().immersive ? 13.5 : aspect < 0.8 ? 12.3 : 10.3
     this.camera.left = -span * aspect
     this.camera.right = span * aspect
     this.camera.top = span
@@ -430,12 +465,14 @@ export class InfrastructureEngine {
       this.elapsed,
       this.options().traffic,
       this.options().params,
+      this.options().strategy,
     )
     this.lastEmit = 0
     this.emit()
   }
   zoom(direction: number) {
     this.flight = null
+    this.renderer.domElement.dataset.cameraMoving = 'false'
     this.camera.zoom = THREE.MathUtils.clamp(
       this.camera.zoom * (direction > 0 ? 1.2 : 1 / 1.2),
       0.6,
@@ -445,9 +482,13 @@ export class InfrastructureEngine {
   }
   setView(view: CameraView) {
     this.viewPreset = view
+    this.renderer.domElement.dataset.cameraView = view
+    this.renderer.domElement.dataset.cameraMoving = this.reduceMotion
+      ? 'false'
+      : 'true'
     const position =
       view === 'top'
-        ? new THREE.Vector3(0.1, 36, 0.1)
+        ? new THREE.Vector3(0.1, 36, 1.6)
         : view === 'front'
           ? new THREE.Vector3(0, 12, 32)
           : new THREE.Vector3(this.current.key === 'tensor' ? 9 : 20, 23, 27)
@@ -459,12 +500,32 @@ export class InfrastructureEngine {
     if (this.reduceMotion) {
       this.camera.position.copy(position)
       this.controls.target.copy(this.flight.target)
-      this.camera.zoom = 1
+      this.camera.zoom = this.flight.zoom
       this.flight = null
+      this.camera.updateProjectionMatrix()
+      this.controls.update()
     }
   }
   reset() {
     this.setView('isometric')
+  }
+  enter() {
+    if (!this.reduceMotion) {
+      this.camera.position.set(26, 31, 38)
+      this.camera.zoom = this.narrow ? 0.62 : 0.85
+      this.camera.updateProjectionMatrix()
+    }
+    this.setView('isometric')
+  }
+  rotate(direction: number) {
+    this.flight = null
+    this.cameraOffset
+      .copy(this.camera.position)
+      .sub(this.controls.target)
+      .applyAxisAngle(up, (direction * Math.PI) / 4)
+    this.camera.position.copy(this.controls.target).add(this.cameraOffset)
+    this.controls.update()
+    this.renderer.domElement.dataset.cameraMoving = 'false'
   }
   focus(id: string, point?: THREE.Vector3) {
     const annotation = this.current.labels.find((label) => label.id === id)
@@ -480,6 +541,10 @@ export class InfrastructureEngine {
       target,
       zoom: Math.min(1.7, Math.max(1.2, this.camera.zoom)),
     }
+    this.renderer.domElement.dataset.cameraView = 'focus'
+    this.renderer.domElement.dataset.cameraMoving = this.reduceMotion
+      ? 'false'
+      : 'true'
   }
   inspectPacket(packetIndex = 0) {
     const o = this.options(),
@@ -872,6 +937,7 @@ export class InfrastructureEngine {
       const w = width < 500 ? 112 : annotation.stage !== undefined ? 153 : 140,
         h = 42
       let visible =
+        o.showLabels !== false &&
         x > w / 2 + 6 &&
         x < width - w / 2 - 6 &&
         y > 72 &&
@@ -899,6 +965,30 @@ export class InfrastructureEngine {
       }
       this.hooks.project(annotation.key || annotation.id, x, y, visible)
     }
+    if (o.immersive) {
+      const selected =
+        o.traffic === 'tensors'
+          ? this.current.labels.find((l) => l.stage === this.frame.chapterIndex)
+          : this.current.labels.find((l) => l.id === o.selected)
+      for (const [key, point] of [
+        ['selection-anchor', selected?.position],
+        ['payload-anchor', this.halo.visible ? this.halo.position : undefined],
+      ] as const) {
+        if (!point) continue
+        this.projected.copy(point)
+        if (key === 'selection-anchor' && selected?.id === 'hbm' && o.exploded)
+          this.projected.y += this.explosion * 1.2
+        this.projected.project(this.camera)
+        const x = (this.projected.x * 0.5 + 0.5) * width,
+          y = (-this.projected.y * 0.5 + 0.5) * height
+        this.hooks.project(
+          key,
+          x,
+          y,
+          x > 20 && x < width - 20 && y > 85 && y < height - 130,
+        )
+      }
+    }
   }
 
   private animate = (time: number) => {
@@ -908,11 +998,27 @@ export class InfrastructureEngine {
     this.lastTime = time
     if (!this.visible || document.hidden) return
     const o = this.options()
+    if (o.active === false) return
+    if (o.immersive) {
+      this.qualityFrames++
+      this.qualityTime += delta
+      if (this.qualityFrames >= 30) {
+        if (
+          this.qualityTime / this.qualityFrames > 0.045 &&
+          this.pixelRatio > 0.75
+        ) {
+          this.pixelRatio = Math.max(0.75, this.pixelRatio * 0.85)
+          this.renderer.setPixelRatio(this.pixelRatio)
+        }
+        this.qualityFrames = 0
+        this.qualityTime = 0
+      }
+    }
     if (!o.paused && !this.reduceMotion) {
       this.elapsed += delta * (o.speed || 1)
       if (this.elapsed > ANIMATION_DURATION + 0.65) this.elapsed = 0
     }
-    this.frame = getMotionFrame(this.elapsed, o.traffic, o.params)
+    this.frame = getMotionFrame(this.elapsed, o.traffic, o.params, o.strategy)
     this.updateWorld(delta)
     if (this.flight) {
       const factor = this.reduceMotion ? 1 : 1 - Math.exp(-delta * 5.5)
@@ -927,15 +1033,44 @@ export class InfrastructureEngine {
       if (
         this.camera.position.distanceTo(this.flight.position) < 0.025 &&
         this.controls.target.distanceTo(this.flight.target) < 0.025
-      )
+      ) {
         this.flight = null
+        this.renderer.domElement.dataset.cameraMoving = 'false'
+      }
     }
     this.controls.autoRotate = Boolean(
-      o.orbit && !o.paused && !this.reduceMotion && !this.flight,
+      o.orbit &&
+        (!o.paused || o.immersive) &&
+        !this.reduceMotion &&
+        !this.flight,
     )
     this.controls.update(delta)
     this.animateHardware()
     this.animatePackets()
+    if (o.followPayload && !this.flight && this.halo.visible) {
+      this.followTarget.copy(this.halo.position)
+      this.followTarget.x += 1.8
+      this.cameraOffset.copy(this.camera.position).sub(this.controls.target)
+      this.controls.target.lerp(this.followTarget, 1 - Math.exp(-delta * 3.5))
+      this.camera.position.copy(this.controls.target).add(this.cameraOffset)
+      this.camera.zoom = THREE.MathUtils.damp(
+        this.camera.zoom,
+        this.narrow ? 0.9 : 1.25,
+        2,
+        delta,
+      )
+      this.camera.updateProjectionMatrix()
+      this.controls.update(delta)
+      this.renderer.domElement.dataset.cameraView = 'follow'
+    }
+    this.camera.updateMatrixWorld()
+    this.renderer.domElement.dataset.cameraPose = this.camera.position
+      .toArray()
+      .map((n) => n.toFixed(2))
+      .join(',')
+    this.renderer.domElement.dataset.motionLayer = o.layer
+    this.renderer.domElement.dataset.motionMode = o.traffic
+    this.renderer.domElement.dataset.strategy = o.strategy || 'continuous'
     const anchor = this.current.labels.find((l) => l.id === o.selected)
     if (anchor) {
       if (this.reduceMotion) this.focusPosition.copy(anchor.position)

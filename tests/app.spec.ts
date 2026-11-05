@@ -5,7 +5,7 @@ test('3D explorer renders, layers and traffic modes expose different explanation
 }) => {
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
-  await page.goto('/?view=explore')
+  await page.goto('/?view=explore&learn=classic')
   await expect(page.locator('canvas')).toHaveCount(1)
   await expect(
     page.getByRole('heading', { name: 'The fleet scheduler' }),
@@ -40,7 +40,7 @@ test('3D explorer renders, layers and traffic modes expose different explanation
 test('request walkthrough accepts a prompt, skips optional retrieval and reaches streaming', async ({
   page,
 }) => {
-  await page.goto('/?view=explore')
+  await page.goto('/?view=explore&learn=classic')
   await page
     .getByRole('button', { name: 'Follow a request', exact: true })
     .click()
@@ -67,7 +67,7 @@ test('request walkthrough accepts a prompt, skips optional retrieval and reaches
 test('lab recomputes demand, topology and handoff without reporting finite overloaded latency', async ({
   page,
 }) => {
-  await page.goto('/?gpus=100000&arrivalRate=18000')
+  await page.goto('/?gpus=100000&arrivalRate=18000&learn=classic')
   await expect(page.getByRole('heading', { name: 'Your system' })).toBeVisible()
   await page.getByRole('button', { name: 'Traffic spike' }).click()
   await expect(
@@ -101,7 +101,7 @@ test('lab recomputes demand, topology and handoff without reporting finite overl
 test('guide is searchable and modal supports keyboard dismissal', async ({
   page,
 }) => {
-  await page.goto('/?view=explore')
+  await page.goto('/?view=explore&learn=classic')
   await page
     .getByRole('button', { name: /Field guide Go a little deeper/ })
     .click()
@@ -126,7 +126,7 @@ test('mobile navigation and all pages fit a narrow viewport', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/?view=explore')
+  await page.goto('/?view=explore&learn=classic')
   await expect(page.locator('canvas')).toHaveCount(1)
   for (const name of [
     'Follow a request',
@@ -161,7 +161,7 @@ test('non-WebGL devices retain an interactive accessible topology', async ({
       return Reflect.apply(original, this, [kind, ...args])
     } as typeof original
   })
-  await page.goto('/?view=explore')
+  await page.goto('/?view=explore&learn=classic')
   await expect(
     page.getByText('INTERACTIVE TOPOLOGY · 2D FALLBACK'),
   ).toBeVisible()
@@ -177,7 +177,7 @@ test('non-WebGL devices retain an interactive accessible topology', async ({
 test('collective playground executes the complete ring all-reduce', async ({
   page,
 }) => {
-  await page.goto('/?view=explore')
+  await page.goto('/?view=explore&learn=classic')
   await page.getByRole('button', { name: 'Collectives', exact: true }).click()
   await expect(
     page.getByRole('heading', { name: 'Eight GPUs. One shared answer.' }),

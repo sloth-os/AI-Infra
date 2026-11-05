@@ -31,7 +31,7 @@ The eight-GPU server depicts a **logical ring** over a physical local fabric. Fo
 1. Seven reduce-scatter exchanges send one chunk per rank clockwise and add the incoming partial sum. Each rank finishes with one completely reduced chunk.
 2. Seven all-gather exchanges circulate completed chunks without adding them again. Every rank finishes with `[36, 36, 36, 36, 36, 36, 36, 36]`.
 
-The data parcels share an exchange clock, so all eight sends complete at a state boundary. Their colors identify the chunk being sent. Each GPU's colored tiles and projected label read the same algorithmic contribution counts as `src/collective.ts`; the 3D ring does not use random progress values. The detailed algorithm scratchpad below the scene can also be stepped independently.
+The data parcels share an exchange clock, so all eight sends complete at a state boundary. Their colors identify the chunk being sent. Each GPU's colored tiles and projected label read the same algorithmic contribution counts as `src/collective.ts`; the 3D ring does not use random progress values. Learning Fusion's floating ring playground scrubs this same clock and inspects its exact rank buffers. The classic reading layout also retains an independent algorithm scratchpad below the scene.
 
 Actual NCCL algorithms depend on topology, message size, and implementation. The diagram does not claim that every collective uses a direct physical ring or that fleet-wide inference replicas all synchronize together.
 

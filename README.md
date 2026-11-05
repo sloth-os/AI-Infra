@@ -16,7 +16,9 @@ Drag to orbit; scroll or pinch to zoom. Keys **1–4** choose a module, **Space*
 
 The request lens and moving payload labels show actual game requests: tenant, input length, retained KV size, current phase, emitted tokens, and deadline. Network transfer progress and memory admission respond to the player's infrastructure. The physics, clock, economy, and compute rates are balanced for a game; they are not benchmarks. [docs/GAME.md](docs/GAME.md) documents the rules and simplifications.
 
-**Learning mode** opens the existing 3D infrastructure explorer, transformer/collective walkthroughs, performance lab, and field guide. Direct links use `?view=explore`, `?view=journey`, `?view=lab`, or `?view=guide`. Existing parameterized lab links continue to work.
+**Learning mode** also defaults to **3D UI Fusion**. Explore, Request journey, Trade-off lab, and Field guide share one continuous 3D world. Explanations attach to selected hardware, experiments change its displayed state, and glossary entries locate related infrastructure. Floating surfaces keep the world within reach; full readers retain every model assumption and research reference. [docs/LEARNING-FUSION.md](docs/LEARNING-FUSION.md) documents the experience.
+
+Direct links use `?view=explore`, `?view=journey`, `?view=lab`, or `?view=guide`. The header's layout toggle opens the original reading layout; `?view=explore&learn=classic` links to it directly. Layout changes preserve the workload, selected strategy, and explorer's teaching clock. Existing parameterized lab links continue to work.
 
 ## Run locally
 
@@ -56,10 +58,10 @@ Open the preview at its `/AI-Infra/` path. Application assets, fonts, favicon, h
 - **Infrastructure explorer:** orbit, zoom, and inspect a persistent Three.js world at fleet, pod, eight-GPU server, and chip scale. Animated parcels, directional links, contribution tiles, memory pages, and projected data labels explain what moves and why. The blocks are conceptual aggregations, not literal physical inventory.
 - **Four 3D animation lenses:** follow a request through seven chapters; allocate, fill, transfer, append, and release KV state; step through fourteen synchronized ring exchanges with actual partial sums; or follow eight transformer operations from embeddings through Q/K/V, causal attention, MLP, logits, and the next token.
 - **Motion controls:** scrub the 48-second teaching timeline, select a chapter, change playback speed, fly between scales automatically, choose a camera preset, orbit, explode hardware layers, inspect a moving payload, or overlay an illustrative load heatmap. Prompt length, fabric bandwidth, and traffic-burst controls update the scene and the trade-off lab together.
-- **Collective playground:** select the Collectives traffic view to step through an executable eight-rank ring all-reduce. Inspect each rank’s actual partial sums through reduce-scatter and all-gather; all ranks finish with the same vector.
+- **Collective playground:** select the Collectives lens and open the synchronized ring playground. Its fourteen exchanges, chunk values, contribution counts, and GPU annotations read the same animation state. The classic layout retains its independent scratchpad.
 - **Follow a request:** an editable prompt and optional retrieval drive a seven-stage educational walkthrough: ingress, retrieval, tokenization/routing, prefill, KV handoff, decoding, and streaming. Inspect each representation, bottleneck, and response. This does not execute an LLM or send the prompt anywhere.
-- **Trade-off lab:** change GPU count, request rate, prompt/output length, active batch size, prefix reuse, network speed, and phase allocation. Compare static batching, continuous batching, and disaggregated prefill/decode. Share parameterized scenario URLs.
-- **Field guide:** layer-specific problems and trade-offs, a parallelism comparison, three traffic domains, training versus inference, a searchable glossary, and six primary sources.
+- **Trade-off lab:** change GPU count, request rate, prompt/output length, active batch size, prefix reuse, network speed, and phase allocation. Compare static batching, continuous batching, and disaggregated prefill/decode. The selected strategy drives the 3D load overlay. Share parameterized Fusion scenario URLs or open the complete performance workbench.
+- **Field guide:** search problems, solutions, glossary entries, and six primary sources in a floating library. Locate concepts in the world, or open the complete guide for parallelism, three traffic domains, training versus inference, and layer-specific trade-offs.
 
 The UI distinguishes reference hardware specifications, conceptual animations, and modeled performance. **The estimates are not benchmarks and should not be used for capacity planning.** The model and its limitations are documented in [docs/MODEL.md](docs/MODEL.md); research notes are in [docs/RESEARCH.md](docs/RESEARCH.md).
 

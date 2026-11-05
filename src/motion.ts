@@ -1,6 +1,6 @@
 import type { Layer, Traffic } from './content'
 import { defaults, kvBytes, simulate } from './model.ts'
-import type { Parameters } from './model'
+import type { Parameters, Strategy } from './model'
 import { ringAllReduce } from './collective.ts'
 
 export const ANIMATION_DURATION = 48
@@ -341,6 +341,7 @@ export function getMotionFrame(
   time: number,
   mode: Traffic,
   p: Parameters = defaults,
+  strategy: Strategy = 'continuous',
 ): MotionFrame {
   const progress = Math.min(
     1,
@@ -390,7 +391,7 @@ export function getMotionFrame(
   const cacheMiB = kvBytes(contextTokens) / 2 ** 20
   const collectiveStep = Math.min(14, Math.floor(progress * 14))
   const collective = collectiveSnapshots[collectiveStep]
-  const model = simulate(p, 'continuous')
+  const model = simulate(p, strategy)
   const transferMs =
     (kvBytes(p.inputTokens) / 1e9 / ((p.networkGbps / 8) * 0.7)) * 1000
   return {
