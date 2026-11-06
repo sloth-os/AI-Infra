@@ -19,6 +19,12 @@ import {
   parseLifecycleLocation,
 } from '../../lifecycle/model.ts'
 import type { LifecycleView } from '../../lifecycle/model'
+import {
+  parseProviderLesson,
+  providerLessonFrame,
+  PROVIDER_STEPS,
+} from '../provider/model.ts'
+import type { ProviderLesson } from '../provider/model'
 
 export const levels: Layer[] = ['fleet', 'pod', 'rack', 'gpu']
 export const levelNames: Record<Layer, string> = {
@@ -31,6 +37,7 @@ export type ContextSelection =
   | { kind: 'issue'; view: IssueView }
   | { kind: 'lifecycle'; view: LifecycleView }
   | { kind: 'model'; view: ExampleView }
+  | { kind: 'provider'; view: ProviderLesson }
 export type Pattern =
   | 'power'
   | 'pages'
@@ -50,7 +57,12 @@ export interface ContextStep {
   layer: Layer
 }
 export interface ContextFrame {
-  deviceBinding?: { server: number; viewServer: number; gpu: number }
+  deviceBinding?: {
+    server: number
+    viewServer: number
+    gpu: number
+    phase?: 'queued' | 'staging' | 'running' | 'checkpoint' | 'done'
+  }
   key: string
   kind: ContextSelection['kind']
   id: string
@@ -92,6 +104,7 @@ const modelLevels: Record<ExampleId, Layer[]> = {
   'cosyvoice-2': ['fleet', 'rack', 'pod', 'gpu', 'gpu', 'fleet'],
 }
 export function contextSteps(selection: ContextSelection): ContextStep[] {
+  if (selection.kind === 'provider') return PROVIDER_STEPS
   if (selection.kind === 'issue')
     return levels.map((layer) => ({ title: levelNames[layer], layer }))
   if (selection.kind === 'model')
@@ -421,6 +434,8 @@ export function contextAtLevel(
   selection: ContextSelection,
   layer: Layer,
 ): ContextFrame {
+  if (selection.kind === 'provider')
+    return providerLessonFrame(selection.view, layer)
   const steps = contextSteps(selection),
     ordinal = levels.indexOf(layer)
   const base = {
@@ -951,6 +966,12 @@ export function primaryIssueLevel(index: number): Layer {
 }
 
 export function parseContextLocation(href: string): ContextSelection | null {
+  const provider = parseProviderLesson(href)
+  if (provider) {
+    const level = readLevel(href)
+    if (level) provider.stage = levels.indexOf(level)
+    return { kind: 'provider', view: provider }
+  }
   const issue = parseIssueLocation(href),
     life = parseLifecycleLocation(href),
     model = parseExampleLocation(href)

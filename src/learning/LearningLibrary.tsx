@@ -10,6 +10,7 @@ import { HotIssuesStudy } from '../issues/HotIssues'
 import type { IssueView } from '../issues/model'
 
 export type LibraryTab =
+  | 'provider'
   | 'concepts'
   | 'glossary'
   | 'sources'

@@ -1,6 +1,6 @@
 # Connected infrastructure stories
 
-Hot issues, AI lifecycle and real models now live **inside the same Fleet → Pod → Server → GPU explorer**. They have no separate header destination, stage islands or alternate 3D world. The original physical hardware, scale rail, camera and canvas remain in place.
+Hot issues, AI lifecycle, real models and the Cloud provider scenario live **inside the same Fleet → Pod → Server → GPU explorer**. They have no separate header destination, stage islands or alternate 3D world. The original physical hardware, scale rail, camera and canvas remain in place.
 
 ## Explore from a place
 
@@ -9,6 +9,9 @@ Choose a scale, inspect a component, or use **Connections** in the command dock.
 - Relevant infrastructure issues with experiments and dated evidence.
 - Pre-training, post-training and inference work at the selected level.
 - All six real models, with the operations relevant to that level.
+- The Cloud provider scenario, with paired capacity replays, customer/cloud responsibility boundaries and two relevant policies at each scale.
+
+The Cloud provider lesson (`?view=explore&provider=cloud`) reuses Game’s 64-slot district and simulation. Its baseline and policy plan share the same elapsed teaching time. Scrub or play the replay, select which allocation to show in 3D, and inspect actual leases at each scale. The cloud replay has its own clock; selecting a scale retains replay time and pauses playback. See [CLOUD-PROVIDER.md](CLOUD-PROVIDER.md) for its source record and comparison rules.
 
 Selecting a story opens a reading surface alongside the hardware. The perspective at its top explains what the story means **here**. Four level buttons remain available in the reader and the main scale rail. The source-backed flow, serving recipes, analytical budgets, objective/schedule toys and evidence readers are retained.
 

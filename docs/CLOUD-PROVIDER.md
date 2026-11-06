@@ -1,5 +1,27 @@
 # Cloud provider scenario
 
+## Learn through the same physical world
+
+Open `?view=explore&provider=cloud` for the Learning version, or choose **Cloud provider scenario** in **Connections** at any hardware level. The cloud game’s **Learning mode** button opens this story at its current scale. The reader can return to the retained cloud game. Both modes keep their existing canvases and cameras.
+
+Switching between this lesson and its game pauses their separate clocks and retains both the Learning policy/replay settings and the Game run. Entering the lesson for the first time uses its default plan; browser history and shared links restore their own serialized lesson state.
+
+Learning provides three sections inside the shared level reader:
+
+- **Service boundary** explains the resource envelope, admission, device binding, artifact transfer, customer runtime, checkpoint acknowledgment and lease return. A responsibility table distinguishes the physical cloud from the model/API provider. A link follows the selected customer’s pre-training, post-training or inference into the existing lifecycle lesson on the same hardware.
+- **Capacity lab** runs a baseline and a selectable policy plan from the same initial district and workload arrivals. The eight policies are free to toggle, with two at each physical scale. A policy change rewinds the experiment. Enabling placement includes the explicit rolling-repack request at time zero; devices still move only after a real cohort drain.
+- **Evidence** retains the primary Kubernetes, Kueue and NVIDIA documentation, synthetic manifest formulas and scope limitations described below.
+
+Use the dock’s replay slider, play/pause and 1×/2×/4× controls. **Baseline / My plan** changes the allocation shown on the existing 3D infrastructure at the same teaching time. Select a customer, server and GPU to inspect its actual lease, memory footprint and resource envelope. The comparison table reports committed jobs, served toy requests, OOM events, fabric bytes, cache hits, readiness, wasted work and leased/useful GPU-seconds for both runs. Low network traffic from a blocked job is not counted as improved service.
+
+The paired replay ends when the plan satisfies its workload goal or at 60 teaching seconds. The baseline is advanced only to the same elapsed time; a completed plan is never compared against a longer baseline run. Quarter-second snapshots use identical integration steps, with the final interval shortened if the goal completes. Within a stable lease stage, moving payloads interpolate its byte/compute progress between adjacent samples. The reference request timeline stays frozen while this story is active. Playback never automatically moves the selected hardware scale or awards game medals.
+
+Sharing retains the project prefix, workspace, scale, policy mask, selected tenant/server/GPU, comparison side, reader section, speed and replay time. Reloaded links start paused. The `provider=cloud` and `cp_` parameters are removed when choosing another story. Reduced motion leaves manual scrubbing and experiments available; WebGL fallback uses the same physical hierarchy and numerical replay. Compact layouts keep the replay slider and scale/camera controls available outside the scrolling reader.
+
+The Learning implementation is in `src/learning/provider/`; it reuses the pure capacity model and physical annotation adapter in `src/game/provider/`. It does not create another world or replace the existing workload models. `tests/provider-learning.test.ts` checks matched time, resource bounds, policy-dependent outcomes, semantic/physical mappings, interpolation and safe URL round trips. Browser checks cover mixed discovery, one persistent canvas, replay/pause, sources, sharing, lifecycle links, mode handoff, mobile controls, reduced motion and fallback.
+
+## Play the capacity game
+
 Open `?scenario=cloud-provider` or select **Cloud provider** with the cloud icon in the game header. A launch button also appears under the desktop campaign heading. The scenario shares Lifecycle Command’s existing physical world, camera and Fleet → Pod → Server → GPU rail. Switching roles pauses and retains each run; it never starts a separate 3D world.
 
 You own a district of **64 dedicated GPU slots**, eight servers, two Pods. Three **fictional teaching customers** request capacity: Nova trains, Forge tunes, Orbit serves inference. Names and workload manifests do not describe real vendors. Other hardware visible in the reference fleet lies outside the district.

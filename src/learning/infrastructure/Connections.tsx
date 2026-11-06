@@ -5,6 +5,7 @@ import {
   Boxes,
   ChevronLeft,
   ChevronRight,
+  Cloud,
   Crosshair,
   Flame,
   Layers3,
@@ -19,10 +20,12 @@ import type { LifecyclePhase } from '../../lifecycle/catalog'
 import type { Layer } from '../../content'
 import { contextSteps, issuesAtLevel, levelNames, levels } from './context'
 import type { ContextFrame, ContextSelection } from './context'
+import type { ReactNode } from 'react'
 import { defaultExampleInputs } from '../../examples/model'
 import { defaultLifecycleView } from '../../lifecycle/model'
 import './connections.css'
 export interface ConnectionActions {
+  onProvider: () => void
   onIssue: (index: number) => void
   onLifecycle: (phase: LifecyclePhase) => void
   onModel: (id: ExampleId) => void
@@ -33,6 +36,7 @@ export function ConnectionsCatalog({
   onIssue,
   onLifecycle,
   onModel,
+  onProvider,
 }: { layer: Layer; selection: ContextSelection | null } & ConnectionActions) {
   return (
     <div
@@ -48,6 +52,35 @@ export function ConnectionsCatalog({
         Choose a problem or workload here. Zoom between Fleet, Pod, Server and
         GPU to follow the same story through its physical context.
       </p>
+      <section>
+        <h3>
+          <Cloud size={15} />
+          Cloud provider scenario
+        </h3>
+        <div className="connection-cards">
+          <button
+            aria-label="Explore scenario: Cloud provider"
+            aria-pressed={selection?.kind === 'provider'}
+            onClick={onProvider}
+            style={{ '--connection-color': '#a8d2c3' } as React.CSSProperties}
+          >
+            <Cloud size={20} />
+            <span>
+              <strong>Serve the model providers.</strong>
+              <small>
+                {layer === 'fleet'
+                  ? 'Compare quotas, borrowing and inference burst capacity across three customers.'
+                  : layer === 'pod'
+                    ? 'Follow scoped artifacts and checkpoints through shared fabric and local caches.'
+                    : layer === 'rack'
+                      ? 'Resolve fragmented GPU slots with topology-aware gangs and rolling recovery.'
+                      : 'Check customer-approved per-device memory profiles and tenant boundaries.'}
+              </small>
+            </span>
+            <ArrowRight size={14} />
+          </button>
+        </div>
+      </section>
       <section>
         <h3>
           <Flame size={15} />
@@ -249,6 +282,7 @@ export function ContextControls({
   onBrowse,
   onClear,
   onFocus,
+  timeline,
 }: {
   frame: ContextFrame
   reduced: boolean
@@ -259,17 +293,20 @@ export function ContextControls({
   onBrowse: () => void
   onClear: () => void
   onFocus: () => void
+  timeline?: ReactNode
 }) {
   return (
     <div className="context-controls" data-testid="context-controls">
       <div className="context-current">
         <span>
           <i style={{ background: frame.color }} />
-          {frame.kind === 'issue'
-            ? 'HOT ISSUE'
-            : frame.kind === 'lifecycle'
-              ? 'AI LIFECYCLE'
-              : 'REAL MODEL'}{' '}
+          {frame.kind === 'provider'
+            ? 'CLOUD PROVIDER'
+            : frame.kind === 'issue'
+              ? 'HOT ISSUE'
+              : frame.kind === 'lifecycle'
+                ? 'AI LIFECYCLE'
+                : 'REAL MODEL'}{' '}
           / {levelNames[frame.layer].toUpperCase()}
         </span>
         <strong>{frame.title}</strong>
@@ -277,6 +314,7 @@ export function ContextControls({
           <X size={14} />
         </button>
       </div>
+      {timeline}
       <nav
         className="context-steps"
         aria-label="Connected walkthrough steps"
@@ -319,7 +357,9 @@ export function ContextControls({
         <span>
           {reduced
             ? 'SELECT A LEVEL OR STEP'
-            : `${frame.duration}s / STEP · TEACHING TIME · 1–4 TO ZOOM`}
+            : frame.kind === 'provider'
+              ? 'PAIRED SIMULATION · 1–4 TO ZOOM'
+              : `${frame.duration}s / STEP · TEACHING TIME · 1–4 TO ZOOM`}
         </span>
         <button
           aria-label="Next connected step"

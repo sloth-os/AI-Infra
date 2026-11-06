@@ -149,14 +149,14 @@ export class ContextOverlay {
       } else if (
         f.layer === 'rack' &&
         server === binding?.viewServer &&
-        f.stage === 2 &&
+        (binding?.phase ? binding.phase === 'running' : f.stage === 2) &&
         f.traffic === 'collectives'
       ) {
         for (let i = 0; i < 8; i++)
           this.addPath([rankPosition(i), rankPosition((i + 1) % 8)], c)
       } else if (
         f.layer === 'gpu' &&
-        f.stage === 2 &&
+        (binding?.phase ? binding.phase === 'running' : f.stage === 2) &&
         server === binding?.viewServer
       )
         local('hbm', 'tensor')

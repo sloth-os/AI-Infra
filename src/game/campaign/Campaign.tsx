@@ -98,6 +98,14 @@ export default function LifecycleCampaign({
       new URLSearchParams(location.search).get('scenario') === 'cloud-provider',
   )
   const cloud = useProvider(active && cloudMode, level)
+  useEffect(() => {
+    if (!active) return
+    const query = new URLSearchParams(location.search)
+    if (query.get('scenario') === 'cloud-provider') {
+      setCloudMode(true)
+      if (query.has('gameLevel')) setLevel(initialLevel())
+    }
+  }, [active])
   const [runs, setRuns] = useState<Record<LifecyclePhase, OperationState>>(
     () => ({
       pretrain: createOperation('pretrain'),
@@ -318,6 +326,13 @@ export default function LifecycleCampaign({
   }
   const learn = () => {
     dispatch({ type: 'pause' })
+    if (cloudMode) {
+      const url = new URL(location.href)
+      url.searchParams.set('provider', 'cloud')
+      url.searchParams.set('level', level === 'rack' ? 'server' : level)
+      url.searchParams.set('learn', 'fusion')
+      history.replaceState({}, '', url)
+    }
     onLearn()
   }
   const reset = () => {

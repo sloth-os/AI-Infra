@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import FleetGame from './Game'
 import LifecycleCampaign from './campaign/Campaign'
 
@@ -27,6 +27,12 @@ export default function GameExperience({
     }
     history.replaceState({}, '', url)
   }
+  useEffect(() => {
+    if (!active) return
+    const value = new URLSearchParams(location.search).get('campaign')
+    if (value === 'lifecycle' || value === 'serving')
+      setCampaign(value === 'lifecycle')
+  }, [active])
   return (
     <>
       <FleetGame

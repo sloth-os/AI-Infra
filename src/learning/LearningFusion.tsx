@@ -109,6 +109,17 @@ import {
   withContextLocation,
 } from './infrastructure/context'
 import type { ContextSelection } from './infrastructure/context'
+import {
+  clearProviderParams,
+  defaultProviderLesson,
+  parseProviderLesson,
+  providerLessonUrl,
+  providerVisualKey,
+  replaySnapshot,
+  sanitizeProviderLesson,
+} from './provider/model'
+import type { ProviderLesson } from './provider/model'
+import { ProviderStudy, ProviderTimeline } from './provider/ProviderStudy'
 
 export type LearningPage = Exclude<Page, 'game'>
 type Panel =
@@ -257,13 +268,15 @@ export default function LearningFusion(p: Props) {
     [help, setHelp] = useState(false)
   const [query, setQuery] = useState('')
   const [libraryTab, setLibraryTab] = useState<LibraryTab>(() =>
-    initialContext?.kind === 'issue'
-      ? 'hot'
-      : initialContext?.kind === 'lifecycle'
-        ? 'lifecycle'
-        : initialContext?.kind === 'model'
-          ? 'models'
-          : 'concepts',
+    initialContext?.kind === 'provider'
+      ? 'provider'
+      : initialContext?.kind === 'issue'
+        ? 'hot'
+        : initialContext?.kind === 'lifecycle'
+          ? 'lifecycle'
+          : initialContext?.kind === 'model'
+            ? 'models'
+            : 'concepts',
   )
   const [example, setExample] = useState<ExampleView | null>(() =>
     initialContext?.kind === 'model' ? initialContext.view : null,
@@ -277,23 +290,55 @@ export default function LearningFusion(p: Props) {
     initialContext?.kind === 'issue' ? initialContext.view : defaultIssueView(),
   )
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const [provider, setProvider] = useState<ProviderLesson>(() =>
+    initialContext?.kind === 'provider'
+      ? initialContext.view
+      : defaultProviderLesson(),
+  )
+  const providerInitialized = useRef(initialContext?.kind === 'provider')
+  const providerActive = p.active && libraryTab === 'provider'
   const issueActive = p.active && libraryTab === 'hot'
   const lifecycleActive = p.active && libraryTab === 'lifecycle'
   const exampleActive = p.active && libraryTab === 'models' && !!example
   const selection = useMemo<ContextSelection | null>(
     () =>
-      issueActive
-        ? { kind: 'issue', view: issue }
-        : lifecycleActive
-          ? { kind: 'lifecycle', view: lifecycle }
-          : exampleActive && example
-            ? { kind: 'model', view: example }
-            : null,
-    [issueActive, lifecycleActive, exampleActive, issue, lifecycle, example],
+      providerActive
+        ? { kind: 'provider', view: provider }
+        : issueActive
+          ? { kind: 'issue', view: issue }
+          : lifecycleActive
+            ? { kind: 'lifecycle', view: lifecycle }
+            : exampleActive && example
+              ? { kind: 'model', view: example }
+              : null,
+    [
+      providerActive,
+      provider,
+      issueActive,
+      lifecycleActive,
+      exampleActive,
+      issue,
+      lifecycle,
+      example,
+    ],
+  )
+  const providerSample = providerActive ? replaySnapshot(provider) : null
+  const providerKey = providerActive ? providerVisualKey(provider, p.layer) : ''
+  const providerFrame = useMemo(
+    () =>
+      providerActive
+        ? contextAtLevel({ kind: 'provider', view: provider }, p.layer)
+        : null,
+    [providerActive, p.layer, providerKey],
   )
   const contextFrame = useMemo(
-    () => (selection ? contextAtLevel(selection, p.layer) : null),
-    [selection, p.layer],
+    () =>
+      selection
+        ? selection.kind === 'provider'
+          ? providerFrame
+          : contextAtLevel(selection, p.layer)
+        : null,
+    [selection, p.layer, providerFrame],
   )
   const teachingActive = !!contextFrame
   const activeLesson = selection?.view || null
@@ -317,6 +362,11 @@ export default function LearningFusion(p: Props) {
     clearIssueParams(url)
     history.replaceState({}, '', url)
   }
+  const clearProviderUrl = () => {
+    const url = new URL(location.href)
+    clearProviderParams(url)
+    history.replaceState({}, '', url)
+  }
   const applyContext = (
     next: ContextSelection,
     layer: Layer = p.layer,
@@ -326,7 +376,18 @@ export default function LearningFusion(p: Props) {
     setFollow(false)
     setJourneyAuto(false)
     p.onManual()
-    if (next.kind === 'issue') {
+    if (next.kind !== 'provider') clearProviderUrl()
+    if (next.kind === 'provider') {
+      providerInitialized.current = true
+      clearExampleUrl()
+      clearLifecycleUrl()
+      clearIssueUrl()
+      setLibraryTab('provider')
+      setProvider({
+        ...sanitizeProviderLesson(next.view),
+        playing: reduced ? false : next.view.playing,
+      })
+    } else if (next.kind === 'issue') {
       clearExampleUrl()
       clearLifecycleUrl()
       setLibraryTab('hot')
@@ -350,6 +411,7 @@ export default function LearningFusion(p: Props) {
     if (openReader) setPanel('guide')
   }
   const clearContext = () => {
+    clearProviderUrl()
     clearExampleUrl()
     clearLifecycleUrl()
     clearIssueUrl()
@@ -357,6 +419,7 @@ export default function LearningFusion(p: Props) {
     setIssue((v) => ({ ...v, playing: false }))
     setLifecycle((v) => ({ ...v, playing: false }))
     setExample((v) => (v ? { ...v, playing: false } : v))
+    setProvider((v) => ({ ...v, playing: false }))
     closeContext()
     setPanel(null)
     setFollow(false)
@@ -440,6 +503,17 @@ export default function LearningFusion(p: Props) {
     v.stage = stageAtLevel(next, p.layer)
     applyContext(next)
   }
+  const activateProvider = () =>
+    applyContext({
+      kind: 'provider',
+      view: {
+        ...provider,
+        stage: layers.findIndex((l) => l.id === p.layer),
+        playing: false,
+      },
+    })
+  const changeProvider = (view: ProviderLesson) =>
+    setProvider(sanitizeProviderLesson(view))
   const changeContextLevel = (layer: Layer, automatic = false) => {
     if (!selection) {
       closeContext()
@@ -474,7 +548,13 @@ export default function LearningFusion(p: Props) {
   }
   const toggleLesson = () => {
     if (reduced) return
-    if (issueActive) setIssue((v) => ({ ...v, playing: !v.playing }))
+    if (providerActive)
+      setProvider((v) => ({
+        ...v,
+        time: v.time >= replaySnapshot(v).replay.end ? 0 : v.time,
+        playing: !v.playing,
+      }))
+    else if (issueActive) setIssue((v) => ({ ...v, playing: !v.playing }))
     else if (lifecycleActive)
       setLifecycle((v) => ({ ...v, playing: !v.playing }))
     else if (exampleActive)
@@ -488,7 +568,7 @@ export default function LearningFusion(p: Props) {
     p.onManual()
   }
   const chooseLibraryTab = (tab: LibraryTab) => {
-    if (!['models', 'lifecycle', 'hot'].includes(tab)) {
+    if (!['provider', 'models', 'lifecycle', 'hot'].includes(tab)) {
       clearContext()
       setPanel('guide')
     }
@@ -496,6 +576,23 @@ export default function LearningFusion(p: Props) {
   }
   useEffect(() => {
     if (!p.active || !selection) return
+    if (selection.kind === 'provider') {
+      if (selection.view.playing) return
+      const timer = setTimeout(
+        () =>
+          history.replaceState(
+            {},
+            '',
+            withContextLocation(
+              providerLessonUrl(location.href, selection.view),
+              p.page,
+              p.layer,
+            ),
+          ),
+        150,
+      )
+      return () => clearTimeout(timer)
+    }
     const url =
       selection.kind === 'issue'
         ? issueUrl(location.href, selection.view)
@@ -506,6 +603,7 @@ export default function LearningFusion(p: Props) {
   }, [p.active, p.page, p.layer, selection])
   useEffect(() => {
     if (!p.active) {
+      setProvider((v) => (v.playing ? { ...v, playing: false } : v))
       setIssue((v) => (v.playing ? { ...v, playing: false } : v))
       setLifecycle((v) => (v.playing ? { ...v, playing: false } : v))
       setExample((v) => (v?.playing ? { ...v, playing: false } : v))
@@ -521,7 +619,11 @@ export default function LearningFusion(p: Props) {
       }
       const layer = initialContextLevel(location.href),
         frame = contextAtLevel(next, layer)
-      if (next.kind === 'issue') {
+      if (next.kind === 'provider') {
+        providerInitialized.current = true
+        setProvider(next.view)
+        setLibraryTab('provider')
+      } else if (next.kind === 'issue') {
         setIssue(next.view)
         setLibraryTab('hot')
       } else if (next.kind === 'lifecycle') {
@@ -543,7 +645,39 @@ export default function LearningFusion(p: Props) {
       root.current
         ?.querySelector('.learn-panel')
         ?.scrollTo({ top: 0, behavior: 'instant' })
-  }, [contextFrame?.key, panel])
+  }, [providerActive ? `provider:${p.layer}` : contextFrame?.key, panel])
+  useEffect(() => {
+    if (!providerActive || !provider.playing || reduced) return
+    let raf = 0,
+      last = performance.now(),
+      accumulated = 0
+    const tick = (now: number) => {
+      raf = requestAnimationFrame(tick)
+      const dt = Math.min(0.25, Math.max(0, (now - last) / 1000))
+      last = now
+      if (document.hidden) return
+      accumulated += dt * provider.speed
+      if (accumulated >= 0.05) {
+        const advance = accumulated
+        accumulated = 0
+        setProvider((v) => {
+          const end = replaySnapshot(v).replay.end,
+            time = Math.min(end, v.time + advance)
+          return { ...v, time, playing: time < end }
+        })
+      }
+    }
+    const reset = () => {
+      last = performance.now()
+      accumulated = 0
+    }
+    document.addEventListener('visibilitychange', reset)
+    raf = requestAnimationFrame(tick)
+    return () => {
+      cancelAnimationFrame(raf)
+      document.removeEventListener('visibilitychange', reset)
+    }
+  }, [providerActive, provider.playing, provider.speed, reduced])
   const [rank, setRank] = useState(0),
     [prompt, setPrompt] = useState(
       'Explain black holes to a curious ten-year-old.',
@@ -627,6 +761,22 @@ export default function LearningFusion(p: Props) {
       setJourneyAuto(false)
       return
     }
+    const incomingProvider = parseProviderLesson(location.href)
+    if (incomingProvider && libraryTab !== 'provider') {
+      const layer = initialContextLevel(location.href)
+      applyContext(
+        {
+          kind: 'provider',
+          view: {
+            ...(providerInitialized.current ? provider : incomingProvider),
+            stage: layers.findIndex((l) => l.id === layer),
+            playing: false,
+          },
+        },
+        layer,
+      )
+      return
+    }
     setReader(null)
     if (p.page === 'journey' && !selection) {
       setPanel('journey')
@@ -666,6 +816,7 @@ export default function LearningFusion(p: Props) {
     setIssue((v) => (v.playing ? { ...v, playing: false } : v))
     setLifecycle((v) => (v.playing ? { ...v, playing: false } : v))
     setExample((v) => (v?.playing ? { ...v, playing: false } : v))
+    setProvider((v) => (v.playing ? { ...v, playing: false } : v))
     closeContext()
     setFollow(false)
     setTheater(false)
@@ -906,7 +1057,7 @@ export default function LearningFusion(p: Props) {
   return (
     <section
       ref={root}
-      className={`learning-fusion ${theater ? 'learn-cinema' : ''} ${teachingActive ? 'has-context' : ''}`}
+      className={`learning-fusion ${theater ? 'learn-cinema' : ''} ${teachingActive ? 'has-context' : ''} ${providerActive ? 'has-provider' : ''}`}
       style={
         {
           '--model-accent': contextFrame?.color || '#c6dea0',
@@ -914,6 +1065,10 @@ export default function LearningFusion(p: Props) {
       }
       hidden={!p.active}
       aria-label="Immersive Learning workspace"
+      data-provider-time={
+        providerActive ? providerSample?.time.toFixed(2) : undefined
+      }
+      data-provider-playing={providerActive ? provider.playing : undefined}
     >
       <div className="learning-world">
         <InfrastructureScene
@@ -934,7 +1089,8 @@ export default function LearningFusion(p: Props) {
           showLabels={labels && !theater}
           followPayload={follow}
           context={contextFrame}
-          onContextStep={chooseContextStep}
+          contextProgress={providerSample?.progress}
+          onContextStep={providerActive ? undefined : chooseContextStep}
           onContextInspect={() => {
             closeContext()
             setPanel('guide')
@@ -1144,18 +1300,26 @@ export default function LearningFusion(p: Props) {
                 aria-label="Infrastructure scale"
               >
                 {layers.map((l, i) => {
-                  const Icon = layerIcons[l.id]
+                  const Icon = layerIcons[l.id],
+                    caption = providerActive
+                      ? {
+                          fleet: '64 leased slots',
+                          pod: '32 GPU slots',
+                          rack: '8 GPUs',
+                          gpu: '80 GiB budget',
+                        }[l.id]
+                      : l.scale
                   return (
                     <button
                       key={l.id}
                       aria-pressed={p.layer === l.id}
-                      aria-label={`${i + 1} ${l.name} ${l.scale}`}
+                      aria-label={`${i + 1} ${l.name} ${caption}`}
                       onClick={() => changeContextLevel(l.id)}
                     >
                       <Icon size={20} />
                       <span>
                         {l.name}
-                        <small>{l.scale}</small>
+                        <small>{caption}</small>
                       </span>
                       <kbd>{i + 1}</kbd>
                     </button>
@@ -1461,6 +1625,7 @@ export default function LearningFusion(p: Props) {
                       onIssue={activateIssue}
                       onLifecycle={activateLifecycle}
                       onModel={selectExample}
+                      onProvider={activateProvider}
                     />
                   ) : panel === 'lab' ? (
                     <LearningLab
@@ -1484,29 +1649,49 @@ export default function LearningFusion(p: Props) {
                           onLevel={changeContextLevel}
                         />
                       )}
-                      <LearningLibrary
-                        query={query}
-                        onQuery={setQuery}
-                        tab={libraryTab}
-                        onTab={chooseLibraryTab}
-                        example={example}
-                        onExample={changeExample}
-                        onCompare={() => setReader('examples')}
-                        issue={issue}
-                        onIssue={changeIssue}
-                        onIssueMethodology={() => setReader('issues')}
-                        lifecycle={lifecycle}
-                        onLifecycle={changeLifecycle}
-                        onLifecycleCompare={() => setReader('lifecycle')}
-                        onReading={() => setReader('guide')}
-                        onLocate={(layer, traffic, node) => {
-                          p.onLocate(layer, traffic, node)
-                          setPanel(null)
-                          setInspector(true)
-                          pin.current = null
-                          p.onNavigate('explore')
-                        }}
-                      />
+                      {providerActive ? (
+                        <ProviderStudy
+                          view={provider}
+                          layer={p.layer}
+                          onChange={changeProvider}
+                          onWorkload={activateLifecycle}
+                          onGame={() => {
+                            const url = new URL(location.href)
+                            url.searchParams.set('scenario', 'cloud-provider')
+                            url.searchParams.set('campaign', 'lifecycle')
+                            url.searchParams.set(
+                              'gameLevel',
+                              p.layer === 'rack' ? 'server' : p.layer,
+                            )
+                            history.replaceState({}, '', url)
+                            go('game')
+                          }}
+                        />
+                      ) : (
+                        <LearningLibrary
+                          query={query}
+                          onQuery={setQuery}
+                          tab={libraryTab}
+                          onTab={chooseLibraryTab}
+                          example={example}
+                          onExample={changeExample}
+                          onCompare={() => setReader('examples')}
+                          issue={issue}
+                          onIssue={changeIssue}
+                          onIssueMethodology={() => setReader('issues')}
+                          lifecycle={lifecycle}
+                          onLifecycle={changeLifecycle}
+                          onLifecycleCompare={() => setReader('lifecycle')}
+                          onReading={() => setReader('guide')}
+                          onLocate={(layer, traffic, node) => {
+                            p.onLocate(layer, traffic, node)
+                            setPanel(null)
+                            setInspector(true)
+                            pin.current = null
+                            p.onNavigate('explore')
+                          }}
+                        />
+                      )}
                     </>
                   ) : panel === 'experiment' ? (
                     <>
@@ -1842,6 +2027,14 @@ export default function LearningFusion(p: Props) {
               <div className="learn-command-deck">
                 {contextFrame ? (
                   <ContextControls
+                    timeline={
+                      providerActive ? (
+                        <ProviderTimeline
+                          view={provider}
+                          onChange={changeProvider}
+                        />
+                      ) : undefined
+                    }
                     frame={contextFrame}
                     reduced={reduced}
                     panelOpen={panel === 'guide'}
@@ -2077,6 +2270,15 @@ export default function LearningFusion(p: Props) {
                   teaching stages, and F to focus. Data budgets use each model’s
                   formats; the worlds are schematics and do not execute model
                   weights.
+                </p>
+                <p>
+                  The Cloud provider scenario connects Fleet, Pod, Server and
+                  GPU with a paired capacity replay. Compare a baseline with
+                  your policy plan at the same elapsed teaching time, inspect
+                  resource envelopes, and follow tenant device bindings,
+                  artifact bytes and completed work. Changing a policy rewinds
+                  the experiment; the replay clock is separate from the
+                  reference request timeline.
                 </p>
                 <p>
                   Select hardware to open its explanation. Understand its role,

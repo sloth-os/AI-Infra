@@ -60,7 +60,12 @@ export function providerFrame(
               (_, i) => (i >= 32 ? -1 : i / 32 < peak / GPU_GIB ? owner : 0),
             )
   return {
-    deviceBinding: { server: j.server, viewServer: server, gpu },
+    deviceBinding: {
+      server: j.server,
+      viewServer: server,
+      gpu,
+      phase: j.state,
+    },
     key: `cloud-provider:${layer}:${server}:${gpu}:${j.id}:${j.state}`,
     id: 'cloud-provider',
     kind: 'lifecycle',
