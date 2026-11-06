@@ -5,6 +5,7 @@ import {
   BookOpen,
   Box,
   Check,
+  Cloud,
   ChevronRight,
   Cpu,
   Gauge,
@@ -50,6 +51,9 @@ import {
 } from './model'
 import type { CampaignProgress, OperationAction, OperationState } from './model'
 import { campaignFrame } from './scene'
+import { ProviderUI } from '../provider/ProviderUI'
+import { ScenarioSwitch } from '../provider/ScenarioSwitch'
+import { useProvider } from '../provider/useProvider'
 import './campaign.css'
 
 const STORAGE = 'strata-lifecycle-campaign-v1'
@@ -89,6 +93,11 @@ export default function LifecycleCampaign({
 }) {
   const [phase, setPhase] = useState<LifecyclePhase>(initialPhase),
     [level, setLevel] = useState<Layer>(initialLevel)
+  const [cloudMode, setCloudMode] = useState(
+    () =>
+      new URLSearchParams(location.search).get('scenario') === 'cloud-provider',
+  )
+  const cloud = useProvider(active && cloudMode, level)
   const [runs, setRuns] = useState<Record<LifecyclePhase, OperationState>>(
     () => ({
       pretrain: createOperation('pretrain'),
@@ -117,7 +126,7 @@ export default function LifecycleCampaign({
     lesson = LEVEL_LESSONS[phase][level],
     contract = contractState(s, level)
   const done = CAMPAIGN_LEVELS.filter((l) => s.evidence[l] >= 2).length
-  const frame = useMemo(
+  const modelFrame = useMemo(
     () => campaignFrame(s, level),
     [
       phase,
@@ -131,6 +140,7 @@ export default function LifecycleCampaign({
       s.warm,
     ],
   )
+  const frame = cloudMode ? cloud.frame : modelFrame
   const dispatch = useCallback(
     (action: OperationAction) =>
       setRuns((previous) => ({
@@ -142,10 +152,10 @@ export default function LifecycleCampaign({
   const visit = useCallback(
     (next: Layer, manual = true) => {
       setLevel(next)
-      dispatch({ type: 'visit', level: next })
+      if (!cloudMode) dispatch({ type: 'visit', level: next })
       if (manual) setFollow(false)
     },
-    [dispatch],
+    [dispatch, cloudMode],
   )
   const selectPhase = (next: LifecyclePhase) => {
     dispatch({ type: 'pause' })
@@ -165,7 +175,7 @@ export default function LifecycleCampaign({
     setFollow(!follow)
   }, [follow])
   useEffect(() => {
-    if (!active || s.status !== 'running') return
+    if (!active || cloudMode || s.status !== 'running') return
     let raf = 0,
       last = performance.now(),
       accumulated = 0
@@ -190,9 +200,9 @@ export default function LifecycleCampaign({
       cancelAnimationFrame(raf)
       document.removeEventListener('visibilitychange', resetClock)
     }
-  }, [active, s.status, phase, speed, dispatch])
+  }, [active, cloudMode, s.status, phase, speed, dispatch])
   useEffect(() => {
-    if (!active)
+    if (!active || cloudMode)
       setRuns(
         (previous) =>
           Object.fromEntries(
@@ -202,24 +212,40 @@ export default function LifecycleCampaign({
             ]),
           ) as Record<LifecyclePhase, OperationState>,
       )
-  }, [active])
+  }, [active, cloudMode])
   useEffect(() => {
-    if (active) dispatch({ type: 'visit', level })
-  }, [active, phase, dispatch])
+    if (active && !cloudMode) dispatch({ type: 'visit', level })
+  }, [active, cloudMode, phase, dispatch])
   useEffect(() => {
     if (workshop.current) workshop.current.scrollTop = 0
   }, [phase, level, panel])
   useEffect(() => {
-    if (active && follow && s.status === 'running') visit(current.layer, false)
-  }, [active, follow, phase, s.stage, s.status, current.layer, visit])
+    if (active && !cloudMode && follow && s.status === 'running')
+      visit(current.layer, false)
+  }, [
+    active,
+    cloudMode,
+    follow,
+    phase,
+    s.stage,
+    s.status,
+    current.layer,
+    visit,
+  ])
   useEffect(() => {
     if (!active) return
     const url = new URL(location.href)
     url.searchParams.set('campaign', 'lifecycle')
-    url.searchParams.set('operation', phase)
+    if (cloudMode) {
+      url.searchParams.set('scenario', 'cloud-provider')
+      url.searchParams.delete('operation')
+    } else {
+      url.searchParams.delete('scenario')
+      url.searchParams.set('operation', phase)
+    }
     url.searchParams.set('gameLevel', level === 'rack' ? 'server' : level)
     history.replaceState({}, '', url)
-  }, [active, phase, level])
+  }, [active, cloudMode, phase, level])
   useEffect(() => {
     const earned = earnedProgress(s)
     if (!Object.keys(earned).length) return
@@ -241,7 +267,7 @@ export default function LifecycleCampaign({
     })
   }, [s.evidence.fleet, s.evidence.pod, s.evidence.rack, s.evidence.gpu, phase])
   useEffect(() => {
-    if (!active) return
+    if (!active || cloudMode) return
     const key = (event: KeyboardEvent) => {
       if (
         event.ctrlKey ||
@@ -277,7 +303,15 @@ export default function LifecycleCampaign({
     }
     window.addEventListener('keydown', key)
     return () => window.removeEventListener('keydown', key)
-  }, [active, help, sources, toggle, visit, toggleRide])
+  }, [active, cloudMode, help, sources, toggle, visit, toggleRide])
+  const selectScenario = useCallback((next: 'model' | 'cloud-provider') => {
+    setCloudMode(next === 'cloud-provider')
+    setFollow(false)
+    setPanel(true)
+    setHelp(false)
+    setSources(false)
+    setCinema(false)
+  }, [])
   const back = () => {
     dispatch({ type: 'pause' })
     onServing()
@@ -446,16 +480,20 @@ export default function LifecycleCampaign({
     <section
       ref={root}
       hidden={!active}
-      className={`campaign-game ${cinema ? 'campaign-cinema' : ''}`}
+      className={`campaign-game ${cloudMode ? 'is-provider' : ''} ${cinema ? 'campaign-cinema' : ''}`}
       aria-label="AI lifecycle campaign"
+      data-scenario={cloudMode ? 'cloud-provider' : 'model'}
       data-phase={phase}
       data-level={level}
-      data-status={s.status}
-      data-time={s.time.toFixed(2)}
+      data-status={cloudMode ? cloud.state.status : s.status}
+      data-time={(cloudMode ? cloud.state.time : s.time).toFixed(2)}
       data-cycles={s.cycles}
-      data-produced={s.produced}
+      data-produced={cloudMode ? cloud.state.served : s.produced}
+      data-training-jobs={cloudMode ? cloud.state.completed.train : undefined}
+      data-tuning-jobs={cloudMode ? cloud.state.completed.tune : undefined}
+      data-contracts={cloudMode ? cloud.metrics.contracts : undefined}
       data-rejected={s.rejected}
-      data-stage={current.id}
+      data-stage={cloudMode ? cloud.job.state : current.id}
     >
       <div className="campaign-world">
         <InfrastructureScene
@@ -466,9 +504,9 @@ export default function LifecycleCampaign({
           layer={level}
           traffic={frame.traffic}
           selected={frame.node}
-          paused={s.status !== 'running'}
+          paused={(cloudMode ? cloud.state.status : s.status) !== 'running'}
           context={frame}
-          contextProgress={s.progress}
+          contextProgress={cloudMode ? cloud.progress : s.progress}
           showLabels={labels && !cinema}
           onSelect={(id) => {
             scene.current?.focus(id)
@@ -479,7 +517,7 @@ export default function LifecycleCampaign({
           onCameraRelease={() => setFollow(false)}
         />
       </div>
-      {active && (
+      {active && !cloudMode && (
         <>
           <header className="campaign-header">
             <button onClick={back} aria-label="Return to serving district">
@@ -503,7 +541,8 @@ export default function LifecycleCampaign({
                 </button>
               ))}
             </nav>
-            <div>
+            <div className="campaign-header-tools">
+              <ScenarioSwitch value="model" onChange={selectScenario} />
               <button onClick={learn} aria-label="Learning mode">
                 <BookOpen size={17} />
               </button>
@@ -533,6 +572,14 @@ export default function LifecycleCampaign({
                       : 'Turn capacity into responsive answers.'}
                 </h1>
                 <p>{metrics.source}</p>
+                <button
+                  className="campaign-cloud-launch"
+                  onClick={() => selectScenario('cloud-provider')}
+                >
+                  <Cloud size={12} />
+                  Play as the cloud provider
+                  <ChevronRight size={12} />
+                </button>
               </div>
               <div className="campaign-score" aria-label="Operation telemetry">
                 <div>
@@ -1183,6 +1230,23 @@ export default function LifecycleCampaign({
             </CampaignDialog>
           )}
         </>
+      )}
+      {active && cloudMode && (
+        <ProviderUI
+          c={cloud}
+          level={level}
+          visit={visit}
+          scene={scene}
+          onScenario={selectScenario}
+          onServing={back}
+          onLearn={learn}
+          panel={panel}
+          setPanel={setPanel}
+          labels={labels}
+          setLabels={setLabels}
+          cinema={cinema}
+          setCinema={setCinema}
+        />
       )}
     </section>
   )

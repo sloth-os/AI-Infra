@@ -112,7 +112,55 @@ export class ContextOverlay {
       f = frame,
       c = frame.color
     const local = (a: string, b: string) => this.addPath([at(a), at(b)], c)
-    if (f.pattern === 'power') {
+    if (f.supplementRole === 'cloud-tenants') {
+      const binding = f.deviceBinding,
+        server = binding?.server ?? -1
+      // Tenant APIs are outside this cloud control plane. Animate actual artifact
+      // and checkpoint paths; never send customer prompts to the lease scheduler.
+      if (
+        f.layer === 'fleet' &&
+        (f.pattern === 'weights' || f.pattern === 'checkpoint')
+      ) {
+        const district: Point3 = [
+          (server < 4 ? -3.1 : 6.2) + ((server % 2) - 0.5) * 0.95,
+          2,
+          -4.9 + (Math.floor((server % 4) / 2) - 0.5) * 1.1,
+        ]
+        this.addPath(
+          f.pattern === 'checkpoint'
+            ? [district, at('storage')]
+            : [at('storage'), district],
+          c,
+        )
+      } else if (
+        f.layer === 'pod' &&
+        server >= 0 &&
+        Math.floor(server / 4) ===
+          Math.floor((binding?.viewServer ?? -1) / 4) &&
+        (f.pattern === 'weights' || f.pattern === 'checkpoint')
+      ) {
+        const target: Point3 = [((server % 4) - 1.5) * 3.8, 3.5, -2.75]
+        this.addPath(
+          f.pattern === 'checkpoint'
+            ? [target, at('fabric')]
+            : [at('fabric'), target],
+          c,
+        )
+      } else if (
+        f.layer === 'rack' &&
+        server === binding?.viewServer &&
+        f.stage === 2 &&
+        f.traffic === 'collectives'
+      ) {
+        for (let i = 0; i < 8; i++)
+          this.addPath([rankPosition(i), rankPosition((i + 1) % 8)], c)
+      } else if (
+        f.layer === 'gpu' &&
+        f.stage === 2 &&
+        server === binding?.viewServer
+      )
+        local('hbm', 'tensor')
+    } else if (f.pattern === 'power') {
       local(
         'power',
         f.layer === 'fleet'
@@ -209,15 +257,18 @@ export class ContextOverlay {
   }
   private updateGlyphs(f: ContextFrame, phase: number) {
     const anchor = hardwareAnchor(f.layer, f.node)
-    const count = f.schedule
-      ? 8
-      : f.pattern === 'power' && f.layer === 'fleet'
-        ? 20
-        : f.pattern === 'placement' && f.layer === 'rack'
+    const count =
+      f.supplementRole === 'cloud-tenants'
+        ? f.count
+        : f.schedule
           ? 8
-          : f.pattern === 'placement' && f.layer === 'gpu'
-            ? 1
-            : Math.max(1, Math.min(1024, f.count))
+          : f.pattern === 'power' && f.layer === 'fleet'
+            ? 20
+            : f.pattern === 'placement' && f.layer === 'rack'
+              ? 8
+              : f.pattern === 'placement' && f.layer === 'gpu'
+                ? 1
+                : Math.max(1, Math.min(1024, f.count))
     this.glyphs.count = count
     this.glyphs.userData.pattern = f.pattern
     this.glyphs.userData.layer = f.layer
@@ -229,7 +280,60 @@ export class ContextOverlay {
         h = 0.15,
         d = 0.22
       this.color.set(f.color)
-      if (f.schedule) {
+      if (f.supplementRole === 'cloud-tenants') {
+        const owner = f.values?.[i] || 0
+        this.color.set(
+          owner === 1
+            ? '#9bc9e7'
+            : owner === 2
+              ? '#b5d79b'
+              : owner === 3
+                ? '#c4abe9'
+                : owner === -1
+                  ? '#e79a88'
+                  : '#3c5260',
+        )
+        if (f.layer === 'fleet') {
+          const pod = Math.floor(i / 32),
+            server = Math.floor((i % 32) / 8),
+            slot = i % 8
+          // Two highlighted physical Pod blocks, each with four server anchors.
+          x =
+            (pod === 0 ? -3.1 : 6.2) +
+            ((server % 2) - 0.5) * 0.95 +
+            ((slot % 4) - 1.5) * 0.16
+          z =
+            -4.9 +
+            (Math.floor(server / 2) - 0.5) * 1.1 +
+            (Math.floor(slot / 4) - 0.5) * 0.25
+          y = 2
+          w = 0.13
+          d = 0.19
+          h = owner ? 0.2 : 0.06
+        } else if (f.layer === 'pod') {
+          const server = Math.floor(i / 8),
+            slot = i % 8
+          x = (server - 1.5) * 3.8 + ((slot % 4) - 1.5) * 0.55
+          z = -2.75 + (Math.floor(slot / 4) - 0.5) * 0.8
+          y = 3.5
+          w = 0.42
+          d = 0.55
+          h = owner ? 0.25 : 0.06
+        } else if (f.layer === 'rack') {
+          ;[x, y, z] = rankPosition(i)
+          y += 0.15
+          w = 1.7
+          d = 1.8
+          h = owner ? 0.28 : 0.05
+        } else {
+          x = anchor[0] + ((i % 8) - 3.5) * 0.28
+          z = anchor[2] + (Math.floor(i / 8) - 1.5) * 0.36
+          y = anchor[1] + 0.3
+          w = 0.23
+          d = 0.28
+          h = owner ? 0.22 : 0.05
+        }
+      } else if (f.schedule) {
         ;[x, y, z] = rankPosition(i)
         w = 1.65
         d = 1.7

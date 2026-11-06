@@ -50,6 +50,7 @@ export interface ContextStep {
   layer: Layer
 }
 export interface ContextFrame {
+  deviceBinding?: { server: number; viewServer: number; gpu: number }
   key: string
   kind: ContextSelection['kind']
   id: string
@@ -783,6 +784,56 @@ export function contextRole(
   id: string,
   frame: ContextFrame,
 ): [string, string] | null {
+  if (frame.id === 'cloud-provider') {
+    const labels: Record<string, [string, string]> = {
+      gateway: [
+        'Cloud control API',
+        'Tenant resource envelopes · no customer prompts',
+      ],
+      scheduler: [
+        'Capacity admission',
+        'Quotas · device claims · topology · peak reserve',
+      ],
+      prefill:
+        frame.layer === 'pod'
+          ? [
+              'Selected Pod · four servers',
+              'First four bays show this Pod’s 32 device claims',
+            ]
+          : [
+              'Tenant capacity · Pod A',
+              'Model providers own the running models and APIs',
+            ],
+      decode:
+        frame.layer === 'pod'
+          ? ['Reference bays', 'Outside the selected 32-device Pod allocation']
+          : [
+              'Tenant capacity · Pod B',
+              'Fault-domain spread · other hardware is reference',
+            ],
+      fabric: [
+        'Shared tenant data fabric',
+        'Artifacts · datasets · durable checkpoints',
+      ],
+      storage: [
+        'Scoped artifact storage',
+        'Tenant identity + digest/version + access policy',
+      ],
+      tensor: [
+        'Leased accelerator',
+        'Customer training / tuning / inference runtime',
+      ],
+      hbm: [
+        'Per-device memory budget',
+        'No cross-device or cross-tenant memory pooling',
+      ],
+      nvlink: [
+        'Eight-device local domain',
+        'Training ranks must fit within this server',
+      ],
+    }
+    return labels[id] || null
+  }
   if (frame.kind === 'issue' && frame.id === 'rl') {
     const labels: Record<string, [string, string]> = {
       prefill: ['Rollout workers', 'Generation under a versioned policy'],
