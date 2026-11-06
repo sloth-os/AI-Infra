@@ -20,6 +20,8 @@ Sharing retains the project prefix, workspace, scale, policy mask, selected tena
 
 The Learning implementation is in `src/learning/provider/`; it reuses the pure capacity model and physical annotation adapter in `src/game/provider/`. It does not create another world or replace the existing workload models. `tests/provider-learning.test.ts` checks matched time, resource bounds, policy-dependent outcomes, semantic/physical mappings, interpolation and safe URL round trips. Browser checks cover mixed discovery, one persistent canvas, replay/pause, sources, sharing, lifecycle links, mode handoff, mobile controls, reduced motion and fallback.
 
+A pixel-level browser regression verifies that the paused hardware remains visible after a responsive resize. Resize notifications explicitly invalidate the WebGL frame, including repeated notifications with unchanged dimensions; settled scenes still skip redundant GPU draws.
+
 ## Play the capacity game
 
 Open `?scenario=cloud-provider` or select **Cloud provider** with the cloud icon in the game header. A launch button also appears under the desktop campaign heading. The scenario shares Lifecycle Command’s existing physical world, camera and Fleet → Pod → Server → GPU rail. Switching roles pauses and retains each run; it never starts a separate 3D world.

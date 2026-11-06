@@ -12,6 +12,53 @@ async function seek(page: Page, value: string) {
     .getByRole('slider', { name: 'Cloud replay time', exact: true })
     .fill(value)
 }
+test('paused cloud hardware stays visible after a responsive resize while settled frames rest the GPU', async ({
+  page,
+}) => {
+  await open(page, 'level=server&cp_time=12')
+  await expect(page.locator(world)).toHaveAttribute(
+    'data-world-settled',
+    'true',
+  )
+  // Capture a composed desktop frame, then resize the same sleeping WebGL canvas.
+  await page.screenshot()
+  await page
+    .getByRole('button', { name: 'Hide connected details', exact: true })
+    .click()
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.waitForTimeout(700)
+  const shot = await page.locator(world).screenshot({
+    style:
+      '.learning-fusion > :not(.learning-world), .learning-world .scene-label { visibility: hidden !important; }',
+  })
+  const bright = await page.evaluate(async (encoded) => {
+    const bitmap = await createImageBitmap(
+      await (await fetch(`data:image/png;base64,${encoded}`)).blob(),
+    )
+    const canvas = new OffscreenCanvas(bitmap.width, bitmap.height),
+      context = canvas.getContext('2d')!
+    context.drawImage(bitmap, 0, 0)
+    const pixels = context.getImageData(0, 0, bitmap.width, bitmap.height).data
+    let count = 0
+    for (let i = 0; i < pixels.length; i += 16)
+      if (pixels[i] + pixels[i + 1] + pixels[i + 2] > 180) count++
+    bitmap.close()
+    return count
+  }, shot.toString('base64'))
+  expect(bright).toBeGreaterThan(1000)
+  await expect
+    .poll(async () => {
+      const before = Number(
+        await page.locator(world).getAttribute('data-context-paints'),
+      )
+      await page.waitForTimeout(400)
+      return (
+        Number(await page.locator(world).getAttribute('data-context-paints')) -
+        before
+      )
+    })
+    .toBe(0)
+})
 test('cloud Learning discovery connects every physical level, keeps one canvas, and retains evidence and experiment state', async ({
   page,
 }) => {

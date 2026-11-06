@@ -426,6 +426,9 @@ export class InfrastructureEngine {
     this.camera.bottom = -span
     this.camera.updateProjectionMatrix()
     this.renderer.setSize(width, height)
+    // setSize clears the WebGL drawing buffer, including repeated observer
+    // notifications with unchanged dimensions. Wake a paused story to repaint.
+    this.contextPaintDirty = true
   }
   private sceneLabels(): SceneLabel[] {
     const o = this.options(),
