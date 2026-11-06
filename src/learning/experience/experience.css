@@ -1,0 +1,875 @@
+.experience-welcome {
+  width: min(900px, calc(100% - 32px));
+  max-height: calc(100svh - 32px);
+  overflow: auto;
+  margin: auto;
+  border: 1px solid #88b09b88;
+  border-radius: 18px;
+  padding: 28px;
+  background: linear-gradient(140deg, #1c3848fa, #10232ffa);
+  color: #deeadf;
+  box-shadow: 0 30px 100px #020b16aa;
+  font-family: 'DM Sans Variable', sans-serif;
+}
+.experience-welcome::backdrop {
+  background: #07121bc4;
+  backdrop-filter: blur(4px);
+}
+.experience-welcome header,
+.experience-welcome footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: space-between;
+}
+.experience-welcome header span {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: #b9d9ad;
+}
+.experience-welcome header button {
+  background: transparent;
+  color: #b5ced0;
+  padding: 7px;
+}
+.experience-welcome h1 {
+  font:
+    450 32px/1.3 'Manrope Variable',
+    sans-serif;
+  max-width: 650px;
+  margin: 22px 0 12px;
+}
+.experience-welcome > p {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #b0c8d0;
+  max-width: 690px;
+}
+.experience-choices {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 22px 0;
+}
+.experience-choices > button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  text-align: left;
+  padding: 20px;
+  background: #173c43;
+  border: 1px solid #8eb99866;
+  border-radius: 10px;
+  color: #d7e7d2;
+}
+.experience-choices > button:first-child {
+  background: #2c493d;
+  border-color: #bdd79c;
+}
+.experience-choices strong {
+  font:
+    450 17px/1.5 'Manrope Variable',
+    sans-serif;
+}
+.experience-choices span {
+  font-size: 12px;
+  line-height: 1.8;
+  color: #afc8c6;
+}
+.experience-choices small {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 10px;
+  color: #c5dfa5;
+  margin-top: auto;
+}
+.experience-welcome footer > button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #d3e5c3;
+  padding: 12px 16px;
+  background: #829e7a20;
+  border: 1px solid #8db79766;
+  border-radius: 6px;
+  font-size: 12px;
+}
+.experience-welcome footer > span {
+  font-size: 11px;
+  color: #9eb9c2;
+}
+.experience-welcome button:focus-visible,
+.experience-recap button:focus-visible,
+.experience-term:focus-visible {
+  outline: 2px solid #c7e99d;
+  outline-offset: 3px;
+}
+.experience-term,
+.learning-fusion .experience-term,
+.campaign-game .experience-term,
+.fleet-game .experience-term {
+  display: inline;
+  width: auto;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0 1px;
+  color: #d0e7b5 !important;
+  background: transparent !important;
+  border: 0;
+  border-bottom: 1px dotted #b8d993 !important;
+  font: inherit;
+  cursor: help;
+}
+.experience-term-popover,
+.experience-flow-popover {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(420px, calc(100% - 32px));
+  max-height: calc(100svh - 48px);
+  overflow: auto;
+  padding: 22px;
+  background: #193340;
+  color: #d5e7da;
+  border: 1px solid #a1c3a38c;
+  border-radius: 12px;
+  box-shadow: 0 12px 70px #030e19aa;
+  font-family: 'DM Sans Variable', sans-serif;
+}
+.experience-flow-popover {
+  width: min(530px, calc(100% - 32px));
+}
+.experience-term-popover::backdrop,
+.experience-flow-popover::backdrop {
+  background: #05111b55;
+}
+.experience-term-popover .experience-term-copy,
+.experience-flow-popover p {
+  color: #b5ccd0;
+  font-size: 13px;
+  line-height: 1.8;
+}
+.experience-term-copy {
+  display: block;
+  margin: 12px 0;
+  font-weight: 400;
+}
+.experience-term-popover > strong {
+  font-size: 14px;
+  font-weight: 500;
+}
+.experience-term-popover small,
+.experience-scope-note {
+  font-size: 10px;
+  line-height: 1.6;
+  color: #9ebac1;
+}
+.experience-terms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 14px 0;
+  font-size: 12px;
+}
+.experience-flow-coach {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 7px;
+  margin-bottom: 7px;
+  border-bottom: 1px solid #789da53d;
+  min-width: 0;
+}
+.experience-flow-coach > button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #c3d9c0;
+  background: transparent;
+  border: 0;
+  padding: 4px;
+  min-width: 0;
+  font-size: 11px;
+  text-align: left;
+}
+.experience-flow-coach > button:first-child {
+  flex: 1;
+}
+.experience-flow-coach > button > span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.experience-flow-coach .experience-focus {
+  flex-shrink: 0;
+  font-size: 10px;
+}
+.experience-flow-popover h2 {
+  font-size: 23px;
+  line-height: 1.4;
+  margin: 10px 0;
+}
+.experience-flow-popover code {
+  display: block;
+  font-size: 12px;
+  line-height: 1.8;
+  white-space: normal;
+  padding: 12px;
+  border-radius: 6px;
+  background: #102632;
+  color: #d1e5c2;
+}
+.experience-flow-popover dl {
+  font-size: 11px;
+  line-height: 1.7;
+}
+.experience-flow-popover dt {
+  color: #d0dec5;
+}
+.experience-flow-popover dd {
+  color: #a3bfc9;
+  margin: 4px 0 12px;
+}
+.experience-flow-popover > button {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid #9ab78b88;
+  border-radius: 5px;
+  background: #bfdc9e20;
+  color: #d2e8bc;
+}
+.experience-kicker {
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: #b9d3a8;
+}
+.experience-deltas {
+  border: 1px solid #819ca74d;
+  padding: 10px;
+  border-radius: 6px;
+  background: #102b36;
+  margin: 10px 0;
+}
+.experience-deltas > small {
+  display: block;
+  font-size: 9px;
+  line-height: 1.6;
+  color: #adc7be;
+}
+.experience-deltas dl {
+  margin: 8px 0 0;
+  display: grid;
+  gap: 9px;
+}
+.experience-deltas dl > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.experience-deltas dt {
+  font-size: 10px;
+  color: #acc1c6;
+}
+.experience-deltas dd {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #d1e4c5;
+}
+.experience-deltas dd > span {
+  color: #95aeb8;
+}
+.experience-deltas strong {
+  font-weight: 500;
+}
+.experience-recap {
+  margin: 18px 0;
+  padding: 16px 0;
+  border-top: 1px solid #8aab9f55;
+  text-align: left;
+}
+.learn-dialog > .experience-recap {
+  padding: 22px;
+  margin: 0;
+  border: 0;
+}
+.experience-recap h3 {
+  font-size: 20px;
+  line-height: 1.4;
+  margin: 8px 0;
+}
+.experience-recap p,
+.experience-recap li {
+  color: #b3cacc;
+  font-size: 12px;
+  line-height: 1.8;
+}
+.experience-recap details {
+  margin: 12px 0;
+  font-size: 12px;
+  color: #c4ddac;
+}
+.experience-recap summary {
+  cursor: pointer;
+}
+.experience-recap ul {
+  padding-left: 18px;
+}
+.experience-recap fieldset {
+  border: 0;
+  margin: 15px 0 0;
+  padding: 0;
+}
+.experience-recap legend {
+  font-size: 12px;
+  line-height: 1.6;
+  margin-bottom: 10px;
+  color: #d1e2cb;
+}
+.experience-recap fieldset button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px;
+  border: 1px solid #789ca65c;
+  border-radius: 5px;
+  background: #14333f;
+  color: #b5cdd0;
+  font-size: 12px;
+  margin: 6px 0;
+  line-height: 1.6;
+}
+.experience-recap fieldset button[aria-pressed='true'] {
+  border-color: #b5d78d;
+  background: #35513c;
+  color: #e0edcc;
+}
+.experience-recap > small {
+  font-size: 10px;
+  line-height: 1.6;
+  color: #92acb5;
+}
+.experience-recap .experience-answer {
+  padding: 10px;
+  border: 1px solid #cfb28e66;
+  border-radius: 5px;
+  background: #5c463425;
+}
+.experience-recap .experience-answer.is-correct {
+  border-color: #a6cb8e88;
+  background: #a1bf8c16;
+}
+.experience-lesson-goal {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 0;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #9ab78c55;
+  color: #cde5b0;
+}
+.experience-lesson-goal > div {
+  flex: 1;
+  min-width: 0;
+}
+.experience-lesson-goal strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 450;
+}
+.experience-lesson-goal span {
+  display: block;
+  font-size: 10px;
+  color: #abc5c7;
+  margin-top: 3px;
+  line-height: 1.5;
+}
+.experience-lesson-goal button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px;
+  border: 1px solid #a8c48e66;
+  border-radius: 5px;
+  background: #b1cc9220;
+  color: #d1e5b6;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.experience-lesson-goal button:last-child {
+  border: 0;
+  background: transparent;
+  padding: 5px;
+}
+.experience-scope-line {
+  color: #b8d0c2 !important;
+  font-size: 10px !important;
+  line-height: 1.5 !important;
+}
+.fleet-game:not(.is-theater) .game-model-note {
+  color: #b4cbbc;
+  font-size: 9px;
+  letter-spacing: 0;
+  max-width: calc(100% - 28px);
+}
+@media (max-width: 700px) {
+  .fleet-game .game-header .game-learning-button > span {
+    display: inline;
+  }
+  .fleet-game .game-header .game-learning-button > svg {
+    display: none;
+  }
+}
+.experience-deck-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+.experience-mobile-quality,
+.experience-nav-short {
+  display: none;
+}
+.experience-mode-label {
+  font:
+    500 11px 'DM Sans Variable',
+    sans-serif;
+  color: #d4e6bf;
+  border: 1px solid #a3bc8555;
+  background: #a3bc851a;
+  border-radius: 5px;
+  padding: 5px 8px;
+}
+.learning-fusion .experience-request-lenses {
+  display: none;
+}
+.learning-fusion .experience-request-player {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 1fr;
+  gap: 6px;
+  margin: 0;
+}
+.experience-request-player > .experience-request-progress {
+  grid-column: 1 / -1;
+  font-size: 10px;
+  color: #b6cbbb;
+  text-align: center;
+  padding: 3px 0;
+}
+.experience-request-player > button:nth-child(3) {
+  background: #c4e79e;
+  border-color: #c4e79e;
+  color: #29412d;
+}
+.experience-request-player > button:nth-child(5) {
+  grid-column: 1 / -1;
+  padding: 6px;
+}
+.learning-fusion:not(.has-context) .learn-panel {
+  bottom: var(--learn-deck-inset, 168px);
+}
+.learning-fusion.has-context:not(.has-provider):not(.learn-cinema)
+  .learn-panel {
+  bottom: var(--learn-deck-inset, 226px);
+}
+.learning-fusion.has-guided-lesson .context-steps {
+  display: none;
+}
+.learning-fusion.has-provider .context-steps {
+  display: none;
+}
+.campaign-dock > .experience-scope-line {
+  margin-bottom: 5px;
+}
+.campaign-game:not(.campaign-cinema) .campaign-panel {
+  bottom: var(--campaign-deck-inset, 210px);
+}
+@media (max-width: 700px) and (min-height: 681px) {
+  .learning-fusion.has-context:not(.learn-cinema) .learn-camera {
+    top: 203px;
+    max-height: max(38px, calc(100% - 203px - var(--learn-deck-inset, 244px)));
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+  .learning-fusion.has-context .learn-camera > button {
+    flex-shrink: 0;
+  }
+}
+.provider-plan-state {
+  color: #c6dcb5;
+  padding: 8px;
+  background: #a3bc8512;
+  border-left: 2px solid #b4cf8d88;
+}
+.provider-comparison-goal {
+  color: #bfd1d0;
+}
+.learning-fusion .provider-comparison thead th {
+  position: sticky;
+  top: 44px;
+  z-index: 1;
+}
+@media (max-width: 1100px) {
+  .learning-fusion .learn-header > nav > button > .experience-nav-short {
+    display: inline;
+  }
+  .learning-fusion .learn-header > nav > button > .experience-nav-long,
+  .learning-fusion .learn-brand > b,
+  .learning-fusion .learn-brand > small {
+    display: none;
+  }
+}
+@media (max-width: 700px) {
+  .learning-fusion .learn-header {
+    padding: 0 12px;
+    gap: 6px;
+  }
+  .learning-fusion .learn-brand {
+    gap: 4px;
+  }
+  .learning-fusion .learn-brand > b,
+  .learning-fusion .learn-brand > small,
+  .learning-fusion .learn-brand > span {
+    display: none;
+  }
+  .experience-mode-label {
+    padding: 7px;
+    font-size: 10px;
+  }
+  .learning-fusion .learn-header > nav {
+    flex: 1;
+    justify-content: space-between;
+    min-width: 0;
+  }
+  .learning-fusion .learn-header > nav > button {
+    width: auto;
+    padding: 7px 4px;
+    font-size: 10px;
+    justify-content: center;
+    flex: 1;
+  }
+  .learning-fusion .learn-header > nav > button > svg,
+  .experience-nav-long {
+    display: none;
+  }
+  .learning-fusion .learn-header > nav > button > .experience-nav-short {
+    display: inline;
+  }
+  .learning-fusion .learn-header-tools > .visual-settings {
+    display: none;
+  }
+  .experience-mobile-quality {
+    display: block;
+    flex-shrink: 0;
+  }
+  .experience-mobile-quality .visual-settings > summary {
+    padding: 3px;
+    height: 24px;
+  }
+  .experience-mobile-quality .visual-settings > div {
+    top: auto;
+    bottom: 32px;
+  }
+  .experience-deck-heading .experience-scope-line {
+    font-size: 9px !important;
+  }
+  .learning-fusion .experience-request-player > button {
+    font-size: 9px;
+    min-height: 32px;
+    padding: 6px 4px;
+  }
+  .experience-request-player > .experience-request-progress {
+    font-size: 9px;
+  }
+  .experience-welcome {
+    padding: 18px;
+  }
+  .experience-welcome h1 {
+    font-size: 23px;
+    margin: 18px 0 10px;
+  }
+  .experience-welcome > p {
+    font-size: 12px;
+  }
+  .experience-choices {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin: 16px 0;
+  }
+  .experience-choices > button {
+    padding: 12px;
+    gap: 5px;
+  }
+  .experience-choices > button > svg {
+    display: none;
+  }
+  .experience-choices strong {
+    font-size: 14px;
+  }
+  .experience-choices span {
+    font-size: 11px;
+  }
+  .experience-welcome footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .experience-flow-coach > button {
+    font-size: 10px;
+  }
+  .experience-lesson-goal {
+    gap: 6px;
+  }
+  .experience-lesson-goal > svg {
+    display: none;
+  }
+  .experience-lesson-goal strong {
+    font-size: 10px;
+  }
+  .experience-lesson-goal span {
+    font-size: 9px;
+  }
+  .experience-lesson-goal button {
+    padding: 6px;
+    font-size: 10px;
+  }
+}
+@media (min-width: 701px) and (max-height: 540px) {
+  .learning-fusion .learn-command-deck:has(.experience-deck-heading),
+  .learning-fusion.has-context
+    .learn-command-deck:has(.experience-deck-heading),
+  .learning-fusion.has-context.has-provider
+    .learn-command-deck:has(.experience-deck-heading) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas: 'scope flow' 'goal goal' 'lenses lenses' 'controls controls';
+    gap: 2px 10px;
+    left: 150px;
+    transform: none;
+    width: calc(100% - 164px);
+    padding: 6px;
+    bottom: 12px;
+  }
+  .learning-fusion .experience-deck-heading {
+    grid-area: scope;
+    margin: 0;
+  }
+  .learning-fusion .experience-flow-coach {
+    grid-area: flow;
+    border: 0;
+    margin: 0;
+    padding: 0;
+  }
+  .learning-fusion .experience-lesson-goal {
+    grid-area: goal;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  .learning-fusion .learn-lens-dock {
+    grid-area: lenses;
+  }
+  .learning-fusion .context-controls,
+  .learning-fusion .learn-timeline-row,
+  .learning-fusion .experience-request-player {
+    grid-area: controls;
+  }
+  .learning-fusion .experience-request-progress {
+    display: none;
+  }
+  .learning-fusion:not(.has-context):not(.learn-cinema) .learn-panel {
+    top: var(--learn-compact-top);
+    bottom: var(--learn-deck-inset, 124px);
+    max-height: none;
+  }
+  .learning-fusion.has-context:not(.has-provider):not(.learn-cinema)
+    .learn-panel {
+    bottom: var(--learn-deck-inset, 124px);
+  }
+  .learning-fusion.has-guided-lesson
+    .learn-command-deck:has(.experience-deck-heading),
+  .learning-fusion.has-guided-lesson.has-context
+    .learn-command-deck:has(.experience-deck-heading),
+  .learning-fusion.has-guided-lesson.has-context.has-provider
+    .learn-command-deck:has(.experience-deck-heading) {
+    grid-template-columns: minmax(210px, 0.9fr) minmax(0, 1.8fr);
+    grid-template-areas: 'scope flow' 'goal controls';
+  }
+  .learning-fusion.has-guided-lesson .experience-lesson-goal > svg {
+    display: none;
+  }
+}
+@media (max-width: 700px) {
+  .learning-fusion.has-context.has-provider .learn-panel {
+    top: 306px;
+    bottom: var(--learn-deck-inset, 244px);
+    max-height: none;
+    min-height: 0;
+  }
+}
+@media (max-width: 700px) and (max-height: 680px) {
+  .learning-fusion.has-context.has-provider .learn-panel {
+    top: 222px;
+  }
+}
+@media (max-height: 540px) {
+  .learning-fusion .provider-comparison thead th {
+    top: 0;
+  }
+  .experience-welcome {
+    padding: 18px;
+  }
+  .experience-welcome h1 {
+    font-size: 23px;
+    margin: 10px 0;
+  }
+  .experience-choices {
+    margin: 12px 0;
+  }
+  .experience-choices > button {
+    padding: 12px;
+  }
+  .experience-lesson-goal span {
+    display: none;
+  }
+}
+@media (max-width: 700px) and (max-height: 680px), (max-height: 540px) {
+  .learning-fusion .provider-comparison thead th {
+    top: 0;
+  }
+  .campaign-game .campaign-panel {
+    bottom: 132px;
+  }
+  .experience-deck-heading {
+    margin-bottom: 2px;
+  }
+  .experience-flow-coach {
+    padding-bottom: 3px;
+    margin-bottom: 3px;
+  }
+  .experience-lesson-goal {
+    padding: 4px 0;
+    margin-bottom: 4px;
+  }
+  .experience-lesson-goal span {
+    display: none;
+  }
+  .experience-lesson-goal strong {
+    font-size: 10px;
+  }
+  .experience-lesson-goal button {
+    padding: 5px;
+    font-size: 9px;
+  }
+  .learning-fusion.has-context .context-steps,
+  .learning-fusion.has-provider .provider-learning-timeline {
+    padding-right: 0;
+  }
+}
+
+.campaign-header .campaign-header-tools > .experience-learn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  padding: 7px 9px;
+  color: #d6e5c9;
+  font-size: 11px;
+}
+.campaign-header .game-scenario-switch {
+  display: flex;
+  gap: 7px;
+  width: auto;
+  padding: 0 9px;
+  font-size: 11px;
+  color: #cce2ba;
+  white-space: nowrap;
+}
+.experience-role-short {
+  display: none;
+}
+.campaign-panel .experience-estimate {
+  font-size: 10px;
+  line-height: 1.6;
+  color: #b0c6cc;
+  padding: 9px;
+  border: 1px solid #9aaf8d55;
+  border-radius: 5px;
+  background: #92a67b12;
+}
+.campaign-decision button > .experience-option-feedback {
+  display: block;
+  color: #d6e4c4;
+  font-size: 10px;
+  line-height: 1.7;
+  margin-top: 7px;
+  border-top: 1px solid #9fb99255;
+  padding-top: 7px;
+}
+@media (max-width: 1100px) {
+  .campaign-brand > span {
+    display: none;
+  }
+}
+@media (max-width: 700px) {
+  .campaign-game .campaign-header {
+    grid-template-columns: 24px minmax(0, 1fr) 112px;
+  }
+  .campaign-game .campaign-header .campaign-header-tools {
+    width: 112px;
+    grid-template-columns: 64px 44px;
+    gap: 3px 4px;
+  }
+  .campaign-header .game-scenario-switch {
+    width: 64px;
+    padding: 3px;
+    gap: 4px;
+    font-size: 9px;
+  }
+  .campaign-header .game-scenario-switch > svg {
+    width: 13px;
+  }
+  .experience-role-short {
+    display: inline;
+  }
+  .experience-role-long {
+    display: none;
+  }
+  .campaign-header .campaign-header-tools > .experience-learn {
+    padding: 5px;
+    width: 44px;
+    justify-content: center;
+    font-size: 10px;
+  }
+  .campaign-header .experience-learn > svg {
+    display: none;
+  }
+  .campaign-header nav button {
+    padding: 5px 3px;
+    min-width: 0;
+  }
+  .campaign-header nav button > span {
+    font-size: 8px;
+    white-space: normal;
+    line-height: 1.3;
+  }
+  .campaign-heading .experience-scope-line {
+    font-size: 9px !important;
+  }
+}
+@media (max-width: 370px) {
+  .campaign-game .campaign-header nav small {
+    display: none;
+  }
+}

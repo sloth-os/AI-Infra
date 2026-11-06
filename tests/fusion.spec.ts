@@ -50,6 +50,10 @@ test('Fusion is the default: world-anchored construction delivers a complete win
     page.getByRole('dialog', { name: 'Mission complete' }),
   ).toBeVisible({ timeout: 65000 })
   await expect(page.locator('.game-result-stats')).toContainText('12')
+  await expect(
+    page.getByRole('region', { name: 'Learning recap', exact: true }),
+  ).toContainText('A complete path delivered answers')
+  await page.screenshot({ path: test.info().outputPath('serving-recap.png') })
   expect(
     await page.evaluate(
       () =>
@@ -295,7 +299,11 @@ test('Fusion remains playable without WebGL and keeps fallback construction abov
     .getByRole('button', { name: 'Install Prefill engine', exact: true })
     .click()
   await expect(page.getByTestId('fusion-credits')).toHaveText('240')
-  const card = await page.locator('.fusion-spatial-card').boundingBox(),
-    dock = await page.locator('.fusion-control-deck').boundingBox()
-  expect(card!.y + card!.height).toBeLessThan(dock!.y)
+  await expect
+    .poll(async () => {
+      const card = (await page.locator('.fusion-spatial-card').boundingBox())!,
+        dock = (await page.locator('.fusion-control-deck').boundingBox())!
+      return card.y + card.height < dock.y
+    })
+    .toBe(true)
 })

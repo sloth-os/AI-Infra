@@ -139,9 +139,13 @@ test('request journey skips optional retrieval and places prefill and KV handoff
     'tensors',
   )
   await expect(page.locator(world)).toHaveAttribute('data-motion-layer', 'gpu')
+  await expect(page.locator('.experience-request-lenses')).toBeHidden()
   await expect(
-    page.getByRole('button', { name: 'Tensor flow', exact: true }),
-  ).toHaveAttribute('aria-pressed', 'true')
+    page.getByRole('group', {
+      name: 'Request walkthrough playback',
+      exact: true,
+    }),
+  ).toBeVisible()
   await page
     .getByRole('button', { name: 'Stage 5: KV handoff', exact: true })
     .click()
@@ -465,9 +469,10 @@ test('reduced motion and unavailable WebGL keep the entire learning workspace us
   await expect(page.locator('.fallback-motion-phase')).toContainText(
     'Token IDs index embedding rows',
   )
-  await expect(page.locator('.learn-narration h2')).toHaveText(
-    'Token IDs index embedding rows',
+  await expect(page.locator('.experience-flow-coach')).toContainText(
+    'Prefill builds attention state',
   )
+  await expect(page.locator('.learn-narration')).toHaveCount(0)
   await page.getByRole('button', { name: 'Trade-off lab', exact: true }).click()
   await page
     .getByRole('slider', { name: 'Prompt length', exact: true })

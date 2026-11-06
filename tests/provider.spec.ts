@@ -59,6 +59,9 @@ test('cloud and model roles share one physical canvas, preserve runs, and expose
   page,
 }) => {
   await page.goto('./')
+  await page
+    .getByRole('button', { name: 'Explore freely', exact: true })
+    .click()
   const canvas = await page.locator(world).elementHandle()
   await page
     .getByLabel('Game scenario', { exact: true })
@@ -133,6 +136,24 @@ test('cloud policies execute a real rolling plan, transfer bytes, finish custome
     }),
   ).toBeVisible({ timeout: 45000 })
   await expect(page.locator(root)).toHaveAttribute('data-status', 'won')
+  await expect(page.locator(root)).toHaveAttribute('data-contracts', '4')
+  const recap = page.getByRole('region', {
+    name: 'Learning recap',
+    exact: true,
+  })
+  await expect(recap).toContainText(
+    'High occupancy alone does not prove useful work.',
+  )
+  await recap
+    .getByRole('button', {
+      name: 'The slots may be fragmented across incompatible local domains.',
+      exact: true,
+    })
+    .click()
+  await expect(recap.getByRole('status')).toContainText('That is the key idea.')
+  await page.screenshot({
+    path: test.info().outputPath('cloud-game-recap.png'),
+  })
   await expect(page.locator(root)).toHaveAttribute('data-contracts', '4')
   expect(
     Number(await page.locator(root).getAttribute('data-training-jobs')),

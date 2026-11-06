@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   ArrowRight,
   BookOpen,
@@ -14,16 +14,25 @@ import {
   PROVIDER_LESSONS,
   PROVIDER_SOURCES,
 } from '../../game/provider/catalog'
-import { POLICIES, providerMetrics, TENANTS } from '../../game/provider/model'
+import {
+  advanceProvider,
+  POLICIES,
+  providerMetrics,
+  TENANTS,
+} from '../../game/provider/model'
 import type { Tenant } from '../../game/provider/model'
 import {
   hasPolicy,
   providerLessonUrl,
   replaySnapshot,
+  providerReplay,
   resourceEnvelope,
 } from './model'
 import type { ProviderLesson } from './model'
 import './provider-learning.css'
+import { DeltaReadout, ExplainedText } from '../experience/Experience'
+import { changeProviderPlan } from './model'
+import type { Delta } from '../experience/model'
 
 export function ProviderStudy({
   view,
@@ -40,11 +49,58 @@ export function ProviderStudy({
 }) {
   const r = replaySnapshot(view),
     [copied, setCopied] = useState(false)
+  const [previousPlan, setPreviousPlan] = useState<{
+    mask: number
+    time: number
+  } | null>(null)
+  const previousMask = useRef(view.policies)
+  useEffect(() => {
+    if (previousMask.current !== view.policies) {
+      setPreviousPlan({ mask: previousMask.current, time: view.time })
+      previousMask.current = view.policies
+    }
+  }, [view.policies, view.time])
   useEffect(() => setCopied(false), [view])
   const update = (next: Partial<ProviderLesson>) =>
     onChange({ ...view, ...next, playing: false })
-  const changePlan = (mask: number) =>
-    update({ policies: mask, time: 0, side: 'plan' })
+  const changePlan = (mask: number) => {
+    const next = changeProviderPlan(view, mask)
+    onChange(next)
+  }
+  const comparison = (a: typeof r.plan, b: typeof r.plan): Delta[] => [
+    {
+      label: 'Training / tuning jobs committed',
+      before: `${a.completed.train} / ${a.completed.tune}`,
+      after: `${b.completed.train} / ${b.completed.tune}`,
+    },
+    {
+      label: 'API requests delivered',
+      before: String(a.served),
+      after: String(b.served),
+    },
+    {
+      label: 'Runtime OOM events',
+      before: String(a.oom),
+      after: String(b.oom),
+    },
+  ]
+  const previousSnapshot =
+    previousPlan && Math.abs(view.time - previousPlan.time) < 0.06
+      ? replaySnapshot({
+          ...view,
+          policies: previousPlan.mask,
+          time: Math.min(r.state.time, providerReplay(previousPlan.mask).end),
+          side: 'plan',
+        }).plan
+      : null
+  // The final replay interval can be shorter than a normal 0.25s sample.
+  // Advance the old history to the same observed timestamp before comparing.
+  const previousAtTime = previousSnapshot
+    ? advanceProvider(
+        previousSnapshot,
+        Math.max(0, r.state.time - previousSnapshot.time),
+      )
+    : null
   const share = async () => {
     try {
       await navigator.clipboard.writeText(
@@ -139,6 +195,20 @@ export function ProviderStudy({
       </nav>
       {view.panel === 'lab' ? (
         <>
+          <DeltaReadout
+            deltas={comparison(r.baseline, r.plan)}
+            label={`Baseline → your plan · ${r.state.time.toFixed(2)} teaching seconds observed`}
+          />
+          <p className="provider-comparison-goal">
+            Serve API users while completing training and tuning and meeting
+            burst readiness. One throughput counter alone does not determine
+            success.
+          </p>
+          <p className="provider-plan-state">
+            {view.policies.toString(2).replaceAll('0', '').length}/8 policies
+            active · showing {view.side === 'plan' ? 'your plan' : 'baseline'} ·
+            policies apply from the start of each replay.
+          </p>
           <div className="provider-learning-intro">
             <h3>Compare the same arrivals on the same devices.</h3>
             <details>
@@ -161,10 +231,18 @@ export function ProviderStudy({
             </details>
           </div>
           <div className="provider-plan-presets">
-            <button onClick={() => changePlan(255)}>
+            <button
+              onClick={() => changePlan(255)}
+              disabled={view.policies === 255}
+            >
               Use all eight policies
             </button>
-            <button onClick={() => changePlan(0)}>Clear plan policies</button>
+            <button
+              onClick={() => changePlan(0)}
+              disabled={view.policies === 0}
+            >
+              Clear plan policies
+            </button>
             <button
               aria-label="Rewind cloud comparison"
               onClick={() => update({ time: 0 })}
@@ -196,10 +274,23 @@ export function ProviderStudy({
           >
             <h3>Policies at this level</h3>
             <p>
-              Changing a policy rewinds both runs. All choices are free to
-              compare. Placement includes a rolling repack request at the start;
-              existing leases move only after a cohort finishes.
+              Change one policy and compare both histories at the selected time.
+              All choices are free. Policies apply from the start; existing
+              leases still move only after a cohort finishes. Use Rewind to
+              replay from zero.
             </p>
+            {previousAtTime && (
+              <div role="status">
+                <DeltaReadout
+                  deltas={comparison(previousAtTime, r.plan)}
+                  label={`Previous plan → new plan · ${r.state.time.toFixed(2)} teaching seconds observed`}
+                />
+                <small>
+                  Observe the same moment. Unchanged counters may need a later
+                  scheduling or checkpoint boundary to expose a difference.
+                </small>
+              </div>
+            )}
             {PROVIDER_DECISIONS.filter((d) => d.level === layer).map((d) => (
               <article key={d.id}>
                 <label>
@@ -213,7 +304,9 @@ export function ProviderStudy({
                   />
                   <span>{d.option}</span>
                 </label>
-                <p>{d.effect}</p>
+                <p>
+                  <ExplainedText text={d.effect} onExplain={() => update({})} />
+                </p>
                 <small>{d.tradeoff}</small>
               </article>
             ))}

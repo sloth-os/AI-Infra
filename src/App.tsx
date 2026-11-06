@@ -71,6 +71,9 @@ import {
   contextAtLevel,
 } from './learning/infrastructure/context'
 import { journeyScene } from './learning/model'
+import { Welcome } from './learning/experience/Experience'
+import { INTRO_KEY, shouldWelcome } from './learning/experience/model'
+import type { LessonIntent, LessonKind } from './learning/experience/model'
 
 const layerIcons: Record<Layer, LucideIcon> = {
   fleet: Globe2,
@@ -159,6 +162,34 @@ function initialPage(): Page {
 
 function App() {
   const [page, setPage] = useState<Page>(initialPage)
+  const [welcome, setWelcome] = useState(() => {
+    let seen = false
+    try {
+      seen = localStorage.getItem(INTRO_KEY) === 'seen'
+    } catch {
+      /* Storage is optional. */
+    }
+    return shouldWelcome(location.href, seen)
+  })
+  const [lessonIntent, setLessonIntent] = useState<LessonIntent | null>(null)
+  const dismissWelcome = () => {
+    setWelcome(false)
+    try {
+      localStorage.setItem(INTRO_KEY, 'seen')
+    } catch {
+      /* Storage is optional. */
+    }
+  }
+  const startLesson = (kind: LessonKind) => {
+    if (document.fullscreenElement)
+      void document.exitFullscreen?.().catch(() => {})
+    dismissWelcome()
+    setLearningFusion(true)
+    setLessonIntent((previous) => ({
+      kind,
+      request: (previous?.request ?? 0) + 1,
+    }))
+  }
   const [learningFusion, setLearningFusion] = useState(
     () => new URLSearchParams(location.search).get('learn') !== 'classic',
   )
@@ -331,8 +362,14 @@ function App() {
 
   return (
     <>
-      <FleetGame active={page === 'game'} onLearn={() => navigate('explore')} />
+      <FleetGame
+        active={page === 'game'}
+        onLearn={() => navigate('explore')}
+        onStartLesson={startLesson}
+      />
       <LearningFusion
+        lessonIntent={lessonIntent}
+        onStartLesson={startLesson}
         active={page !== 'game' && learningFusion}
         page={page === 'game' ? 'explore' : page}
         sceneRef={fusionSceneRef}
@@ -433,6 +470,7 @@ function App() {
           />
         }
       />
+      {welcome && <Welcome onChoose={startLesson} onExplore={dismissWelcome} />}
       <div className="app-shell" hidden={page === 'game' || learningFusion}>
         <aside className={`sidebar ${mobileNav ? 'sidebar-open' : ''}`}>
           <a

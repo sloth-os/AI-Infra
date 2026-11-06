@@ -803,16 +803,21 @@ export function LifecycleStudy({
   view,
   onChange,
   onCompare,
+  startLab = false,
 }: {
   view: LifecycleView
   onChange: (view: LifecycleView) => void
   onCompare: () => void
+  startLab?: boolean
 }) {
   const [tab, setTab] = useState<'flow' | 'lab' | 'operations' | 'sources'>(
-      'flow',
+      startLab ? 'lab' : 'flow',
     ),
     [copied, setCopied] = useState(false)
   const study = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (startLab) setTab('lab')
+  }, [startLab])
   const readingStage = tab === 'flow' ? view.stage : null
   useEffect(() => {
     study.current?.closest('.learn-panel')?.scrollTo(0, 0)

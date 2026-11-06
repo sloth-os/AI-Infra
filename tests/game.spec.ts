@@ -74,6 +74,18 @@ test('actual 3D hex clicks build a service, deliver requests, win and save stars
     page.getByRole('dialog', { name: 'Mission complete' }),
   ).toBeVisible({ timeout: 65000 })
   await expect(page.locator('.game-result-stats')).toContainText('12')
+  const recap = page.getByRole('region', {
+    name: 'Learning recap',
+    exact: true,
+  })
+  await expect(recap).toContainText('12 requests delivered')
+  await recap
+    .getByRole('button', {
+      name: 'No; compute, memory admission and queueing can still limit service.',
+      exact: true,
+    })
+    .click()
+  await expect(recap.getByRole('status')).toContainText('That is the key idea.')
   expect(
     await page.evaluate(
       () =>

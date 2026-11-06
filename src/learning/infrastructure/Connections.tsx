@@ -12,7 +12,6 @@ import {
   PanelRightClose,
   PanelRightOpen,
   Play,
-  X,
 } from 'lucide-react'
 import { modelExamples } from '../../examples/catalog'
 import type { ExampleId } from '../../examples/catalog'
@@ -208,19 +207,20 @@ export function ContextPerspective({
         {levelNames[frame.layer].toUpperCase()} / {frame.title}
       </span>
       <h2>{frame.heading}</h2>
-      <nav aria-label="Story infrastructure levels">
-        {levels.map((layer) => (
-          <button
-            key={layer}
-            aria-pressed={layer === frame.layer}
-            onClick={() => onLevel(layer)}
-          >
-            {levelNames[layer]}
-          </button>
-        ))}
-      </nav>
       <details className="context-level-explanation">
         <summary>How this level works</summary>
+        <nav aria-label="Story infrastructure levels">
+          {levels.map((layer) => (
+            <button
+              key={layer}
+              aria-pressed={layer === frame.layer}
+              onClick={() => onLevel(layer)}
+            >
+              {levelNames[layer]}
+            </button>
+          ))}
+        </nav>
+
         <p>{frame.explanation}</p>
         <small>
           Same hardware world · stage and placement labels are conceptual.
@@ -284,7 +284,6 @@ export function ContextControls({
   onPlay,
   onRead,
   onBrowse,
-  onClear,
   onFocus,
   timeline,
 }: {
@@ -295,29 +294,11 @@ export function ContextControls({
   onPlay: () => void
   onRead: () => void
   onBrowse: () => void
-  onClear: () => void
   onFocus: () => void
   timeline?: ReactNode
 }) {
   return (
     <div className="context-controls" data-testid="context-controls">
-      <div className="context-current">
-        <span>
-          <i style={{ background: frame.color }} />
-          {frame.kind === 'provider'
-            ? 'CLOUD PROVIDER'
-            : frame.kind === 'issue'
-              ? 'HOT ISSUE'
-              : frame.kind === 'lifecycle'
-                ? 'AI LIFECYCLE'
-                : 'REAL MODEL'}{' '}
-          / {levelNames[frame.layer].toUpperCase()}
-        </span>
-        <strong>{frame.title}</strong>
-        <button onClick={onClear} aria-label="Clear connected story">
-          <X size={14} />
-        </button>
-      </div>
       {timeline}
       <nav
         className="context-steps"

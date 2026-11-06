@@ -56,6 +56,16 @@ import { ProviderUI } from '../provider/ProviderUI'
 import { ScenarioSwitch } from '../provider/ScenarioSwitch'
 import { useProvider } from '../provider/useProvider'
 import './campaign.css'
+import {
+  ExplainedText,
+  LessonChoices,
+  MissionRecap,
+} from '../../learning/experience/Experience'
+import {
+  operationDeltas,
+  operationRecap,
+} from '../../learning/experience/model'
+import type { LessonKind } from '../../learning/experience/model'
 
 const STORAGE = 'strata-lifecycle-campaign-v1'
 const icons = { fleet: Globe2, pod: Network, rack: Server, gpu: Cpu }
@@ -87,10 +97,12 @@ export default function LifecycleCampaign({
   active,
   onServing,
   onLearn,
+  onStartLesson,
 }: {
   active: boolean
   onServing: () => void
   onLearn: () => void
+  onStartLesson: (kind: LessonKind) => void
 }) {
   const [phase, setPhase] = useState<LifecyclePhase>(initialPhase),
     [level, setLevel] = useState<Layer>(initialLevel)
@@ -115,6 +127,12 @@ export default function LifecycleCampaign({
     }),
   )
   const [saved, setSaved] = useState<CampaignProgress>(loadProgress)
+  const [lastChoice, setLastChoice] = useState<{
+    phase: LifecyclePhase
+    method: OperationState['method']
+    id: string
+    config: Record<string, string>
+  } | null>(null)
   const [decisionTarget, setDecisionTarget] = useState<{ id: string } | null>(
     null,
   )
@@ -153,6 +171,21 @@ export default function LifecycleCampaign({
     ],
   )
   const frame = cloudMode ? cloud.frame : modelFrame
+  useEffect(() => {
+    const host = root.current,
+      dock = host?.querySelector<HTMLElement>('.campaign-dock')
+    if (!active || !host || !dock) return
+    const measure = () =>
+      host.style.setProperty(
+        '--campaign-deck-inset',
+        `${Math.ceil(host.clientHeight - dock.offsetTop + 12)}px`,
+      )
+    const observer = new ResizeObserver(measure)
+    observer.observe(host)
+    observer.observe(dock)
+    measure()
+    return () => observer.disconnect()
+  }, [active, cloudMode, cinema])
   const dispatch = useCallback(
     (action: OperationAction) =>
       setRuns((previous) => ({
@@ -300,6 +333,8 @@ export default function LifecycleCampaign({
     if (!active || cloudMode) return
     const key = (event: KeyboardEvent) => {
       if (
+        (event.target as Element).closest('dialog, [popover]') ||
+        document.querySelector(':popover-open') ||
         event.ctrlKey ||
         event.metaKey ||
         event.altKey ||
@@ -358,6 +393,7 @@ export default function LifecycleCampaign({
     onLearn()
   }
   const reset = () => {
+    setLastChoice(null)
     setRuns((previous) => ({
       ...previous,
       [phase]: createOperation(phase, s.method),
@@ -369,7 +405,7 @@ export default function LifecycleCampaign({
     phase === 'pretrain'
       ? level === 'fleet'
         ? [
-            ['Useful tokens / modeled second', compact(metrics.rate)],
+            ['Estimated useful tokens / second', compact(metrics.rate)],
             [
               'Full-job checkpoint',
               compact(metrics.checkpointBytes / 2 ** 30, ' GiB'),
@@ -435,7 +471,7 @@ export default function LifecycleCampaign({
                 ]
         : level === 'fleet'
           ? [
-              ['Modeled requests / second', compact(metrics.rate)],
+              ['Estimated requests / second', compact(metrics.rate)],
               ['GPUs allocated / quota', `${metrics.allocatedGPUs} / 64`],
             ]
           : level === 'pod'
@@ -580,8 +616,13 @@ export default function LifecycleCampaign({
             </nav>
             <div className="campaign-header-tools">
               <ScenarioSwitch value="model" onChange={selectScenario} />
-              <button onClick={learn} aria-label="Learning mode">
+              <button
+                className="experience-learn"
+                onClick={learn}
+                aria-label="Learning mode"
+              >
                 <BookOpen size={17} />
+                <span>Learn</span>
               </button>
               <button
                 onClick={() => {
@@ -776,7 +817,12 @@ export default function LifecycleCampaign({
                   </div>
                   {metrics.blocked && (
                     <div className="campaign-admission-notice">
-                      <strong>{metrics.blocked}</strong>
+                      <strong>
+                        <ExplainedText
+                          text={metrics.blocked}
+                          onExplain={() => dispatch({ type: 'pause' })}
+                        />
+                      </strong>
                       <button
                         onClick={() =>
                           inspectDecision(
@@ -858,6 +904,16 @@ export default function LifecycleCampaign({
                       </div>
                     ))}
                   </div>
+                  <p className="experience-estimate" role="note">
+                    {metrics.blocked || !metrics.valid
+                      ? 'Estimate only: this configuration cannot commit work yet.'
+                      : 'Configuration estimates, not measured hardware performance.'}{' '}
+                    Observed: {s.produced}{' '}
+                    {phase === 'inference'
+                      ? 'requests delivered'
+                      : 'updates committed'}{' '}
+                    in {s.time.toFixed(1)} game seconds.
+                  </p>
                   {DECISIONS[phase]
                     .filter((d) => d.level === level)
                     .map((decision) => (
@@ -892,13 +948,19 @@ export default function LifecycleCampaign({
                                     s.method !== 'grpo') ||
                                   cost > s.credits
                                 }
-                                onClick={() =>
+                                onClick={() => {
+                                  setLastChoice({
+                                    phase,
+                                    method: s.method,
+                                    id: decision.id,
+                                    config: { ...s.config },
+                                  })
                                   dispatch({
                                     type: 'choose',
                                     decision: decision.id,
                                     option: option.id,
                                   })
-                                }
+                                }}
                               >
                                 <span>
                                   {option.title}
@@ -914,6 +976,27 @@ export default function LifecycleCampaign({
                                   </b>
                                 </span>
                                 <small>{option.consequence}</small>
+                                {lastChoice?.phase === phase &&
+                                  lastChoice.method === s.method &&
+                                  lastChoice.id === decision.id &&
+                                  s.config[decision.id] === option.id && (
+                                    <span
+                                      className="experience-option-feedback"
+                                      role="status"
+                                    >
+                                      Estimated change:{' '}
+                                      {operationDeltas(
+                                        phase,
+                                        operationMetrics(s, lastChoice.config),
+                                        metrics,
+                                      )
+                                        .map(
+                                          (d) =>
+                                            `${d.label}: ${d.before} → ${d.after}`,
+                                        )
+                                        .join(' · ')}
+                                    </span>
+                                  )}
                               </button>
                             )
                           })}
@@ -1007,6 +1090,13 @@ export default function LifecycleCampaign({
             </>
           )}
           <div className="campaign-dock">
+            <div
+              className="experience-scope-line"
+              aria-label="Current infrastructure scope"
+            >
+              Play · Model operator · {metrics.allocatedGPUs} allocated / 64 GPU
+              quota · {LEVEL_NAMES[level]} view
+            </div>
             <div className="campaign-live-stage">
               <span>
                 <i />
@@ -1171,6 +1261,10 @@ export default function LifecycleCampaign({
                   : 'updates committed'}{' '}
                 · {s.time.toFixed(1)} game seconds · {done}/4 contracts verified
               </p>
+              <MissionRecap
+                key={`${phase}-${s.method}-${s.cycles}`}
+                recap={operationRecap(s, metrics, baseline)}
+              />
               <button
                 onClick={() =>
                   selectPhase(
@@ -1200,6 +1294,12 @@ export default function LifecycleCampaign({
             >
               {help ? (
                 <>
+                  <LessonChoices
+                    onChoose={(kind) => {
+                      setHelp(false)
+                      onStartLesson(kind)
+                    }}
+                  />
                   <p>
                     Play pre-training, post-training and inference at all four
                     scales. Every phase has four performance contracts; earn
@@ -1301,6 +1401,7 @@ export default function LifecycleCampaign({
       )}
       {active && cloudMode && (
         <ProviderUI
+          onStartLesson={onStartLesson}
           c={cloud}
           level={level}
           visit={visit}

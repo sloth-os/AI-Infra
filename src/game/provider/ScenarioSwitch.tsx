@@ -10,6 +10,12 @@ export function ScenarioSwitch({
   return (
     <label className="game-scenario-switch" title="Change game scenario">
       <Cloud size={17} />
+      <span className="experience-role-long">
+        {value === 'model' ? 'Model operator' : 'Cloud provider'}
+      </span>
+      <span className="experience-role-short">
+        {value === 'model' ? 'Model' : 'Cloud'}
+      </span>
       <select
         aria-label="Game scenario"
         value={value}

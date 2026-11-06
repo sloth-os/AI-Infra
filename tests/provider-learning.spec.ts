@@ -168,13 +168,14 @@ test('paired replay exposes actual completed work and policy-dependent failures 
     'data-side',
     'baseline',
   )
+  const comparisonTime = await slider.inputValue()
   await page
     .getByRole('checkbox', {
       name: 'Cloud policy: Use approved memory envelope',
       exact: true,
     })
     .uncheck()
-  await expect(slider).toHaveValue('0')
+  await expect(slider).toHaveValue(comparisonTime)
   await seek(page, '12')
   expect(
     Number(
@@ -358,7 +359,7 @@ test('mobile, reduced motion and physical-topology fallback retain scrubbing, po
         exact: true,
       })
       .uncheck()
-    await expect(slider).toHaveValue('0')
+    await expect(slider).toHaveValue('12')
     await page
       .getByRole('checkbox', {
         name: 'Cloud policy: VM + dedicated GPU leases',

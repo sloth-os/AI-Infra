@@ -60,6 +60,9 @@ test('the default game covers three lifecycle phases at all four physical levels
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
   await page.goto('/')
+  await page
+    .getByRole('button', { name: 'Explore freely', exact: true })
+    .click()
   await expect(
     page.getByRole('region', { name: 'AI lifecycle campaign', exact: true }),
   ).toBeVisible()
@@ -120,6 +123,17 @@ test('actual inference work verifies all four performance contracts, drives anim
     page.getByRole('region', { name: 'Lifecycle operation complete' }),
   ).toBeVisible({ timeout: 60000 })
   await expect(page.locator(root)).toHaveAttribute('data-produced', '64')
+  const recap = page.getByRole('region', {
+    name: 'Learning recap',
+    exact: true,
+  })
+  await expect(recap).toContainText('64 requests delivered')
+  await recap
+    .getByRole('button', { name: 'It roughly doubles.', exact: true })
+    .click()
+  await expect(recap.getByRole('status')).toContainText('That is the key idea.')
+  await page.screenshot({ path: test.info().outputPath('lifecycle-recap.png') })
+  await expect(page.locator(root)).toHaveAttribute('data-produced', '64')
   expect(
     await page.evaluate(
       () =>
@@ -145,7 +159,14 @@ test('pre-training must fix actual residency before it can finish updates, then 
   await expect(page.locator(root)).toHaveAttribute('data-status', 'running')
   await expect(page.locator('.campaign-admission-notice')).toContainText(
     'HBM blocked',
+    { useInnerText: true },
   )
+  await page.getByRole('button', { name: 'Explain HBM', exact: true }).click()
+  await expect(page.locator(root)).toHaveAttribute('data-status', 'paused')
+  await expect(
+    page.locator('.experience-term-popover:popover-open'),
+  ).toContainText('High-bandwidth memory')
+  await page.keyboard.press('Escape')
   await expect(page.locator(root)).toHaveAttribute('data-produced', '0')
   await level(page, 2)
   await choose(page, 'Training state ownership', 'ZeRO-2')
@@ -332,19 +353,20 @@ test('sources, short-screen controls, reduced motion and no-WebGL fallback retai
     [844, 390],
   ]) {
     await page.setViewportSize({ width, height })
-    const layout = await page.evaluate(() => {
-      const b = (selector: string) =>
-        document.querySelector(selector)!.getBoundingClientRect()
-      return {
-        overflow: document.documentElement.scrollWidth > innerWidth,
-        dock: b('.campaign-dock').bottom <= innerHeight,
-        panel: b('.campaign-panel').bottom < b('.campaign-dock').top,
-        camera: b('.campaign-camera').bottom < b('.campaign-dock').top,
-        phases:
-          b('.campaign-header nav').right <= b('.campaign-header > div').left,
-      }
-    })
-    expect(layout).toEqual({
+    const layout = () =>
+      page.evaluate(() => {
+        const b = (selector: string) =>
+          document.querySelector(selector)!.getBoundingClientRect()
+        return {
+          overflow: document.documentElement.scrollWidth > innerWidth,
+          dock: b('.campaign-dock').bottom <= innerHeight,
+          panel: b('.campaign-panel').bottom < b('.campaign-dock').top,
+          camera: b('.campaign-camera').bottom < b('.campaign-dock').top,
+          phases:
+            b('.campaign-header nav').right <= b('.campaign-header > div').left,
+        }
+      })
+    await expect.poll(layout).toEqual({
       overflow: false,
       dock: true,
       panel: true,

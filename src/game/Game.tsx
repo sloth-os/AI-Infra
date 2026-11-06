@@ -71,6 +71,9 @@ import type { GameAction, GameState, ModuleType, Progress } from './model'
 import { VisualSettings, useEffectsQuality } from '../components/VisualSettings'
 import './game.css'
 import './fusion.css'
+import { LessonChoices, MissionRecap } from '../learning/experience/Experience'
+import { servingRecap } from '../learning/experience/model'
+import type { LessonKind } from '../learning/experience/model'
 
 const moduleIcons: Record<ModuleType, LucideIcon> = {
   prefill: Cpu,
@@ -147,10 +150,12 @@ export default function FleetGame({
   active,
   onLearn,
   onCampaign,
+  onStartLesson,
 }: {
   active: boolean
   onLearn: () => void
   onCampaign: () => void
+  onStartLesson: (kind: LessonKind) => void
 }) {
   const effects = useEffectsQuality()
   const [state, setState] = useState<GameState>(() => createGame())
@@ -438,6 +443,8 @@ export default function FleetGame({
     if (!active) return
     const onKey = (e: KeyboardEvent) => {
       if (
+        (e.target as Element).closest('dialog, [popover]') ||
+        document.querySelector(':popover-open') ||
         e.ctrlKey ||
         e.metaKey ||
         e.altKey ||
@@ -672,7 +679,7 @@ export default function FleetGame({
                 aria-label="Learning mode"
               >
                 <BookOpen size={15} />
-                <span>Learning mode</span>
+                <span>Learn</span>
                 <ArrowUpRight size={12} />
               </button>
               <button
@@ -1448,8 +1455,13 @@ export default function FleetGame({
               }}
             />
           )}
-          <span className="game-model-note">
-            GAME-BALANCED TIME & CURRENCY · ANALYTICAL KV SIZES
+          <span
+            className="game-model-note"
+            aria-label="Current infrastructure scope"
+            title="Game-balanced time and currency · analytical K/V sizes"
+          >
+            Play · Serving district · {state.units.length} modules · game
+            capacity
           </span>
 
           {dialog === 'requests' && (
@@ -1540,6 +1552,13 @@ export default function FleetGame({
               onClose={() => setDialog(null)}
             >
               <span className="game-eyebrow">YOU ARE THE SCHEDULER</span>
+              <LessonChoices
+                onChoose={(kind) => {
+                  if (playing) dispatch({ type: 'pause' })
+                  setDialog(null)
+                  onStartLesson(kind)
+                }}
+              />
               <h2>
                 A city that runs
                 <br />
@@ -1732,10 +1751,7 @@ export default function FleetGame({
                     INTEGRITY<strong>{state.integrity}%</strong>
                   </span>
                 </div>
-                <div className="game-result-lesson">
-                  <BookOpen size={18} />
-                  <p>{mission.lesson}</p>
-                </div>
+                <MissionRecap recap={servingRecap(state)} />
                 <div className="game-result-actions">
                   <button
                     className="game-primary"

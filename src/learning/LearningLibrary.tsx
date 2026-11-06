@@ -39,6 +39,7 @@ export default function LearningLibrary({
   onExample,
   onCompare,
   lifecycle,
+  guidedTraining = false,
   onLifecycle,
   onLifecycleCompare,
   issue,
@@ -55,6 +56,7 @@ export default function LearningLibrary({
   onExample: (v: ExampleView | null) => void
   onCompare: () => void
   lifecycle: LifecycleView
+  guidedTraining?: boolean
   onLifecycle: (view: LifecycleView) => void
   onLifecycleCompare: () => void
   issue: IssueView
@@ -136,6 +138,7 @@ export default function LearningLibrary({
         />
       ) : tab === 'lifecycle' ? (
         <LifecycleStudy
+          startLab={guidedTraining}
           view={lifecycle}
           onChange={onLifecycle}
           onCompare={onLifecycleCompare}

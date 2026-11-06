@@ -120,6 +120,24 @@ import {
 } from './provider/model'
 import type { ProviderLesson } from './provider/model'
 import { ProviderStudy, ProviderTimeline } from './provider/ProviderStudy'
+import {
+  FlowCoach,
+  LessonChoices,
+  LessonGoal,
+  MissionRecap,
+} from './experience/Experience'
+import {
+  lessons,
+  parseLesson,
+  providerRecap,
+  requestRecap,
+  requestTeaching,
+  trafficTerms,
+  trainingRecap,
+} from './experience/model'
+import type { LessonIntent, LessonKind } from './experience/model'
+import { lifecycleMetrics } from '../lifecycle/model'
+import { changeProviderPlan, policyMask } from './provider/model'
 
 export type LearningPage = Exclude<Page, 'game'>
 type Panel =
@@ -134,6 +152,8 @@ type Panel =
   | 'connections'
   | null
 interface Props {
+  lessonIntent: LessonIntent | null
+  onStartLesson: (kind: LessonKind) => void
   active: boolean
   page: LearningPage
   sceneRef: RefObject<SceneHandle | null>
@@ -238,6 +258,12 @@ function LearningDialog({
 }
 
 export default function LearningFusion(p: Props) {
+  const [lesson, setLesson] = useState<LessonKind | null>(() =>
+    parseLesson(new URLSearchParams(location.search).get('lesson')),
+  )
+  const [recapOpen, setRecapOpen] = useState(false)
+  const [visitedStages, setVisitedStages] = useState<number[]>([0])
+  const handledLesson = useRef(0)
   const effects = useEffectsQuality()
   const initialContext = useMemo(() => parseContextLocation(location.href), [])
   const root = useRef<HTMLElement>(null),
@@ -425,6 +451,72 @@ export default function LearningFusion(p: Props) {
     setPanel(null)
     setFollow(false)
     p.onManual()
+  }
+  useEffect(() => {
+    const intent = p.lessonIntent
+    if (!intent || handledLesson.current === intent.request) return
+    handledLesson.current = intent.request
+    setLesson(intent.kind)
+    setRecapOpen(false)
+    setVisitedStages([0])
+    clearContext()
+    p.onPreset('baseline')
+    p.onStrategy(intent.kind === 'request' ? 'disaggregated' : 'continuous')
+    p.onPaused(true)
+    if (intent.kind === 'request') {
+      p.onJourneyStep(0)
+      p.onJourneyScene(0, false)
+      p.onNavigate('journey')
+      setPanel('journey')
+    } else if (intent.kind === 'training') {
+      const view = defaultLifecycleView('pretrain')
+      applyContext(
+        {
+          kind: 'lifecycle',
+          view: {
+            ...view,
+            stage: 3,
+            inputs: { ...view.inputs, sharding: 'ddp' },
+          },
+        },
+        'rack',
+      )
+      p.onNavigate('explore')
+    } else {
+      applyContext(
+        {
+          kind: 'provider',
+          view: {
+            ...defaultProviderLesson(),
+            stage: 2,
+            policies: 0,
+            side: 'baseline',
+            time: 12,
+            server: 0,
+          },
+        },
+        'rack',
+      )
+      p.onNavigate('explore')
+    }
+    const url = new URL(location.href)
+    url.searchParams.set('lesson', intent.kind)
+    url.searchParams.set('learn', 'fusion')
+    history.replaceState({}, '', url)
+  }, [p.lessonIntent])
+  useEffect(() => {
+    if (p.active && p.page === 'journey' && !selection)
+      setVisitedStages((previous) =>
+        previous.includes(p.journeyStep)
+          ? previous
+          : [...previous, p.journeyStep],
+      )
+  }, [p.active, p.page, p.journeyStep, teachingActive])
+  const leaveLesson = () => {
+    setLesson(null)
+    const url = new URL(location.href)
+    url.searchParams.delete('lesson')
+    history.replaceState({}, '', url)
   }
   const changeIssue = (v: IssueView) => {
     const stage = issueIndex(v.stage)
@@ -840,6 +932,7 @@ export default function LearningFusion(p: Props) {
     return () => clearTimeout(timer)
   }, [journeyAuto, p.active, p.page, p.journeyStep, rag])
   const go = (page: Page) => {
+    leaveLesson()
     if (['game', 'journey', 'lab'].includes(page)) clearContext()
     setIssue((v) => (v.playing ? { ...v, playing: false } : v))
     setLifecycle((v) => (v.playing ? { ...v, playing: false } : v))
@@ -893,6 +986,7 @@ export default function LearningFusion(p: Props) {
     } else p.onManual()
   }
   const inspectData = () => {
+    setJourneyAuto(false)
     if (webgl) p.sceneRef.current?.inspectPacket()
     else {
       setSnapshot({
@@ -915,6 +1009,8 @@ export default function LearningFusion(p: Props) {
     if (!p.active) return
     const key = (e: KeyboardEvent) => {
       if (
+        (e.target as Element).closest('dialog, [popover]') ||
+        document.querySelector(':popover-open') ||
         e.ctrlKey ||
         e.metaKey ||
         e.altKey ||
@@ -925,6 +1021,17 @@ export default function LearningFusion(p: Props) {
         help
       )
         return
+      if (
+        p.page === 'journey' &&
+        !contextFrame &&
+        e.code === 'Space' &&
+        (e.target as HTMLElement).tagName !== 'BUTTON'
+      ) {
+        e.preventDefault()
+        setJourneyAuto(!journeyAuto)
+        p.onPaused(journeyAuto)
+        return
+      }
       if (contextFrame) {
         if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
           e.preventDefault()
@@ -983,18 +1090,149 @@ export default function LearningFusion(p: Props) {
         setFollow(false)
         p.sceneRef.current?.rotate(e.key.toLowerCase() === 'q' ? -1 : 1)
       } else if (e.key.toLowerCase() === 'f') toggleFollow()
-      else if (e.key === '?') setHelp(true)
+      else if (e.key === '?') {
+        pauseForReading()
+        setHelp(true)
+      }
     }
     window.addEventListener('keydown', key)
     return () => window.removeEventListener('keydown', key)
   })
   const setStep = (step: number) => {
     setJourneyAuto(false)
+    p.onPaused(true)
     p.onJourneyStep(step)
   }
   const open = (next: Panel) => {
     closeContext()
     setPanel(panel === next ? null : next)
+  }
+  const requestActive = p.page === 'journey' && !teachingActive
+  const guidedLesson =
+    lesson === 'request' && requestActive
+      ? 'request'
+      : lesson === 'training' &&
+          lifecycleActive &&
+          lifecycle.phase === 'pretrain'
+        ? 'training'
+        : lesson === 'cloud' && providerActive
+          ? 'cloud'
+          : null
+  const viewScope = `${levelNames[p.layer]}${p.layer === 'rack' ? ' · 8 GPUs' : p.layer === 'gpu' ? ' · 1 GPU' : ''}`
+  const hardwareScope = providerActive
+    ? 'Cloud provider · 64 physical GPU slots'
+    : lifecycleActive
+      ? `${lifecycle.phase === 'inference' ? `${lifecycle.inputs.fleet.toLocaleString()}-GPU reference fleet` : `${lifecycleMetrics(lifecycle.inputs).gpus}-GPU sized job`} · ${lifecycle.phase === 'posttrain' ? lifecycle.method.toUpperCase() : lifecycle.phase === 'pretrain' ? 'Pre-training' : 'Inference'}`
+      : exampleActive || issueActive
+        ? `${contextFrame?.title} · reference hardware`
+        : `${p.params.gpus.toLocaleString()} modeled GPUs · reference world`
+  const scopeLine = `Learn · ${hardwareScope} · ${viewScope}`
+  const requestFlow = requestTeaching[p.journeyStep]
+  const currentFlow = contextFrame
+    ? {
+        title: contextFrame.heading,
+        payload: contextFrame.payload,
+        explanation: contextFrame.explanation,
+        scope: contextFrame.scope,
+        terms: trafficTerms(contextFrame.traffic),
+      }
+    : requestActive
+      ? {
+          title: requestFlow.title,
+          payload: requestFlow.what,
+          explanation: requestFlow.why,
+          scope: `Split prefill/decode reference walkthrough · assumed ${p.params.inputTokens.toLocaleString()} prompt tokens · 8-GPU TP group · teaching time. Colocated alternatives can keep state local. The example text is not tokenized or sent to a model.`,
+          terms: requestFlow.terms,
+        }
+      : {
+          title: frame.chapter.title,
+          payload: frame.chapter.payload,
+          explanation:
+            details[p.selected]?.description ||
+            'Inspect the selected hardware and the current data representation.',
+          scope: `${scopeLine}. Shapes and timing illustrate the declared model.`,
+          terms: trafficTerms(p.traffic),
+        }
+  const recap = useMemo(
+    () =>
+      !recapOpen
+        ? null
+        : guidedLesson === 'training'
+          ? trainingRecap(lifecycle.inputs)
+          : guidedLesson === 'cloud' && providerSample
+            ? {
+                ...providerRecap(providerSample.plan, providerSample.baseline),
+                scope:
+                  'Cloud provider · 64 GPU slots · paired histories in teaching time',
+              }
+            : requestRecap(
+                visitedStages.filter((i) => rag || i !== 1).length,
+                rag ? 7 : 6,
+              ),
+    [
+      recapOpen,
+      guidedLesson,
+      lifecycle.inputs,
+      providerSample?.plan,
+      visitedStages,
+      rag,
+    ],
+  )
+  const pauseForReading = () => {
+    setJourneyAuto(false)
+    p.onPaused(true)
+    if (activeLesson?.playing) toggleLesson()
+  }
+  const openRecap = () => {
+    pauseForReading()
+    setRecapOpen(true)
+  }
+  const trainingFits = lifecycleMetrics(lifecycle.inputs).state / 2 ** 30 < 80
+  const lessonAction =
+    guidedLesson === 'request'
+      ? p.journeyStep === 6
+        ? 'Review lesson'
+        : 'Read this stage'
+      : guidedLesson === 'training'
+        ? trainingFits
+          ? 'Review lesson'
+          : 'Compare ZeRO-3'
+        : provider.policies === 0
+          ? 'Try placement'
+          : provider.policies !== 255
+            ? 'Compare full plan'
+            : providerSample?.plan.status !== 'won'
+              ? 'Observe completions'
+              : 'Review lesson'
+  const advanceLesson = () => {
+    if (guidedLesson === 'request') {
+      if (p.journeyStep === 6) openRecap()
+      else {
+        closeContext()
+        setPanel('journey')
+      }
+    } else if (guidedLesson === 'training') {
+      if (trainingFits) openRecap()
+      else
+        changeLifecycle({
+          ...lifecycle,
+          inputs: { ...lifecycle.inputs, sharding: 'zero3' },
+          playing: false,
+        })
+    } else if (guidedLesson === 'cloud') {
+      if (provider.policies === 0)
+        changeProvider(changeProviderPlan(provider, policyMask(['placement'])))
+      else if (provider.policies !== 255)
+        changeProvider(changeProviderPlan(provider, 255))
+      else if (providerSample?.plan.status !== 'won')
+        changeProvider({
+          ...provider,
+          side: 'plan',
+          time: providerSample!.replay.end,
+          playing: false,
+        })
+      else openRecap()
+    }
   }
   const panelTitle =
     panel === 'connections'
@@ -1085,7 +1323,7 @@ export default function LearningFusion(p: Props) {
   return (
     <section
       ref={root}
-      className={`learning-fusion ${theater ? 'learn-cinema' : ''} ${teachingActive ? 'has-context' : ''} ${providerActive ? 'has-provider' : ''}`}
+      className={`learning-fusion ${guidedLesson ? 'has-guided-lesson' : ''} ${theater ? 'learn-cinema' : ''} ${teachingActive ? 'has-context' : ''} ${providerActive ? 'has-provider' : ''}`}
       style={
         {
           '--model-accent': contextFrame?.color || '#c6dea0',
@@ -1163,22 +1401,31 @@ export default function LearningFusion(p: Props) {
               <button
                 onClick={() => {
                   if (teachingActive) toggleLesson()
-                  else p.onPaused(!p.paused)
+                  else if (requestActive) {
+                    setJourneyAuto(!journeyAuto)
+                    p.onPaused(journeyAuto)
+                  } else p.onPaused(!p.paused)
                 }}
                 aria-label={
                   teachingActive && activeLesson
                     ? activeLesson.playing
                       ? 'Pause connected walkthrough'
                       : 'Play connected walkthrough'
-                    : p.paused
-                      ? 'Play timeline'
-                      : 'Pause timeline'
+                    : requestActive
+                      ? journeyAuto
+                        ? 'Pause walkthrough'
+                        : 'Play walkthrough'
+                      : p.paused
+                        ? 'Play timeline'
+                        : 'Pause timeline'
                 }
               >
                 {(
                   teachingActive && activeLesson
                     ? !activeLesson.playing
-                    : p.paused
+                    : requestActive
+                      ? !journeyAuto
+                      : p.paused
                 ) ? (
                   <Play size={16} />
                 ) : (
@@ -1199,6 +1446,7 @@ export default function LearningFusion(p: Props) {
                   </span>
                   <b>strata.</b>
                   <small>LEARNING WORLDS</small>
+                  <em className="experience-mode-label">Play</em>
                 </button>
                 <nav aria-label="Learning workspace navigation">
                   {pages.map(({ id, title, Icon }) => (
@@ -1212,7 +1460,17 @@ export default function LearningFusion(p: Props) {
                       aria-label={title}
                     >
                       <Icon size={15} />
-                      <span>{title}</span>
+                      <span className="experience-nav-long">{title}</span>
+                      <span className="experience-nav-short">
+                        {
+                          {
+                            explore: 'Explore',
+                            journey: 'Request',
+                            lab: 'Lab',
+                            guide: 'Guide',
+                          }[id]
+                        }
+                      </span>
                     </button>
                   ))}
                 </nav>
@@ -1235,7 +1493,10 @@ export default function LearningFusion(p: Props) {
                     <Grid2X2 size={17} />
                   </button>
                   <button
-                    onClick={() => setHelp(true)}
+                    onClick={() => {
+                      pauseForReading()
+                      setHelp(true)
+                    }}
                     aria-label="Learning controls and help"
                   >
                     <CircleHelp size={17} />
@@ -1362,7 +1623,7 @@ export default function LearningFusion(p: Props) {
                     setPanel('guide')
                   }}
                 />
-              ) : (
+              ) : !requestActive ? (
                 <aside
                   className="learn-narration"
                   aria-label="Current 3D transformation"
@@ -1391,7 +1652,7 @@ export default function LearningFusion(p: Props) {
                     {frame.chapter.constraint}
                   </span>
                 </aside>
-              )}
+              ) : null}
               <nav
                 className="learn-camera"
                 aria-label="Learning camera controls"
@@ -1708,6 +1969,7 @@ export default function LearningFusion(p: Props) {
                           onIssue={changeIssue}
                           onIssueMethodology={() => setReader('issues')}
                           lifecycle={lifecycle}
+                          guidedTraining={guidedLesson === 'training'}
                           onLifecycle={changeLifecycle}
                           onLifecycleCompare={() => setReader('lifecycle')}
                           onReading={() => setReader('guide')}
@@ -1943,46 +2205,6 @@ export default function LearningFusion(p: Props) {
                         <Sparkles size={14} />
                         <p>{journey[p.journeyStep].detail}</p>
                       </div>
-                      <div className="learn-journey-actions">
-                        <button
-                          disabled={p.journeyStep === 0}
-                          onClick={() =>
-                            setStep(
-                              adjacentJourneyStage(p.journeyStep, -1, rag),
-                            )
-                          }
-                        >
-                          <ChevronLeft size={14} />
-                          Previous
-                        </button>
-                        <button
-                          onClick={() => {
-                            setJourneyAuto(!journeyAuto)
-                            p.onPaused(journeyAuto)
-                          }}
-                        >
-                          {journeyAuto ? (
-                            <Pause size={14} />
-                          ) : (
-                            <Play size={14} />
-                          )}{' '}
-                          {journeyAuto
-                            ? 'Pause walkthrough'
-                            : 'Play walkthrough'}
-                        </button>
-                        <button
-                          onClick={() =>
-                            setStep(
-                              p.journeyStep === 6
-                                ? 0
-                                : adjacentJourneyStage(p.journeyStep, 1, rag),
-                            )
-                          }
-                        >
-                          {p.journeyStep === 6 ? 'Start again' : 'Next stage'}
-                          <ChevronRight size={14} />
-                        </button>
-                      </div>
                       <button
                         className="learn-text-link"
                         onClick={() => setPayloadVisible(!payloadVisible)}
@@ -2053,6 +2275,45 @@ export default function LearningFusion(p: Props) {
                 </button>
               )}
               <div className="learn-command-deck" ref={deck}>
+                <div className="experience-deck-heading">
+                  <div
+                    className="experience-scope-line"
+                    aria-label="Current infrastructure scope"
+                  >
+                    {scopeLine}
+                  </div>
+                  <div className="experience-mobile-quality">
+                    <VisualSettings />
+                  </div>
+                </div>
+                {guidedLesson && (
+                  <LessonGoal
+                    title={lessons.find((l) => l.id === guidedLesson)!.title}
+                    question={
+                      guidedLesson === 'cloud'
+                        ? 'Compare the same arrivals and elapsed time: free slots, topology, memory and completed work.'
+                        : guidedLesson === 'training'
+                          ? 'Get model state below an illustrative 80 GiB per GPU; activations and workspace need additional room.'
+                          : requestFlow.why
+                    }
+                    action={lessonAction}
+                    onAction={advanceLesson}
+                    onClose={leaveLesson}
+                  />
+                )}
+                <FlowCoach
+                  {...currentFlow}
+                  onExplain={pauseForReading}
+                  onInspect={requestActive ? inspectData : undefined}
+                  onClear={contextFrame ? clearContext : undefined}
+                  onFocus={() => {
+                    p.sceneRef.current?.focus(
+                      contextFrame ? 'context-focus' : p.selected,
+                    )
+                    closeContext()
+                    setPanel(null)
+                  }}
+                />
                 {contextFrame ? (
                   <ContextControls
                     timeline={
@@ -2073,13 +2334,12 @@ export default function LearningFusion(p: Props) {
                       closeContext()
                       setPanel(panel === 'guide' ? null : 'guide')
                     }}
-                    onClear={clearContext}
                     onFocus={() => p.sceneRef.current?.focus('context-focus')}
                   />
                 ) : (
                   <>
                     <div
-                      className="learn-lens-dock"
+                      className={`learn-lens-dock ${requestActive ? 'experience-request-lenses' : ''}`}
                       aria-label="Learning data lenses"
                     >
                       {(Object.keys(lensNames) as Traffic[]).map((mode) => {
@@ -2132,102 +2392,166 @@ export default function LearningFusion(p: Props) {
                         </button>
                       )}
                     </div>
-                    <div className="learn-timeline-row">
-                      <button
-                        className="learn-play"
-                        onClick={() => p.onPaused(!p.paused)}
-                        aria-label={
-                          p.paused ? 'Play timeline' : 'Pause timeline'
-                        }
-                      >
-                        {p.paused ? <Play size={16} /> : <Pause size={16} />}
-                      </button>
-                      <button
-                        onClick={() => {
-                          closeContext()
-                          p.onChapter(Math.max(0, frame.chapterIndex - 1))
-                        }}
-                        aria-label="Previous animation chapter"
-                      >
-                        <ChevronLeft size={16} />
-                      </button>
-                      <label className="learn-timeline">
-                        <input
-                          type="range"
-                          min={0}
-                          max={ANIMATION_DURATION}
-                          step={0.1}
-                          aria-label="Animation timeline"
-                          aria-valuetext={`${frame.time.toFixed(1)} teaching seconds: ${frame.chapter.title}`}
-                          value={frame.time}
-                          onChange={(e) => {
-                            p.onPaused(true)
-                            p.sceneRef.current?.seek(Number(e.target.value))
-                          }}
-                          style={
-                            {
-                              '--learn-progress': `${frame.progress * 100}%`,
-                            } as React.CSSProperties
+                    {requestActive ? (
+                      <>
+                        {' '}
+                        <div
+                          className="learn-journey-actions experience-request-player"
+                          role="group"
+                          aria-label="Request walkthrough playback"
+                        >
+                          <button
+                            disabled={p.journeyStep === 0}
+                            onClick={() =>
+                              setStep(
+                                adjacentJourneyStage(p.journeyStep, -1, rag),
+                              )
+                            }
+                          >
+                            <ChevronLeft size={14} />
+                            Previous
+                          </button>
+                          <button
+                            onClick={() => {
+                              setJourneyAuto(!journeyAuto)
+                              p.onPaused(journeyAuto)
+                            }}
+                          >
+                            {journeyAuto ? (
+                              <Pause size={14} />
+                            ) : (
+                              <Play size={14} />
+                            )}{' '}
+                            {journeyAuto
+                              ? 'Pause walkthrough'
+                              : 'Play walkthrough'}
+                          </button>
+                          <button
+                            onClick={() =>
+                              setStep(
+                                p.journeyStep === 6
+                                  ? 0
+                                  : adjacentJourneyStage(p.journeyStep, 1, rag),
+                              )
+                            }
+                          >
+                            {p.journeyStep === 6 ? 'Start again' : 'Next stage'}
+                            <ChevronRight size={14} />
+                          </button>
+                          <span className="experience-request-progress">
+                            {p.journeyStep +
+                              1 -
+                              (!rag && p.journeyStep > 1 ? 1 : 0)}
+                            /{rag ? 7 : 6} · {requestFlow.title}
+                          </span>
+                          {p.journeyStep === 6 && (
+                            <button onClick={openRecap}>
+                              What you learned
+                            </button>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="learn-timeline-row">
+                        <button
+                          className="learn-play"
+                          onClick={() => p.onPaused(!p.paused)}
+                          aria-label={
+                            p.paused ? 'Play timeline' : 'Pause timeline'
                           }
-                        />
-                        <span>
-                          {frame.time.toFixed(1)}s / {ANIMATION_DURATION}s <i />
-                          {frame.chapter.short}
-                        </span>
-                      </label>
-                      <button
-                        onClick={() => {
-                          closeContext()
-                          p.onChapter(
-                            Math.min(
-                              chapters.length - 1,
-                              frame.chapterIndex + 1,
-                            ),
-                          )
-                        }}
-                        aria-label="Next animation chapter"
-                      >
-                        <ChevronRight size={16} />
-                      </button>
-                      <button
-                        className="learn-speed"
-                        onClick={() =>
-                          p.onSpeed(p.speed === 1 ? 2 : p.speed === 2 ? 0.5 : 1)
-                        }
-                        aria-label="Change learning playback speed"
-                      >
-                        {p.speed}×
-                      </button>
-                      <button
-                        onClick={() => open('chapters')}
-                        aria-label="Open animation chapters"
-                      >
-                        <Layers3 size={17} />
-                      </button>
-                      <button
-                        onClick={() => {
-                          closeContext()
-                          setFollow(false)
-                          setPanel(null)
-                          setJourneyAuto(false)
-                          if (p.page !== 'explore') p.onNavigate('explore')
-                          p.onGuided()
-                        }}
-                        aria-pressed={p.guided}
-                        aria-label="Guided camera tour"
-                      >
-                        <Compass size={17} />
-                        <span>Tour</span>
-                      </button>
-                      <button
-                        onClick={toggleFollow}
-                        aria-pressed={follow}
-                        aria-label="Ride with learning payload"
-                      >
-                        <Orbit size={17} />
-                        <span>Ride</span>
-                      </button>
-                    </div>
+                        >
+                          {p.paused ? <Play size={16} /> : <Pause size={16} />}
+                        </button>
+                        <button
+                          onClick={() => {
+                            closeContext()
+                            p.onChapter(Math.max(0, frame.chapterIndex - 1))
+                          }}
+                          aria-label="Previous animation chapter"
+                        >
+                          <ChevronLeft size={16} />
+                        </button>
+                        <label className="learn-timeline">
+                          <input
+                            type="range"
+                            min={0}
+                            max={ANIMATION_DURATION}
+                            step={0.1}
+                            aria-label="Animation timeline"
+                            aria-valuetext={`${frame.time.toFixed(1)} teaching seconds: ${frame.chapter.title}`}
+                            value={frame.time}
+                            onChange={(e) => {
+                              p.onPaused(true)
+                              p.sceneRef.current?.seek(Number(e.target.value))
+                            }}
+                            style={
+                              {
+                                '--learn-progress': `${frame.progress * 100}%`,
+                              } as React.CSSProperties
+                            }
+                          />
+                          <span>
+                            {frame.time.toFixed(1)}s / {ANIMATION_DURATION}s{' '}
+                            <i />
+                            {frame.chapter.short}
+                          </span>
+                        </label>
+                        <button
+                          onClick={() => {
+                            closeContext()
+                            p.onChapter(
+                              Math.min(
+                                chapters.length - 1,
+                                frame.chapterIndex + 1,
+                              ),
+                            )
+                          }}
+                          aria-label="Next animation chapter"
+                        >
+                          <ChevronRight size={16} />
+                        </button>
+                        <button
+                          className="learn-speed"
+                          onClick={() =>
+                            p.onSpeed(
+                              p.speed === 1 ? 2 : p.speed === 2 ? 0.5 : 1,
+                            )
+                          }
+                          aria-label="Change learning playback speed"
+                        >
+                          {p.speed}×
+                        </button>
+                        <button
+                          onClick={() => open('chapters')}
+                          aria-label="Open animation chapters"
+                        >
+                          <Layers3 size={17} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            closeContext()
+                            setFollow(false)
+                            setPanel(null)
+                            setJourneyAuto(false)
+                            if (p.page !== 'explore') p.onNavigate('explore')
+                            p.onGuided()
+                          }}
+                          aria-pressed={p.guided}
+                          aria-label="Guided camera tour"
+                        >
+                          <Compass size={17} />
+                          <span>Tour</span>
+                        </button>
+                        <button
+                          onClick={toggleFollow}
+                          aria-pressed={follow}
+                          aria-label="Ride with learning payload"
+                        >
+                          <Orbit size={17} />
+                          <span>Ride</span>
+                        </button>
+                      </div>
+                    )}
                   </>
                 )}
               </div>
@@ -2280,6 +2604,14 @@ export default function LearningFusion(p: Props) {
               </div>
             </LearningDialog>
           )}
+          {recapOpen && recap && (
+            <LearningDialog
+              title="Lesson recap"
+              onClose={() => setRecapOpen(false)}
+            >
+              <MissionRecap recap={recap} />
+            </LearningDialog>
+          )}
           {help && (
             <LearningDialog
               title="Learning controls and help"
@@ -2290,6 +2622,12 @@ export default function LearningFusion(p: Props) {
                   THE WORLD IS THE WORKSPACE
                 </span>
                 <h2>Find the part. Follow the data.</h2>
+                <LessonChoices
+                  onChoose={(kind) => {
+                    setHelp(false)
+                    p.onStartLesson(kind)
+                  }}
+                />
                 <p>
                   AI lifecycle follows pre-training, post-training and
                   inference, with SFT, DPO and GRPO recipes. Real models opens
@@ -2304,8 +2642,9 @@ export default function LearningFusion(p: Props) {
                   GPU with a paired capacity replay. Compare a baseline with
                   your policy plan at the same elapsed teaching time, inspect
                   resource envelopes, and follow tenant device bindings,
-                  artifact bytes and completed work. Changing a policy rewinds
-                  the experiment; the replay clock is separate from the
+                  artifact bytes and completed work. Policy comparisons retain
+                  the selected moment and recompute histories from the start.
+                  Rewind is explicit; the replay clock is separate from the
                   reference request timeline.
                 </p>
                 <p>

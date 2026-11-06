@@ -13,6 +13,7 @@ import type { Parameters, Strategy } from '../model'
 import { learningScenarioUrl } from './model'
 import LearningChallenges from './LearningChallenges'
 import type { LearningChallenge } from './challenges'
+import { DeltaReadout } from './experience/Experience'
 
 export const strategyNames: Record<Strategy, string> = {
   static: 'Static batching',
@@ -111,11 +112,15 @@ export default function LearningLab({
   onChallengeWorld?: (challenge: LearningChallenge) => void
 }) {
   const [copied, setCopied] = useState(false)
+  const [previousStrategy, setPreviousStrategy] = useState<Strategy | null>(
+    null,
+  )
   const result = simulate(params, strategy),
     outcomes = strategies.map((s) => ({
       strategy: s,
       result: simulate(params, s),
     }))
+  const previous = previousStrategy ? simulate(params, previousStrategy) : null
   const max = Math.max(
     params.arrivalRate,
     ...outcomes.map((o) => o.result.capacity),
@@ -162,13 +167,44 @@ export default function LearningLab({
           <button
             key={s}
             aria-pressed={strategy === s}
-            onClick={() => onStrategy(s)}
+            onClick={() => {
+              if (s !== strategy) setPreviousStrategy(strategy)
+              onStrategy(s)
+            }}
           >
             <span>0{i + 1}</span>
             {strategyNames[s]}
           </button>
         ))}
       </div>
+      {previous && previousStrategy && previousStrategy !== strategy && (
+        <div role="status">
+          <DeltaReadout
+            label={`${strategyNames[previousStrategy]} → ${strategyNames[strategy]} · same current workload · estimates`}
+            deltas={[
+              {
+                label: 'Capacity',
+                before: `${formatNumber(previous.capacity)} req/s`,
+                after: `${formatNumber(result.capacity)} req/s`,
+              },
+              {
+                label: 'First token',
+                before: duration(previous.ttftMs),
+                after: duration(result.ttftMs),
+              },
+              {
+                label: 'K/V handoff',
+                before: duration(previous.transferMs),
+                after: duration(result.transferMs),
+              },
+            ]}
+          />
+          <p className="experience-scope-note">
+            Compare capacity, latency and transfer together. Split serving moves
+            prompt state between pools; colocated strategies retain it locally.
+          </p>
+        </div>
+      )}
       <div
         className={`learn-model-status ${result.stable ? 'stable' : 'overloaded'}`}
         role="status"

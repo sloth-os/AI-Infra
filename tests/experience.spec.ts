@@ -262,9 +262,11 @@ test('mobile visual controls and operations remain reachable without covering na
     .getByRole('button', { name: 'Close command drawer', exact: true })
     .click()
   await page.getByRole('button', { name: 'Learning mode', exact: true }).click()
-  await page.locator('.learn-header .visual-settings summary').click()
+  await page
+    .locator('.experience-mobile-quality .visual-settings summary')
+    .click()
   popup = await page
-    .locator('.learn-header .visual-settings > div')
+    .locator('.experience-mobile-quality .visual-settings > div')
     .boundingBox()
   expect(popup!.x).toBeGreaterThanOrEqual(0)
   expect(popup!.x + popup!.width).toBeLessThanOrEqual(320)

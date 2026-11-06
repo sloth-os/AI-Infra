@@ -243,19 +243,20 @@ test('connected mobile details, scale controls and camera stay reachable; fallba
     [760, 1024],
   ]) {
     await page.setViewportSize({ width, height })
-    const layout = await page.evaluate(() => {
-      const b = (s: string) =>
-        document.querySelector(s)!.getBoundingClientRect()
-      return {
-        overflow: document.documentElement.scrollWidth > innerWidth,
-        nav: b('.learn-header nav').right <= b('.learn-header-tools').left,
-        panel: b('.learn-panel').bottom < b('.learn-command-deck').top,
-        rail: b('.learn-scale-rail').bottom < b('.learn-command-deck').top,
-        dock: b('.learn-command-deck').bottom <= innerHeight,
-        camera: b('.learn-camera').bottom < b('.learn-command-deck').top,
-      }
-    })
-    expect(layout).toEqual({
+    const layout = () =>
+      page.evaluate(() => {
+        const b = (s: string) =>
+          document.querySelector(s)!.getBoundingClientRect()
+        return {
+          overflow: document.documentElement.scrollWidth > innerWidth,
+          nav: b('.learn-header nav').right <= b('.learn-header-tools').left,
+          panel: b('.learn-panel').bottom < b('.learn-command-deck').top,
+          rail: b('.learn-scale-rail').bottom < b('.learn-command-deck').top,
+          dock: b('.learn-command-deck').bottom <= innerHeight,
+          camera: b('.learn-camera').bottom < b('.learn-command-deck').top,
+        }
+      })
+    await expect.poll(layout).toEqual({
       overflow: false,
       nav: true,
       panel: true,

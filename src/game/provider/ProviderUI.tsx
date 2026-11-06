@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import {
   ArrowLeft,
@@ -35,6 +35,12 @@ import type { Tenant } from './model'
 import type { ProviderController } from './useProvider'
 import { ScenarioSwitch } from './ScenarioSwitch'
 import './provider.css'
+import {
+  LessonChoices,
+  MissionRecap,
+} from '../../learning/experience/Experience'
+import { providerRecap } from '../../learning/experience/model'
+import type { LessonKind } from '../../learning/experience/model'
 
 const icons = { fleet: Globe2, pod: Network, rack: Server, gpu: Cpu }
 export function ProviderUI({
@@ -45,6 +51,7 @@ export function ProviderUI({
   onScenario,
   onServing,
   onLearn,
+  onStartLesson,
   panel,
   setPanel,
   labels,
@@ -59,6 +66,7 @@ export function ProviderUI({
   onScenario: (s: 'model' | 'cloud-provider') => void
   onServing: () => void
   onLearn: () => void
+  onStartLesson: (kind: LessonKind) => void
   panel: boolean
   setPanel: (v: boolean) => void
   labels: boolean
@@ -67,6 +75,10 @@ export function ProviderUI({
   setCinema: (v: boolean) => void
 }) {
   const { state: s, metrics: m, dispatch, job } = c
+  const recap = useMemo(
+    () => (s.status === 'won' || s.status === 'lost' ? providerRecap(s) : null),
+    [s],
+  )
   const [dialog, setDialog] = useState<'help' | 'sources' | null>(null)
   const workshop = useRef<HTMLElement>(null)
   const lesson = PROVIDER_LESSONS[level]
@@ -79,6 +91,8 @@ export function ProviderUI({
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
       if (
+        (event.target as Element).closest('dialog, [popover]') ||
+        document.querySelector(':popover-open') ||
         event.ctrlKey ||
         event.metaKey ||
         event.altKey ||
@@ -176,8 +190,13 @@ export function ProviderUI({
         </nav>
         <div className="campaign-header-tools">
           <ScenarioSwitch value="cloud-provider" onChange={onScenario} />
-          <button onClick={onLearn} aria-label="Learning mode">
+          <button
+            className="experience-learn"
+            onClick={onLearn}
+            aria-label="Learning mode"
+          >
             <BookOpen size={17} />
+            <span>Learn</span>
           </button>
           <button
             onClick={() => openDialog('help')}
@@ -561,6 +580,13 @@ export function ProviderUI({
         </>
       )}
       <div className="campaign-dock provider-dock">
+        <div
+          className="experience-scope-line"
+          aria-label="Current infrastructure scope"
+        >
+          Play · Cloud provider · 64 physical GPU slots · {LEVEL_NAMES[level]}{' '}
+          view
+        </div>
         <div className="campaign-live-stage">
           <span>
             <i />
@@ -700,6 +726,7 @@ export function ProviderUI({
             {s.completed.train} training jobs · {s.completed.tune} tuning jobs ·{' '}
             {s.served} requests · {m.contracts}/4 contracts
           </p>
+          {recap && <MissionRecap recap={recap} />}
           <button onClick={() => dispatch({ type: 'reset' })}>
             Replay and compare with the baseline
           </button>
@@ -719,6 +746,12 @@ export function ProviderUI({
         >
           {dialog === 'help' ? (
             <>
+              <LessonChoices
+                onChoose={(kind) => {
+                  setDialog(null)
+                  onStartLesson(kind)
+                }}
+              />
               <p>
                 Own the physical cloud. Serve Nova’s pre-training, Forge’s
                 post-training and Orbit’s inference at Fleet, Pod, Server and

@@ -51,6 +51,19 @@ export const hasPolicy = (view: ProviderLesson, policy: Policy) =>
   !!(view.policies & (1 << POLICIES.indexOf(policy)))
 export const policyMask = (policies: Policy[]) =>
   policies.reduce((mask, p) => mask | (1 << POLICIES.indexOf(p)), 0)
+/** Compare replayed histories at the selected moment, never a live teleport. */
+export function changeProviderPlan(
+  view: ProviderLesson,
+  mask: number,
+): ProviderLesson {
+  const next = sanitizeProviderLesson({ ...view, policies: mask })
+  return {
+    ...next,
+    side: 'plan',
+    playing: false,
+    time: Math.min(next.time, providerReplay(next.policies).end),
+  }
+}
 export function sanitizeProviderLesson(
   raw: Partial<ProviderLesson>,
 ): ProviderLesson {
