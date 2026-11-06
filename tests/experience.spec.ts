@@ -3,7 +3,7 @@ import type { Page } from '@playwright/test'
 const gameCanvas = '[data-testid="game-scene"] canvas',
   learnCanvas = '.learning-world canvas'
 async function sandbox(page: Page) {
-  await page.goto('/')
+  await page.goto('/?campaign=serving')
   await page.getByRole('button', { name: 'Sandbox', exact: true }).click()
   await page.getByRole('button', { name: 'Start mission', exact: true }).click()
   await page.getByRole('button', { name: 'Pause game', exact: true }).click()

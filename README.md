@@ -4,7 +4,9 @@ A playable 3D strategy game about AI serving, with a source-backed learning expl
 
 ## Play Fleet Command
 
-The home page is an isometric infrastructure game. Build prefill and decode engines on a floating 16-sector district, reserve KV memory, expand the shared fabric, and keep requests within their deadlines. Completed requests earn construction credits; missed deadlines damage service integrity. Upgrades, continuous batching, tenant-scoped prefix reuse, power limits, traffic bursts, and a repairable outage change the outcome.
+The home page opens **Lifecycle Command**: a 3D campaign across **Fleet → Pod → Server → GPU** for **pre-training, post-training and inference**. Twelve performance contracts require actual completed work after a qualifying intervention. Tune data packing, checkpoint durability, state sharding, collectives, worker roles, objective validation, batching, routing and K/V residency. The live pipeline and animation share simulation progress. Each phase retains its run; earned contract medals stay in this browser. [docs/LIFECYCLE-GAME.md](docs/LIFECYCLE-GAME.md) explains the rules, equations and declared timing assumptions.
+
+The **Serving district** back control opens the original isometric construction game, also available at `?campaign=serving`. Build prefill and decode engines on a floating 16-sector district, reserve KV memory, expand the shared fabric, and keep requests within their deadlines. Completed requests earn construction credits; missed deadlines damage service integrity. Upgrades, continuous batching, tenant-scoped prefix reuse, power limits, traffic bursts, and a repairable outage change the outcome.
 
 Six missions introduce the complete request path, batching, memory pressure, network contention, prefix locality, and a combined operational challenge. **Open horizon** is an endless sandbox. Any mission can be played immediately. Stars and personal bests stay in browser-local storage; a live run survives switching to Learning mode but is reset by reloading.
 

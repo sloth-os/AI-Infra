@@ -38,6 +38,7 @@ export interface SceneOptions {
   onCameraRelease?: () => void
   onRank?: (rank: number) => void
   context?: ContextFrame | null
+  contextProgress?: number
   onContextStep?: (step: number, automatic?: boolean) => void
   onSelect: (id: string) => void
 }
@@ -1142,7 +1143,9 @@ export class InfrastructureEngine {
       this.contextOverlay.group.position.copy(this.current.group.position)
       this.contextOverlay.update(
         context,
-        this.contextClock / context.duration,
+        o.contextProgress === undefined
+          ? this.contextClock / context.duration
+          : THREE.MathUtils.clamp(o.contextProgress, 0, 1),
         o.effects || 'balanced',
         this.reduceMotion,
       )
@@ -1220,6 +1223,8 @@ export class InfrastructureEngine {
       .map((n) => n.toFixed(2))
       .join(',')
     this.renderer.domElement.dataset.contextKind = context?.kind || ''
+    this.renderer.domElement.dataset.contextProgress =
+      o.contextProgress === undefined ? '' : String(o.contextProgress)
     this.renderer.domElement.dataset.contextId = context?.id || ''
     this.renderer.domElement.dataset.contextStage = context
       ? String(context.stage)

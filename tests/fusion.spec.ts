@@ -3,7 +3,7 @@ import type { Page } from '@playwright/test'
 
 const canvas = '[data-testid="game-scene"] canvas'
 async function start(page: Page, sandbox = false) {
-  await page.goto('/')
+  await page.goto('/?campaign=serving')
   if (sandbox)
     await page.getByRole('button', { name: 'Sandbox', exact: true }).click()
   await expect(page.locator(canvas)).toHaveCount(1)
@@ -283,7 +283,7 @@ test('Fusion remains playable without WebGL and keeps fallback construction abov
       value: () => null,
     }),
   )
-  await page.goto('/')
+  await page.goto('/?campaign=serving')
   await page.getByRole('button', { name: 'Start mission' }).click()
   await page.getByRole('button', { name: 'Pause game', exact: true }).click()
   await expect(page.getByText('TACTICAL BOARD · 2D FALLBACK')).toBeVisible()

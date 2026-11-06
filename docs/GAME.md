@@ -1,4 +1,8 @@
-# Fleet Command game design and simulation
+# Serving district
+
+The default Game entry now opens the four-scale, three-phase [Lifecycle Command campaign](LIFECYCLE-GAME.md). This document describes the original serving district, available from the campaign’s back control or `?campaign=serving`.
+
+## Game design and simulation
 
 Fleet Command is a browser-only real-time strategy game about the constraints of AI serving. The main loop is **observe → build → serve → earn → rebalance**. The player wins a campaign mission by delivering its request target and meeting its additional infrastructure objective before the shift ends. Zero integrity or an incomplete shift ends the run. Sandbox traffic grows until the service fails or the player chooses **Finish this shift**.
 

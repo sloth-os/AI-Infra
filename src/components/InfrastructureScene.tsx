@@ -30,6 +30,7 @@ export interface InfrastructureSceneProps extends SceneOptions {
   onFrame?: (frame: MotionFrame) => void
   compact?: boolean
   initialTime?: number
+  testId?: string
   onProject?: (key: string, x: number, y: number, visible: boolean) => void
   onInspection?: (value: PayloadInspection | null) => void
   onUnavailable?: () => void
@@ -206,7 +207,7 @@ export const InfrastructureScene = forwardRef<
     <div
       ref={host}
       className={`infrastructure-scene enhanced-scene ${props.compact ? 'compact-scene' : ''} ${fallback ? 'scene-fallback' : ''}`}
-      data-testid="infrastructure-scene"
+      data-testid={props.testId || 'infrastructure-scene'}
       data-motion-mode={props.traffic}
       data-context-kind={props.context?.kind || ''}
       data-context-id={props.context?.id || ''}

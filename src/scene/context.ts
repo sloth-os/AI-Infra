@@ -242,6 +242,18 @@ export class ContextOverlay {
         this.color.set(
           state === 1 ? '#9ac5e8' : state === -1 ? '#c7a2e5' : '#536674',
         )
+      } else if (
+        f.pattern === 'rollouts' &&
+        f.supplementRole === 'worker-roles' &&
+        f.layer === 'pod'
+      ) {
+        x = ((i % 4) - 1.5) * 3.8
+        z = (Math.floor(i / 4) - 0.5) * 5.5
+        y = 3.5
+        w = 2.1
+        d = 1.65
+        h = 0.18
+        this.color.set((f.values?.[i] || 0) > 0 ? '#c4abe9' : '#b5d79b')
       } else if (f.pattern === 'power' && f.layer === 'fleet') {
         x = ((i % 5) - 2) * 3.1
         y = 2.7
@@ -303,6 +315,16 @@ export class ContextOverlay {
               : f.color,
         )
         if (selected) h = 0.3
+      } else if (f.pattern === 'rollouts' && f.values?.length) {
+        const advantage = f.values[i % f.values.length]
+        h = 0.08 + Math.min(1.6, Math.abs(advantage)) * 0.4
+        this.color.set(
+          advantage > 0 ? '#b7d99b' : advantage < 0 ? '#bd9ce0' : '#637783',
+        )
+      } else if (f.pattern === 'tokens' && f.values?.length) {
+        const active = f.values[i % f.values.length] !== 0
+        this.color.set(active ? f.color : '#526776')
+        h = active ? 0.22 : 0.06
       } else if (f.pattern === 'tokens' && f.applied && f.id === 'reasoning') {
         this.color.copy(red).lerp(green, f.probability ** i)
         w = 0.26

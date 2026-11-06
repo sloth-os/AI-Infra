@@ -146,9 +146,11 @@ function GameDialog({
 export default function FleetGame({
   active,
   onLearn,
+  onCampaign,
 }: {
   active: boolean
   onLearn: () => void
+  onCampaign: () => void
 }) {
   const effects = useEffectsQuality()
   const [state, setState] = useState<GameState>(() => createGame())
@@ -635,6 +637,16 @@ export default function FleetGame({
                 : `${mission.name.toUpperCase()} · WAVE ${metrics.wave}`}
             </div>
             <div className="game-header-actions">
+              <button
+                onClick={() => {
+                  if (playing) dispatch({ type: 'pause' })
+                  onCampaign()
+                }}
+                aria-label="Play AI lifecycle campaign"
+              >
+                <Cpu size={15} />
+                <span>Train, tune & serve</span>
+              </button>
               <VisualSettings />
               <button
                 className="game-fusion-toggle"
@@ -750,6 +762,14 @@ export default function FleetGame({
                   <ArrowRight size={18} />
                 </button>
                 <div className="game-briefing-links">
+                  <button
+                    onClick={onCampaign}
+                    aria-label="Play all four infrastructure levels"
+                  >
+                    <Cpu size={14} />
+                    Train, tune & serve · 12 contracts
+                    <ArrowRight size={13} />
+                  </button>
                   <button onClick={() => openDialog('missions')}>
                     <Map size={14} />
                     Choose a mission
