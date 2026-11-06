@@ -15,28 +15,39 @@ export function pinLearningCard(
   width: number,
   height: number,
   cardHeight: number,
+  compactTop = 176,
 ): SpatialPin {
   const pin = pinSpatialCard(previous, key, x, y, width, height, cardHeight)
   const same =
     previous?.key === key &&
     previous.viewportWidth === width &&
     previous.viewportHeight === height
-  const left =
-    width < 1000 || same
-      ? pin.x
-      : x <= width * 0.6
-        ? width - pin.width - 84
-        : 320
-  const top =
-    width < 700
-      ? pin.y
+  const compact = height <= 540,
+    phone = width <= 700
+  const left = phone
+    ? 14
+    : compact
+      ? 150
+      : width < 1000 || same
+        ? pin.x
+        : x <= width * 0.6
+          ? width - pin.width - 84
+          : 320
+  const top = phone
+    ? height <= 680
+      ? 222
+      : 306
+    : compact
+      ? compactTop
       : Math.max(pin.y, Math.min(182, Math.max(112, height - cardHeight - 168)))
-  const attachX = Math.max(left + 18, Math.min(left + pin.width - 18, x))
+  const cardWidth = phone ? width - 78 : compact ? width - 164 : pin.width
+  const attachX = Math.max(left + 18, Math.min(left + cardWidth - 18, x))
   const attachY = Math.max(top + 18, Math.min(top + cardHeight - 18, y))
   return {
     ...pin,
     x: left,
     y: top,
+    width: cardWidth,
     tetherLength: Math.hypot(attachX - x, attachY - y),
     tetherAngle: (Math.atan2(attachY - y, attachX - x) * 180) / Math.PI,
   }

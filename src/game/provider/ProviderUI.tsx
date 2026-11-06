@@ -8,7 +8,8 @@ import {
   Cpu,
   Gauge,
   Globe2,
-  HardDrive,
+  PanelRightClose,
+  PanelRightOpen,
   Maximize2,
   Minus,
   Network,
@@ -334,6 +335,20 @@ export function ProviderUI({
               <div className="campaign-panel-top">
                 <span>YOU ARE THE CLOUD PROVIDER</span>
                 <button
+                  className="campaign-configure"
+                  aria-label="Configure this level"
+                  onClick={() => {
+                    const action =
+                      workshop.current?.querySelector<HTMLButtonElement>(
+                        '.campaign-decision button:not(:disabled)',
+                      )
+                    action?.scrollIntoView({ block: 'center' })
+                    action?.focus({ preventScroll: true })
+                  }}
+                >
+                  Configure
+                </button>
+                <button
                   onClick={() => setPanel(false)}
                   aria-label="Close cloud workshop"
                 >
@@ -341,94 +356,11 @@ export function ProviderUI({
                 </button>
               </div>
               <h2>{lesson.title}</h2>
-              <p className="campaign-goal">{lesson.goal}</p>
               <details className="campaign-explanation">
-                <summary>How this level serves model providers</summary>
+                <summary>Goal and service responsibilities</summary>
+                <p className="campaign-goal">{lesson.goal}</p>
                 <p>{lesson.process}</p>
               </details>
-              <div className="provider-inspect">
-                <label>
-                  Physical server
-                  <select
-                    aria-label="Inspect cloud server"
-                    value={c.server}
-                    onChange={(e) => c.setServer(Number(e.target.value))}
-                  >
-                    {Array.from({ length: 8 }, (_, i) => (
-                      <option key={i} value={i}>
-                        Pod {i < 4 ? 'A' : 'B'} · Server {i + 1}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <button
-                  aria-label="Follow tenant lease"
-                  aria-pressed={c.follow}
-                  onClick={() => c.setFollow(!c.follow)}
-                >
-                  {c.follow ? 'Following lease' : 'Follow lease'}
-                </button>
-              </div>
-              {(level === 'rack' || level === 'gpu') && (
-                <div
-                  className="provider-device-map"
-                  role="group"
-                  aria-label="Eight physical GPU slots"
-                >
-                  {m.owners
-                    .slice(c.server * 8, c.server * 8 + 8)
-                    .map((t, i) => (
-                      <button
-                        key={i}
-                        style={
-                          {
-                            '--owner-color': t ? TENANTS[t].color : '#566a77',
-                          } as React.CSSProperties
-                        }
-                        aria-label={`Inspect GPU ${i + 1}: ${t ? TENANTS[t].name : 'idle'}`}
-                        aria-pressed={c.gpu === i}
-                        onClick={() => c.setGpu(i)}
-                      >
-                        <Cpu size={14} />
-                        <b>{i + 1}</b>
-                        <small>{t ? t.toUpperCase() : 'IDLE'}</small>
-                      </button>
-                    ))}
-                </div>
-              )}
-              <div
-                className="campaign-local-metrics"
-                aria-label="Cloud level performance readout"
-              >
-                {details.map(([label, value]) => (
-                  <div key={label}>
-                    <small>{label}</small>
-                    <strong>{value}</strong>
-                  </div>
-                ))}
-              </div>
-              <div
-                className="provider-tenant-ledger"
-                aria-label="Tenant allocation ledger"
-              >
-                {(['train', 'serve', 'tune'] as Tenant[]).map((t) => (
-                  <div key={t}>
-                    <i style={{ background: TENANTS[t].color }} />
-                    <span>
-                      {TENANTS[t].name}
-                      <small>
-                        {t === 'serve'
-                          ? 'Persistent replicas · end-user API owner'
-                          : 'Checkpointable eight-device batch gang'}
-                      </small>
-                    </span>
-                    <strong>
-                      {m.held[t]}
-                      <small>/ {TENANTS[t].quota} quota</small>
-                    </strong>
-                  </div>
-                ))}
-              </div>
               {PROVIDER_DECISIONS.filter((d) => d.level === level).map((d) => (
                 <section className="campaign-decision" key={d.id}>
                   <h3>{d.title}</h3>
@@ -449,27 +381,114 @@ export function ProviderUI({
                       </small>
                     </button>
                   </div>
-                  <p>{d.effect}</p>
                   <details className="campaign-explanation">
-                    <summary>Cost and responsibility boundary</summary>
+                    <summary>Effect and trade-off</summary>
+                    <p>{d.effect}</p>
                     <p>{d.tradeoff}</p>
                   </details>
+                  {d.id === 'placement' && (
+                    <button
+                      className="provider-repack"
+                      aria-label="Run rolling placement plan"
+                      disabled={
+                        !s.config.placement ||
+                        ['won', 'lost'].includes(s.status)
+                      }
+                      onClick={() => dispatch({ type: 'repack' })}
+                    >
+                      <RotateCcw size={15} />
+                      Run rolling placement plan
+                      <small>{s.drains} replica cohorts drained</small>
+                    </button>
+                  )}
                 </section>
               ))}
-              {level === 'rack' && (
-                <button
-                  className="provider-repack"
-                  aria-label="Run rolling placement plan"
-                  disabled={
-                    !s.config.placement || ['won', 'lost'].includes(s.status)
-                  }
-                  onClick={() => dispatch({ type: 'repack' })}
+              <div
+                className="campaign-local-metrics"
+                aria-label="Cloud level performance readout"
+              >
+                {details.map(([label, value]) => (
+                  <div key={label}>
+                    <small>{label}</small>
+                    <strong>{value}</strong>
+                  </div>
+                ))}
+              </div>
+              <details className="provider-accounting provider-allocation">
+                <summary>Inspect physical allocation</summary>
+                <div className="provider-inspect">
+                  <label>
+                    Physical server
+                    <select
+                      aria-label="Inspect cloud server"
+                      value={c.server}
+                      onChange={(e) => c.setServer(Number(e.target.value))}
+                    >
+                      {Array.from({ length: 8 }, (_, i) => (
+                        <option key={i} value={i}>
+                          Pod {i < 4 ? 'A' : 'B'} · Server {i + 1}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <button
+                    aria-label="Follow tenant lease"
+                    aria-pressed={c.follow}
+                    onClick={() => c.setFollow(!c.follow)}
+                  >
+                    {c.follow ? 'Following lease' : 'Follow lease'}
+                  </button>
+                </div>
+                {(level === 'rack' || level === 'gpu') && (
+                  <div
+                    className="provider-device-map"
+                    role="group"
+                    aria-label="Eight physical GPU slots"
+                  >
+                    {m.owners
+                      .slice(c.server * 8, c.server * 8 + 8)
+                      .map((t, i) => (
+                        <button
+                          key={i}
+                          style={
+                            {
+                              '--owner-color': t ? TENANTS[t].color : '#566a77',
+                            } as React.CSSProperties
+                          }
+                          aria-label={`Inspect GPU ${i + 1}: ${t ? TENANTS[t].name : 'idle'}`}
+                          aria-pressed={c.gpu === i}
+                          onClick={() => c.setGpu(i)}
+                        >
+                          <Cpu size={14} />
+                          <b>{i + 1}</b>
+                          <small>{t ? t.toUpperCase() : 'IDLE'}</small>
+                        </button>
+                      ))}
+                  </div>
+                )}
+                <div
+                  className="provider-tenant-ledger"
+                  aria-label="Tenant allocation ledger"
                 >
-                  <RotateCcw size={15} />
-                  Run rolling placement plan
-                  <small>{s.drains} replica cohorts drained</small>
-                </button>
-              )}
+                  {(['train', 'serve', 'tune'] as Tenant[]).map((t) => (
+                    <div key={t}>
+                      <i style={{ background: TENANTS[t].color }} />
+                      <span>
+                        {TENANTS[t].name}
+                        <small>
+                          {t === 'serve'
+                            ? 'Persistent replicas · end-user API owner'
+                            : 'Checkpointable eight-device batch gang'}
+                        </small>
+                      </span>
+                      <strong>
+                        {m.held[t]}
+                        <small>/ {TENANTS[t].quota} quota</small>
+                      </strong>
+                    </div>
+                  ))}
+                </div>
+              </details>
               <section
                 className={`campaign-contract ${s.evidence[level] ? 'is-complete' : ''}`}
                 data-complete={s.evidence[level]}
@@ -616,14 +635,25 @@ export function ProviderUI({
           </button>
           <span className="campaign-transport-space" />
           <button
+            className="campaign-panel-toggle"
+            aria-expanded={panel}
+            title={
+              panel
+                ? 'Hide controls and explore the 3D world'
+                : 'Open cloud controls'
+            }
             aria-label={panel ? 'Hide cloud workshop' : 'Show cloud workshop'}
             onClick={() => {
               setPanel(!panel)
               setCinema(false)
             }}
           >
-            <HardDrive size={15} />
-            <span>{panel ? 'World' : 'Workshop'}</span>
+            {panel ? (
+              <PanelRightClose size={15} />
+            ) : (
+              <PanelRightOpen size={15} />
+            )}
+            <span>{panel ? '3D view' : 'Controls'}</span>
           </button>
           <button
             aria-label="Restart cloud scenario"

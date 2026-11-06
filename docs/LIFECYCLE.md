@@ -108,7 +108,7 @@ Bytes use binary KiB/MiB/GiB/TiB in the interface; network Gb/s and parameter co
 
 ## Motion, controls and accessibility
 
-**1–4** chooses Fleet, Pod, Server or GPU. Arrows select a connected operation; **Space** controls playback; **F** focuses connected hardware; **H** enters/exits cinema. Selecting an operation visits its mapped native level. Manual zooming retains the phase, method and inputs while choosing a compatible operation at the new level. Reader tabs remain available, and World/Details frees the physical scene. Playback uses four teaching seconds per operation while the reference request clock stays frozen.
+**1–4** chooses Fleet, Pod, Server or GPU. Arrows select a connected operation; **Space** controls playback; **F** focuses connected hardware; **H** enters/exits cinema. Selecting an operation visits its mapped native level. Manual zooming retains the phase, method and inputs while choosing a compatible operation at the new level. Reader tabs remain available, and 3D view/Details frees the physical scene. Playback uses four teaching seconds per operation while the reference request clock stays frozen.
 
 Training rank colors on the existing server use the same GPipe schedule as the sizing reader. Model-specific state, rollout counts and inference KV retain their declared analytical scopes; visible glyphs aggregate data. Inter-pool inference KV transfer is conditional on the disaggregation option. Checkpoint/release operations are periodic roles, not mandatory work after every optimizer step. Larger calculated jobs can span many physical servers.
 

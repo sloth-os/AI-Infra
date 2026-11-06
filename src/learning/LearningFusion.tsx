@@ -241,6 +241,7 @@ export default function LearningFusion(p: Props) {
   const effects = useEffectsQuality()
   const initialContext = useMemo(() => parseContextLocation(location.href), [])
   const root = useRef<HTMLElement>(null),
+    deck = useRef<HTMLDivElement>(null),
     card = useRef<HTMLElement>(null),
     cardHeight = useRef(360),
     pin = useRef<SpatialPin | null>(null)
@@ -718,6 +719,9 @@ export default function LearningFusion(p: Props) {
         host.clientWidth,
         host.clientHeight,
         cardHeight.current,
+        Number.parseFloat(
+          host.style.getPropertyValue('--learn-metrics-bottom') || '124',
+        ) + 52,
       )
     pin.current = layout
     for (const [name, value] of Object.entries({
@@ -756,6 +760,30 @@ export default function LearningFusion(p: Props) {
   useEffect(() => {
     refreshAnchor.current?.()
   }, [webgl, contextKey, context, p.active])
+  useEffect(() => {
+    const host = root.current,
+      controls = deck.current
+    if (!p.active || !host || !controls) return
+    const metrics = host.querySelector<HTMLElement>('.learn-metrics')
+    const measure = () => {
+      host.style.setProperty(
+        '--learn-deck-inset',
+        `${Math.ceil(host.clientHeight - controls.offsetTop + 12)}px`,
+      )
+      if (metrics)
+        host.style.setProperty(
+          '--learn-metrics-bottom',
+          `${metrics.offsetTop + metrics.offsetHeight}px`,
+        )
+      refreshAnchor.current?.()
+    }
+    const observer = new ResizeObserver(measure)
+    observer.observe(host)
+    observer.observe(controls)
+    if (metrics) observer.observe(metrics)
+    measure()
+    return () => observer.disconnect()
+  }, [p.active, theater, teachingActive])
   useEffect(() => {
     if (!p.active) {
       setJourneyAuto(false)
@@ -2024,7 +2052,7 @@ export default function LearningFusion(p: Props) {
                   <ArrowUpRight size={14} />
                 </button>
               )}
-              <div className="learn-command-deck">
+              <div className="learn-command-deck" ref={deck}>
                 {contextFrame ? (
                   <ContextControls
                     timeline={

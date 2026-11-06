@@ -138,19 +138,13 @@ export default function LearningLab({
         THE TRADE-OFF LAB
       </div>
       <h2>Move the bottleneck.</h2>
-      <p>
-        Change the workload. Compare three serving strategies. The world’s load
-        overlay and payload sizes use the same parameters.
-      </p>
-      <LearningChallenges
-        params={params}
-        strategy={strategy}
-        onLoad={(c) => {
-          onParameters({ ...c.initial })
-          onStrategy(c.strategy)
-          onChallengeWorld?.(c)
-        }}
-      />
+      <details className="learn-lab-intro">
+        <summary>How to compare serving strategies</summary>
+        <p>
+          Change the workload. Compare three serving strategies. The world’s
+          load overlay and payload sizes use the same parameters.
+        </p>
+      </details>
       <div className="learn-presets">
         {[
           ['baseline', 'Baseline'],
@@ -210,6 +204,15 @@ export default function LearningLab({
           <strong>{duration(result.transferMs)}</strong>
         </div>
       </div>
+      <LearningChallenges
+        params={params}
+        strategy={strategy}
+        onLoad={(c) => {
+          onParameters({ ...c.initial })
+          onStrategy(c.strategy)
+          onChallengeWorld?.(c)
+        }}
+      />
       <div className="learn-lab-controls">
         {controls.map((c) => (
           <label

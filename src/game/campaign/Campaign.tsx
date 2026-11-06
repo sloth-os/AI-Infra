@@ -10,12 +10,13 @@ import {
   Cpu,
   Gauge,
   Globe2,
-  HardDrive,
   Layers3,
   Maximize2,
   Minus,
   Network,
   Pause,
+  PanelRightClose,
+  PanelRightOpen,
   Play,
   Plus,
   RotateCcw,
@@ -114,6 +115,9 @@ export default function LifecycleCampaign({
     }),
   )
   const [saved, setSaved] = useState<CampaignProgress>(loadProgress)
+  const [decisionTarget, setDecisionTarget] = useState<{ id: string } | null>(
+    null,
+  )
   const [panel, setPanel] = useState(true),
     [help, setHelp] = useState(false),
     [sources, setSources] = useState(false),
@@ -165,6 +169,13 @@ export default function LifecycleCampaign({
     },
     [dispatch, cloudMode],
   )
+  const inspectDecision = (next: Layer, id?: string) => {
+    visit(next)
+    setPanel(true)
+    setDecisionTarget({
+      id: id ?? DECISIONS[phase].find((d) => d.level === next)!.id,
+    })
+  }
   const selectPhase = (next: LifecyclePhase) => {
     dispatch({ type: 'pause' })
     setPhase(next)
@@ -227,6 +238,17 @@ export default function LifecycleCampaign({
   useEffect(() => {
     if (workshop.current) workshop.current.scrollTop = 0
   }, [phase, level, panel])
+  useEffect(() => {
+    if (!decisionTarget || !panel || cloudMode) return
+    const target = workshop.current?.querySelector<HTMLElement>(
+      `[data-decision="${decisionTarget.id}"]`,
+    )
+    if (!target) return
+    const action = target.querySelector('button:not(:disabled)') ?? target
+    action.scrollIntoView({ block: 'center' })
+    target.focus({ preventScroll: true })
+    setDecisionTarget(null)
+  }, [decisionTarget, panel, level, cloudMode])
   useEffect(() => {
     if (active && !cloudMode && follow && s.status === 'running')
       visit(current.layer, false)
@@ -739,6 +761,13 @@ export default function LifecycleCampaign({
                       {PHASE_NAMES[phase].toUpperCase()}
                     </span>
                     <button
+                      className="campaign-configure"
+                      onClick={() => inspectDecision(level)}
+                      aria-label="Configure this level"
+                    >
+                      Configure <ChevronRight size={12} />
+                    </button>
+                    <button
                       onClick={() => setPanel(false)}
                       aria-label="Close performance workshop"
                     >
@@ -750,7 +779,10 @@ export default function LifecycleCampaign({
                       <strong>{metrics.blocked}</strong>
                       <button
                         onClick={() =>
-                          visit(phase === 'inference' ? 'gpu' : 'rack')
+                          inspectDecision(
+                            phase === 'inference' ? 'gpu' : 'rack',
+                            phase === 'inference' ? 'precision' : 'state',
+                          )
                         }
                       >
                         Inspect{' '}
@@ -760,9 +792,9 @@ export default function LifecycleCampaign({
                     </div>
                   )}
                   <h2>{lesson.title}</h2>
-                  <p className="campaign-goal">{lesson.goal}</p>
                   <details className="campaign-explanation">
-                    <summary>How this level works</summary>
+                    <summary>Goal and how this level works</summary>
+                    <p className="campaign-goal">{lesson.goal}</p>
                     <p>{lesson.process}</p>
                   </details>
                   {phase === 'posttrain' && (
@@ -788,26 +820,31 @@ export default function LifecycleCampaign({
                           )}
                         </select>
                       </label>
-                      <p>{METHOD_NOTES[s.method]}</p>
-                      {level === 'pod' && (
-                        <p className="campaign-roles">
-                          {s.method === 'sft' ? (
-                            'Offline SFT: eight learner GPU workers; no rollout generation.'
-                          ) : s.method === 'dpo' ? (
-                            'Offline DPO: two frozen reference workers and six learner workers; no rollout generation.'
-                          ) : (
-                            <>
-                              <span style={{ color: '#c4abe9' }}>
-                                Purple: {s.config.roles} rollout workers.
-                              </span>{' '}
-                              <span style={{ color: '#b5d79b' }}>
-                                Green: {8 - Number(s.config.roles)} learner
-                                workers.
-                              </span>
-                            </>
-                          )}
-                        </p>
-                      )}
+                      <details className="campaign-explanation">
+                        <summary>
+                          How {s.method.toUpperCase()} uses this hardware
+                        </summary>
+                        <p>{METHOD_NOTES[s.method]}</p>
+                        {level === 'pod' && (
+                          <p className="campaign-roles">
+                            {s.method === 'sft' ? (
+                              'Offline SFT: eight learner GPU workers; no rollout generation.'
+                            ) : s.method === 'dpo' ? (
+                              'Offline DPO: two frozen reference workers and six learner workers; no rollout generation.'
+                            ) : (
+                              <>
+                                <span style={{ color: '#c4abe9' }}>
+                                  Purple: {s.config.roles} rollout workers.
+                                </span>{' '}
+                                <span style={{ color: '#b5d79b' }}>
+                                  Green: {8 - Number(s.config.roles)} learner
+                                  workers.
+                                </span>
+                              </>
+                            )}
+                          </p>
+                        )}
+                      </details>
                     </>
                   )}
                   <div
@@ -824,7 +861,12 @@ export default function LifecycleCampaign({
                   {DECISIONS[phase]
                     .filter((d) => d.level === level)
                     .map((decision) => (
-                      <section className="campaign-decision" key={decision.id}>
+                      <section
+                        className="campaign-decision"
+                        key={decision.id}
+                        data-decision={decision.id}
+                        tabIndex={-1}
+                      >
                         <h3>{decision.title}</h3>
                         <details className="campaign-explanation">
                           <summary>Why this intervention matters</summary>
@@ -1049,6 +1091,13 @@ export default function LifecycleCampaign({
               </button>
               <span className="campaign-transport-space" />
               <button
+                className="campaign-panel-toggle"
+                aria-expanded={panel}
+                title={
+                  panel
+                    ? 'Hide controls and explore the 3D world'
+                    : 'Open performance controls'
+                }
                 aria-label={
                   panel
                     ? 'Hide performance workshop'
@@ -1060,8 +1109,12 @@ export default function LifecycleCampaign({
                   setFollow(false)
                 }}
               >
-                <HardDrive size={15} />
-                <span>{panel ? 'World' : 'Workshop'}</span>
+                {panel ? (
+                  <PanelRightClose size={15} />
+                ) : (
+                  <PanelRightOpen size={15} />
+                )}
+                <span>{panel ? '3D view' : 'Controls'}</span>
               </button>
               <button aria-label="Restart current operation" onClick={reset}>
                 <RotateCcw size={15} />

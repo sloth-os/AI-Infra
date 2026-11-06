@@ -269,3 +269,21 @@
     display: none;
   }
 }
+
+.provider-workshop .campaign-panel-top {
+  margin-bottom: 8px;
+}
+.provider-workshop .campaign-decision {
+  margin: 12px 0;
+}
+.provider-workshop .campaign-decision h3 {
+  margin: 0 0 8px;
+}
+.provider-workshop .campaign-decision button > small {
+  font-size: 9px;
+  color: var(--campaign-accent);
+}
+.provider-workshop .provider-allocation {
+  padding: 10px 0;
+  border-block: 1px solid #789aa344;
+}

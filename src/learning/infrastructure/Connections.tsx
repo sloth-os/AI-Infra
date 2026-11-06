@@ -1,7 +1,6 @@
 import {
   ArrowRight,
   ArrowUpRight,
-  BookOpen,
   Boxes,
   ChevronLeft,
   ChevronRight,
@@ -10,6 +9,8 @@ import {
   Flame,
   Layers3,
   Pause,
+  PanelRightClose,
+  PanelRightOpen,
   Play,
   X,
 } from 'lucide-react'
@@ -207,7 +208,6 @@ export function ContextPerspective({
         {levelNames[frame.layer].toUpperCase()} / {frame.title}
       </span>
       <h2>{frame.heading}</h2>
-      <p>{frame.explanation}</p>
       <nav aria-label="Story infrastructure levels">
         {levels.map((layer) => (
           <button
@@ -219,10 +219,14 @@ export function ContextPerspective({
           </button>
         ))}
       </nav>
-      <small>
-        Same hardware world · stage and placement labels are conceptual.
-        Aggregate glyphs run in teaching time.
-      </small>
+      <details className="context-level-explanation">
+        <summary>How this level works</summary>
+        <p>{frame.explanation}</p>
+        <small>
+          Same hardware world · stage and placement labels are conceptual.
+          Aggregate glyphs run in teaching time.
+        </small>
+      </details>
     </section>
   )
 }
@@ -378,13 +382,24 @@ export function ContextControls({
           <span>Focus</span>
         </button>
         <button
+          className="context-reader-toggle"
           onClick={onRead}
+          aria-expanded={panelOpen}
+          title={
+            panelOpen
+              ? 'Hide details and explore the 3D world'
+              : 'Open story details'
+          }
           aria-label={
             panelOpen ? 'Hide connected details' : 'Show connected details'
           }
         >
-          <BookOpen size={14} />
-          <span>{panelOpen ? 'World' : 'Details'}</span>
+          {panelOpen ? (
+            <PanelRightClose size={14} />
+          ) : (
+            <PanelRightOpen size={14} />
+          )}
+          <span>{panelOpen ? '3D view' : 'Details'}</span>
         </button>
       </div>
     </div>

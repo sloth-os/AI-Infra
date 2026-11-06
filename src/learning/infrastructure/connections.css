@@ -68,24 +68,24 @@
   margin-top: 4px;
 }
 .context-perspective {
-  padding: 14px;
+  padding: 10px;
   border: 1px solid color-mix(in srgb, var(--model-accent), transparent 65%);
   border-radius: 7px;
   background: #1b3540;
-  margin: 0 0 20px;
+  margin: 0 0 12px;
 }
 .context-perspective > span {
-  font-size: 7px;
+  font-size: 8px;
   letter-spacing: 0.6px;
   color: var(--model-accent);
   line-height: 1.8;
 }
 .context-perspective h2 {
-  font-size: 19px;
+  font-size: 16px;
   color: #d3e1d5;
   line-height: 1.5;
   font-weight: 450;
-  margin: 9px 0;
+  margin: 6px 0;
 }
 .context-perspective p {
   font-size: 11px;
@@ -96,10 +96,11 @@
   display: flex;
   flex-direction: row;
   gap: 4px;
-  margin: 14px 0;
+  margin: 8px 0;
 }
 .context-perspective nav button {
   flex: 1;
+  min-height: 30px;
   border: 1px solid #7195a43d;
   border-radius: 4px;
   background: #16303b;
@@ -111,7 +112,7 @@
   border-color: var(--model-accent);
   color: var(--model-accent);
 }
-.context-perspective > small {
+.context-level-explanation > small {
   font-size: 8px;
   line-height: 1.8;
   color: #86a5af;
@@ -258,7 +259,7 @@
   opacity: 0.35;
 }
 .context-playback > span {
-  font-size: 6px;
+  font-size: 8px;
   letter-spacing: 0.7px;
   flex: 1;
   color: #6f93a0;
@@ -441,7 +442,7 @@
     padding-top: 6px;
   }
   .context-playback > span {
-    font-size: 4px;
+    display: none;
     letter-spacing: 0.1px;
   }
   .context-playback > button {
@@ -565,4 +566,130 @@
     max-height: calc(100% - 349px);
     min-height: 0;
   }
+}
+
+.context-level-explanation > summary {
+  cursor: pointer;
+  color: var(--model-accent);
+  font-size: 11px;
+  line-height: 1.6;
+  padding: 3px 0;
+}
+.context-playback > .context-reader-toggle > span {
+  display: inline;
+}
+.context-playback > .context-reader-toggle {
+  margin-left: auto;
+  border: 1px solid #8db2aa66;
+  border-radius: 4px;
+  min-height: 30px;
+}
+
+/* Connected stories share the compact hardware layout in every orientation. */
+@media (max-height: 540px) {
+  .learning-fusion.has-context .context-current {
+    position: absolute;
+    top: 0;
+    right: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  .learning-fusion.has-context .context-controls {
+    position: relative;
+  }
+  .learning-fusion.has-context .context-current > span,
+  .learning-fusion.has-context .context-current > strong,
+  .learning-fusion.has-context .context-steps button > span,
+  .learning-fusion.has-context .context-metrics > small,
+  .learning-fusion.has-context .context-playback > span {
+    display: none;
+  }
+  .learning-fusion.has-context .context-current > button {
+    width: 28px;
+    height: 28px;
+  }
+  .learning-fusion.has-context .context-steps {
+    grid-template-columns: repeat(var(--context-steps), minmax(0, 1fr));
+    padding-right: 32px;
+    gap: 3px;
+  }
+  .learning-fusion.has-context .context-steps button {
+    padding: 5px;
+    justify-content: center;
+  }
+  .learning-fusion.has-context .context-steps b {
+    font-size: 9px;
+  }
+  .learning-fusion.has-context .learn-command-deck {
+    bottom: 12px;
+    width: calc(100% - 28px);
+    padding: 6px;
+  }
+  .learning-fusion.has-context .context-playback {
+    margin-top: 5px;
+    padding-top: 5px;
+  }
+  .learning-fusion.has-context .learn-panel-top {
+    position: static;
+  }
+  .learning-fusion.has-context:not(.has-provider) .learn-panel {
+    top: 216px;
+    bottom: 112px;
+    max-height: none;
+    min-height: 0;
+  }
+}
+@media (min-width: 701px) and (max-height: 540px) {
+  .learning-fusion.has-context .context-metrics {
+    top: 66px;
+    left: 150px;
+    right: 14px;
+    max-width: none;
+  }
+  .learning-fusion.has-context .context-metrics > div {
+    padding: 4px 10px;
+    flex: 1;
+  }
+  .learning-fusion.has-context:not(.has-provider) .learn-panel {
+    top: var(--learn-compact-top);
+    left: 150px;
+    right: 14px;
+    width: auto;
+  }
+}
+
+.learning-fusion .context-perspective > span {
+  display: none;
+}
+.learning-fusion .context-perspective h2 {
+  font-size: 15px;
+  line-height: 1.35;
+  margin: 0 0 6px;
+}
+.learning-fusion .context-perspective {
+  padding: 8px;
+}
+@media (max-width: 700px) and (min-height: 541px) {
+  .learning-fusion.has-context:not(.has-provider) .learn-panel {
+    top: 306px;
+    bottom: var(--learn-deck-inset, 226px);
+    max-height: none;
+    min-height: 0;
+  }
+}
+@media (max-width: 700px) and (max-height: 680px) {
+  .learning-fusion.has-context:not(.has-provider) .learn-panel {
+    top: 222px;
+  }
+}
+.learning-fusion.has-context .learn-panel {
+  bottom: var(--learn-deck-inset, 226px);
+}
+
+.learning-fusion.has-context .life-study .model-study-actions {
+  margin: 4px 0;
+}
+.learning-fusion .context-perspective {
+  margin-bottom: 8px;
 }

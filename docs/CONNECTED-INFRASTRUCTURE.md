@@ -17,7 +17,7 @@ Selecting a story opens a reading surface alongside the hardware. The perspectiv
 
 For an issue, changing scale retains the same issue, intervention and input assumptions. For a model or lifecycle phase, it retains the same model/phase and inputs, and selects the current or first compatible operation at the new level. Selecting a specific walkthrough step visits that operation's native level. Changing workload keeps the current physical level. This mapping is pedagogical; it is not a claim that every component must run on a separate worker or that a published model consumes all eight reference GPU slots.
 
-**Play connected walkthrough** follows the story through its levels: four perspectives for an issue; six operations for a model or lifecycle phase. **1–4** changes scale, arrows choose a walkthrough step, **Space** plays/pauses, and **F** focuses the connected hardware. World/Details hides/restores the reader. Cinema controls the same walkthrough. Clearing the story leaves the selected hardware scale and resumes the retained base timeline according to its previous pause state.
+**Play connected walkthrough** follows the story through its levels: four perspectives for an issue; six operations for a model or lifecycle phase. **1–4** changes scale, arrows choose a walkthrough step, **Space** plays/pauses, and **F** focuses the connected hardware. 3D view/Details hides/restores the reader. Cinema controls the same walkthrough. Clearing the story leaves the selected hardware scale and resumes the retained base timeline according to its previous pause state.
 
 ## One physical world, distinct mechanisms
 

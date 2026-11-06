@@ -30,7 +30,7 @@ The request lens and moving payload labels show actual game requests: tenant, in
 
 **Hot issues** provides a researched **top-ten editorial watchlist**, reviewed November 5, 2026, supported by 18 dated primary-source records. Explore power/cooling, KV/HBM, P/D networks, MoE routing, reasoning latency, precision, online RL, placement, recovery and tenant isolation from all four hardware perspectives. Interventions update the same calculated budgets and attached annotations. [docs/HOT-ISSUES.md](docs/HOT-ISSUES.md) records the evidence and quantitative counterexamples.
 
-Direct links use `?view=explore`, `journey`, `lab` or `guide`. Add `level=fleet|pod|server|gpu` and `example=kimi-k3`, `lifecycle=pretrain` or `issue=kv-memory` to open a connected story. Existing case-study links remain compatible; shared URLs retain their inputs and physical level. **1–4** chooses scale, arrows choose a connected step, **Space** controls playback, and **F** focuses the hardware. World/Details and cinema keep the same scene. The classic reading layout remains available through the header's layout toggle. [docs/LEARNING-FUSION.md](docs/LEARNING-FUSION.md) covers the original explorer and readers.
+Direct links use `?view=explore`, `journey`, `lab` or `guide`. Add `level=fleet|pod|server|gpu` and `example=kimi-k3`, `lifecycle=pretrain` or `issue=kv-memory` to open a connected story. Existing case-study links remain compatible; shared URLs retain their inputs and physical level. **1–4** chooses scale, arrows choose a connected step, **Space** controls playback, and **F** focuses the hardware. 3D view/Details and cinema keep the same scene. The classic reading layout remains available through the header's layout toggle. [docs/LEARNING-FUSION.md](docs/LEARNING-FUSION.md) covers the original explorer and readers.
 
 **Flow effects and operator gameplay** add soft data wakes, event rings, KV transfer-progress ribbons and output streams tied to actual generated tokens. Use the sparkle menu for Calm, Balanced or Cinematic effects across both modes. Game operations add FIFO/deadline/shortest-prompt scheduling, optional memory backfill, a resource-constrained capacity reserve, service contracts and sandbox stress drills. In the learning lab, **Learn by solving** offers four live infrastructure missions with budget checks, hints, stars and local XP. [docs/EXPERIENCE.md](docs/EXPERIENCE.md) records the mechanics, visual semantics and verification.
 
@@ -88,6 +88,8 @@ npm run build       # strict TypeScript + production bundle
 npm test            # game rules, all mission strategies, math and algorithms
 npm run test:e2e    # real browser tests including software WebGL and mobile
 ```
+
+[Browser and visual review](docs/UI-UX-REVIEW.md) records the responsive usability findings, before/after screenshots and regression coverage for every mode and connected story family.
 
 Browser tests use `/usr/bin/chromium` by default. Set `CHROMIUM_PATH` to another Chromium executable as needed. They launch Vite automatically. Software rendering is enabled for GPU-less environments. No browser download is required when system Chromium is installed.
 

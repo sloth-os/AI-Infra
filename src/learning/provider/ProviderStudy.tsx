@@ -141,20 +141,24 @@ export function ProviderStudy({
         <>
           <div className="provider-learning-intro">
             <h3>Compare the same arrivals on the same devices.</h3>
-            <p>
-              Both runs start with eight warm two-GPU inference replicas, one on
-              every server. Nova requests training; Forge requests tuning; Orbit
-              grows from eight to twelve replicas at 18 teaching seconds.
-            </p>
-            <p>
-              The 3D world shows{' '}
-              <strong>
-                {view.side === 'plan' ? 'your plan' : 'the baseline'}
-              </strong>{' '}
-              at {r.time.toFixed(1)}s. Use the replay slider to inspect
-              allocations, transferred bytes and completed work. The baseline is
-              evaluated at exactly the same elapsed time.
-            </p>
+            <details>
+              <summary>Arrivals and comparison rules</summary>
+              <p>
+                Both runs start with eight warm two-GPU inference replicas, one
+                on every server. Nova requests training; Forge requests tuning;
+                Orbit grows from eight to twelve replicas at 18 teaching
+                seconds.
+              </p>
+              <p>
+                The 3D world shows{' '}
+                <strong>
+                  {view.side === 'plan' ? 'your plan' : 'the baseline'}
+                </strong>{' '}
+                at {r.time.toFixed(1)}s. Use the replay slider to inspect
+                allocations, transferred bytes and completed work. The baseline
+                is evaluated at exactly the same elapsed time.
+              </p>
+            </details>
           </div>
           <div className="provider-plan-presets">
             <button onClick={() => changePlan(255)}>

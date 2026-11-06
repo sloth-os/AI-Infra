@@ -40,9 +40,11 @@ test('spatial explanations clear the desktop rails and remain stable as their wo
     420,
   )
   assert.ok(highSubject.y >= 182)
-  const phone = pinLearningCard(first, 'scheduler', 195, 400, 390, 844, 430)
-  assert.ok(phone.x >= 14 && phone.x + phone.width <= 376)
-  assert.ok(phone.y + 430 <= 844 - 168)
+  const phone = pinLearningCard(first, 'scheduler', 195, 400, 390, 844, 330)
+  assert.equal(phone.x, 14)
+  assert.equal(phone.y, 306)
+  assert.ok(phone.x + phone.width <= 326)
+  assert.ok(phone.y + 330 <= 844 - 168)
 })
 
 test('every request stage selects a real component and the appropriate 3D transformation', () => {

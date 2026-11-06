@@ -140,6 +140,16 @@
   font-weight: 450;
   text-align: right;
 }
+.learning-fusion .provider-study thead th {
+  background: #203e47;
+  color: #d5e6da;
+  font-size: 10px;
+  line-height: 1.5;
+  white-space: normal;
+}
+.learning-fusion .provider-study tbody th {
+  white-space: normal;
+}
 .provider-comparison th:first-child {
   width: 53%;
   text-align: left;
@@ -350,7 +360,7 @@
     padding-top: 5px;
   }
   .has-provider .context-playback > span,
-  .has-provider .context-playback > button > span {
+  .has-provider .context-playback > button:not(.context-reader-toggle) > span {
     display: none;
   }
   .has-provider .context-playback button {
@@ -378,7 +388,7 @@
     max-width: none;
   }
   .has-provider .context-metrics > div {
-    padding: 6px 10px;
+    padding: 4px 10px;
     flex: 1;
   }
   .has-provider .context-metrics strong {
@@ -403,7 +413,7 @@
     height: 14px;
   }
   .learning-fusion.has-provider .learn-camera {
-    top: 112px;
+    top: calc(var(--learn-metrics-bottom, 124px) + 8px);
     left: 150px;
     right: 14px;
     flex-direction: row;
@@ -415,7 +425,7 @@
     height: 27px;
   }
   .learning-fusion.has-context.has-provider .learn-panel {
-    top: 150px;
+    top: var(--learn-compact-top);
     bottom: 120px;
     left: 150px;
     right: 14px;
@@ -426,4 +436,18 @@
   .learning-fusion.has-context.has-provider .learn-command-deck {
     width: calc(100% - 28px);
   }
+}
+
+.provider-learning-intro details {
+  margin: 8px 0;
+}
+.provider-learning-intro summary {
+  cursor: pointer;
+  font-size: 11px;
+  color: #b2cfc7;
+  line-height: 1.7;
+}
+
+.learning-fusion.has-context.has-provider .learn-panel {
+  bottom: var(--learn-deck-inset, 244px);
 }
